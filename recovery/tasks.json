@@ -13,7 +13,8 @@
     "Task state and evidence must agree with actual files and latest checkpoint.",
     "Substeps may use IDs such as W02.1 in checkpoints; one behavior/check per patch.",
     "Implementation authorized; W02 and local W03 verified. TensorRT 10.16.1 SDK/plugin/engine and Docker synthetic checks passed; reference semantics, memory/failure checks, W06/W07, benchmarks and CI remain.",
-    "2026-10-02: real-bag message integration and live RViz rendering verified. W07 viewer substep is independent of the pending W06 worker; full W07 acceptance remains incomplete."
+    "2026-10-02: real-bag message integration and live RViz rendering verified. W07 viewer substep is independent of the pending W06 worker; full W07 acceptance remains incomplete.",
+    "2026-10-02: user published RViz and bag/video work at dd687da7f42b4dc8fb53370be4a7c26635bc6e95. Complete project/chat history added; historical inventory publication states are retained as dated evidence."
   ],
   "state_values": [
     "pending",
@@ -344,7 +345,7 @@
         "QoS and clock compatibility checked",
         "Stage times, drop reasons and header preservation validated"
       ],
-      "next_action": "RViz and reproducible sample bag/camera helper delivered. Resolve training semantics against a labeled reference and continue W06 plus full launch/QoS/metrics acceptance; review/push this uncommitted patch.",
+      "next_action": "RViz and reproducible sample bag/camera helper delivered and published at dd687da. Resolve training semantics against a labeled reference and continue W06 plus full launch/QoS/metrics acceptance.",
       "evidence": [
         {
           "command": "docker exec -i pointpillars /entrypoint.sh python3 - < .recovery/verification/inspect-live-bag.py",
@@ -419,14 +420,16 @@
         "src/device_info.cpp",
         "docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex",
         "docs/LEGACY_FOXY_README.md",
-        "tools/deploy.sh"
+        "tools/deploy.sh",
+        "docs/PROJECT_HISTORY_AND_DECISION_RECORD.md",
+        "docs/CHAT_DISCUSSION_RECORD.md"
       ],
       "acceptance": [
         "Clean-machine pinned setup/build/run rehearsal",
         "CPU/ROS/GPU validation reported distinctly",
         "Rollback and supervisor/fault handling exercised"
       ],
-      "next_action": "Automatic downloads/Git build and one-command launch delivered; standard pointpillars container left running. Publish these deployment edits before GitHub bootstrap elsewhere. Retry built-in PDF compilation when sandbox works; obtain reference semantics and finish benchmark/operational/CI and additional hardware acceptance.",
+      "next_action": "Automatic deployment and RViz/bag/video work published at dd687da; history documentation added locally. Retry built-in PDF compilation when available; obtain reference semantics and finish benchmark/operational/CI, clean-machine and additional-hardware acceptance.",
       "evidence": [
         {
           "result": "Portable multistage full image build and colcon test passed; final entrypoint subsequently fixed by small image update.",
@@ -588,6 +591,13 @@
           "result": "Built-in compiler sandbox connection closed before parsing. Three attempts after folder move; PDF compilation remains unverified.",
           "log": ".recovery/verification/automatic-latex-compile.json",
           "log_sha256": "d15de225c69d0155a2d11986f8a1c517d70598564d8e564727742053ee822277"
+        },
+        {
+          "command": "python3 /tmp/pp-history-doc-checks.py",
+          "exit_code": 0,
+          "result": "Complete history covers all 51 published changed paths and 36 discussion turns, including 91 visible progress updates. 167 current links/anchors, 27 shell syntax blocks, six artifact identities, preserved existing ignore edits/task states and Git-eligible file limits checked. Documentation only; no runtime rerun.",
+          "log": ".recovery/verification/history-doc-checks.txt",
+          "log_sha256": "efe3612ff117b54802c43d3dc1de713f5810f553d1f73b5116152bf599ae7cdd"
         }
       ]
     }

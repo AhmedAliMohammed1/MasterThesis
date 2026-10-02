@@ -4,6 +4,8 @@ This project receives LiDAR point clouds and publishes 3D detection messages usi
 
 The [A-to-Z LaTeX guide](docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex) explains the completed changes and gives plain-language steps and commands for driver installation, Docker/NVIDIA Container Toolkit setup, automatic Git/model/SDK downloads, build/run, inspection, bag playback, synthetic verification, transfer to another computer, native colcon development, troubleshooting, and interrupted-work recovery. Open the `.tex` file in the Codex editor for its PDF preview when the compiler is available. PDF compilation is unverified: the built-in compiler could not initialize; its latest attempt could not download the uncached TeX bundle; earlier attempts after the folder move reported a closed sandbox connection. The source and command checks are saved.
 
+For the full account of how the project reached this stage, read the [project history and decision record](docs/PROJECT_HISTORY_AND_DECISION_RECORD.md). It covers every discussion topic, the purpose and location of all 51 changed implementation files, decisions, corrections, test evidence and remaining work. The [chronological chat record](docs/CHAT_DISCUSSION_RECORD.md) preserves the original requests and recorded replies, with earlier commands and status clearly marked as historical.
+
 ## Build and run with one command
 
 With a working host NVIDIA driver, Docker and NVIDIA Container Toolkit, run from the project folder:
