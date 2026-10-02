@@ -1,51 +1,58 @@
-# Two-command Docker workflow
+# Automatic Docker build and deployment
 
-For a fresh computer, use the [A-to-Z LaTeX guide](../docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex), including driver/toolkit setup, exact SDK/model preparation, and image transfer.
-
-Run these commands from `/home/ae/Desktop/MasterThesis`:
+On a Linux x86-64 host with a supported NVIDIA GPU, working driver, Docker and NVIDIA Container Toolkit, run from the project folder:
 
 ```bash
-docker build -t pp-infer:jazzy-trt10 .
-docker run --rm --init --name pointpillars --gpus all --network host --ipc host -v pp-engines:/var/lib/pp_infer pp-infer:jazzy-trt10
+sudo bash tools/deploy.sh
 ```
 
-The runtime image includes Ubuntu 24.04, CUDA 12.9.1 shared libraries, ROS 2 Jazzy, TensorRT 10.16.1.11, all three PointPillars plugins, the pretrained ONNX and the colcon-built node. Compilers and CUDA development files stay in the build stage. First startup creates an FP32 batch-one engine on the container's GPU. Later launches reuse a cache keyed by model hash, CUDA-selected GPU UUID/capability, NVIDIA driver version, CUDA driver/runtime API versions and SDK/build recipe. Failed engine builds leave no accepted final engine. No GPU is needed for `docker build`; GPU is required for `docker run`.
+This one command builds the image and starts the node in the foreground. Ctrl+C stops it. The wrapper will not replace an existing container with the same name; stop/remove the intended old instance first or select another `PP_CONTAINER_NAME`.
 
-Node: `/pointpillars`. Input: `/point_cloud`. Output: `/bbox`. Stop using Ctrl+C. Stop any previous host inference instance before running the container on the same topics. Launch a sensor driver or replay a ROS bag separately; the inference image does not include sensor data.
+`docker build` creates an image. It cannot keep a ROS node running after its build container exits. The wrapper runs `docker build` followed by `docker run`; target-GPU engine creation happens at container startup. Host drivers and Docker GPU integration must already work.
 
-Build inputs already prepared on this machine: `docker/assets/pointpillars.onnx` and `.recovery/sdk/tensorrt-10.16.1/usr`. These are intentionally ignored by Git/recovery. A Dockerfile alone is not the model/SDK backup. Keep the original download; copy the required build inputs alongside the source on a new build machine. Once built, the image contains them and can run without the source/download directories.
+The Dockerfile automatically:
 
-Host prerequisites: Docker, a compatible NVIDIA driver and NVIDIA Container Toolkit configured for Docker. Containers cannot supply the host kernel driver. Network access is needed to download base/ROS packages during the first build. The SDK/model versions are fixed; ROS apt packages/base tag updates mean this is not a byte-for-byte locked build.
+1. Clones the latest published GitHub `main` source using BuildKit's Git `ADD`.
+2. Installs ROS 2 Jazzy, CUDA 12.9 components, C++/colcon tools and PCL dependencies.
+3. Downloads and installs the exact TensorRT 10.16.1.11 CUDA 12.9 runtime/plugin/parser/tool/header packages from NVIDIA's signed apt repository. All TensorRT dependencies are pinned to the same CUDA variant; large static development packages are omitted.
+4. Downloads NVIDIA NGC PointPillarNet `deployable_v1.1` ONNX and verifies SHA-256 `2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1`.
+5. Builds and tests `pp_infer` with colcon, records the Git commit in `/opt/pp_infer/source-revision.txt`, and packages a runtime image.
 
-Training class labels/order, intensity normalization and coordinates remain unverified. Defaults are provisional numeric labels and scale 1.0; synthetic checks do not establish real detection accuracy. The node's current reliable subscription requires a compatible publisher. The bounded worker and configurable sensor QoS remain unfinished.
-
-Select another input topic within the second command using `-e POINT_CLOUD_TOPIC=/your/lidar/topic`. Set ROS domain using `-e ROS_DOMAIN_ID=...`. To override model parameters, append ROS arguments after the image name, for example `run -p intensity_scale:=255.0`; only use normalization verified against your export specification. `docker/node.yaml` can also be edited before building. For shared systems, match the host ROS domain and middleware.
-
-Development validation:
+No local `.recovery/sdk`, downloaded DEB, ONNX, engine, or build tree is sent to Docker. `.dockerignore` allows only the Dockerfile and ignore file. You can build from the Dockerfile alone:
 
 ```bash
-docker run --rm --gpus all pp-infer:jazzy-trt10 nvidia-smi
-docker run --rm pp-infer:jazzy-trt10 ros2 pkg executables pp_infer
+sudo docker build -t pp-infer:jazzy-trt10 - < Dockerfile
 ```
 
-## Different machines and GPUs
+To launch the built image directly:
 
-The runtime code has no RTX 4060 model/architecture assumption. Startup inspects the selected CUDA device, requires SM 7.5 or newer, and builds an engine on that device. GPU compatibility follows [NVIDIA TensorRT 10.x support](https://docs.nvidia.com/deeplearning/tensorrt/10.x.x/getting-started/support-matrix.html). GPU memory must fit this model and engine build. Only the available RTX 4060 has been physically tested here; other supported devices still need target validation.
+```bash
+sudo docker run --rm --init --name pointpillars \
+  --gpus all --network host --ipc host \
+  -v pp-engines:/var/lib/pp_infer pp-infer:jazzy-trt10
+```
 
-This image is Linux **amd64/x86-64**. Different Intel/AMD x86-64 hosts with supported NVIDIA GPUs can use the same built image and do not need host ROS, CUDA toolkit or TensorRT installed. A compatible host NVIDIA driver, Docker and NVIDIA Container Toolkit are required. Windows can use an appropriately configured Linux/WSL2 GPU container environment; the host-network recipe above is validated only on Linux. ARM64/SBSA and Jetson require separate matching SDK/platform images. Unsupported old GPUs cannot be made compatible by a Dockerfile.
+Push source edits before rebuilding: local uncommitted or unpushed runtime changes are not included. BuildKit resolves the Git reference and caches by source identity, so unchanged dependencies need not be downloaded again. To pin a release, pass `--build-arg GIT_REF=<full-commit-sha>` to the build, or set `PP_GIT_REF` for the wrapper.
 
-To choose a GPU within the set visible to the container, add `-e PP_GPU_INDEX=1` to the run command. CUDA_VISIBLE_DEVICES is respected when PP_GPU_INDEX is unset; otherwise the first CUDA-visible device is used. CUDA device 0 after this remapping is shared by the preflight, engine builder and ROS runtime. To reduce the builder's workspace limit on smaller GPUs, add `-e PP_WORKSPACE_MIB=256`; this changes the cache key. It does not cap total GPU memory. Engine generation is serialized for a shared cache key using flock and promoted only after trtexec succeeds.
+```bash
+sudo env PP_GIT_REF='YOUR_FULL_COMMIT_SHA' bash tools/deploy.sh
+```
 
-To run elsewhere, transfer the built image (for example using Docker save/load) or push it to your own registry. The image carries the model/libraries; the source checkout does not automatically carry ignored SDK/model data. No registry publication is performed by this task.
+For another repository, set `PP_GIT_REPO` in the wrapper or `GIT_REPO` as a build argument. A private repository needs BuildKit Git authentication secrets; do not embed access tokens in URLs, Dockerfile arguments or source. Network access is required for a fresh build. CUDA/SDK versions are pinned; Ubuntu tags and ROS apt versions can still change. Pin the Git commit and retain the built image for repeatable deployments.
 
-## Verification on this machine
+At startup, the selected CUDA GPU is checked and an FP32 batch-one engine is generated. Engines are cached in `pp-engines`, keyed by model hash, GPU UUID/capability, driver, CUDA APIs and build recipe. Builds for the same key are serialized; temporary files are promoted only after successful engine generation. Transfer the image to another supported computer and let it generate its own engine.
 
-- Full final Dockerfile build and four colcon tests passed; corrected ROS entrypoint included.
-- Container GPU check and fresh ONNX engine generation passed.
-- A synthetic ROS frame produced detections with the same header, twice across a restart.
-- Exactly one engine generation occurred across both starts; the second reused the volume cache.
-- Invalid GPU index failed before engine/node startup.
-- Isolated validation container was stopped and removed. The image `pp-infer:jazzy-trt10` and `pp-engines` volume are retained.
-- Real-data accuracy, other physical GPUs, ARM builds and CUDA memory instrumentation remain unverified.
+Node `/pointpillars` receives `/point_cloud` (`sensor_msgs/msg/PointCloud2`) and publishes `/bbox` (`vision_msgs/msg/Detection3DArray`). Start a sensor or bag publisher separately; the container does not generate real data. Input needs little-endian scalar FLOAT32 XYZI and a compatible reliable publisher.
 
-The builder installs only needed CUDA packages from NVIDIA’s Ubuntu repository, pinned to CUDA 12.9 Update 1 component versions; it does not download the full CUDA development image. Host CUDA/toolchain files are not copied.
+Wrapper settings: `PP_IMAGE`, `PP_CONTAINER_NAME`, `PP_ENGINE_VOLUME`, `PP_GIT_REPO`, `PP_GIT_REF`, `PP_GPU_INDEX`, `PP_WORKSPACE_MIB`, `ROS_DOMAIN_ID`, `POINT_CLOUD_TOPIC`, `DETECTIONS_TOPIC`. Extra wrapper arguments are forwarded to `docker build`, including build arguments and secrets. For example:
+
+```bash
+sudo env POINT_CLOUD_TOPIC=/lidar/points ROS_DOMAIN_ID=7 \
+  PP_GPU_INDEX=0 PP_WORKSPACE_MIB=256 bash tools/deploy.sh
+```
+
+GPU indexes refer to the visible CUDA set. Workspace limits do not cap total GPU memory. The image is Linux amd64 and follows [TensorRT 10.x hardware support](https://docs.nvidia.com/deeplearning/tensorrt/10.x.x/getting-started/support-matrix.html), with capability 7.5 as a floor. ARM/Jetson requires a separate image. Only the available RTX 4060 has been physically tested.
+
+Class order, intensity scaling and coordinate semantics still need reference validation. Defaults remain generic labels and scale 1.0. Synthetic tests do not establish real-data accuracy. Bounded-worker integration, configurable QoS, CUDA memory instrumentation and operational acceptance remain unfinished.
+
+See the [A-to-Z LaTeX guide](../docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex), [README](../README.md) and [progress record](../recovery/PROGRESS.md) for setup, verification and limits.

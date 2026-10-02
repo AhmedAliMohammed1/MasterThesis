@@ -1,17 +1,23 @@
 # Resume pp_infer work after interrupted credit, context or tooling
 
-Open this repository: `/home/ae/Desktop/MasterThesis`.
+Open this repository: `/media/ae/New Volume/MasterThesis`.
 
 The user authorized implementation on 2026-10-01. W02 CPU foundations and W03 local ROS adapters are implemented; W04/W05 runtime source migration builds/links against extracted TensorRT 10.16.1.11 and passes synthetic GPU smoke checks; reference semantics, memory/failure checks and W06 remain pending; read PROGRESS.md/tasks.json and the latest checkpoint for verification and remaining blockers. Docker packaging is implemented and verified with synthetic GPU/ROS checks; see docker/README.md and config/docker_inventory.json. Continue using the protocol below, preserving existing work.
 
-The A-to-Z implementation/deployment guide is `docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex`; README now describes the Jazzy workflow. All current build instructions now use colcon; reduced CPU, sanitized CPU and ROS builds/tests passed. Its commands passed syntax/link checks and its synthetic container command passed in isolated ROS domain 91. Built-in LaTeX compilation is pending because the compiler could not retrieve its TeX bundle, before parsing source. Preserve the source and retry with the built-in compiler when available; do not install a terminal TeX distribution for this task.
+The A-to-Z implementation/deployment guide is `docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex`; README now describes the Jazzy workflow. All current build instructions now use colcon; reduced CPU, sanitized CPU and ROS builds/tests passed. Its commands passed syntax/link checks and its synthetic container command passed in isolated ROS domain 91. Built-in LaTeX compilation remains unverified: the original attempt could not retrieve its TeX bundle, and attempts after the folder move report that the LaTeX sandbox connection closed before parsing source. Preserve the source and retry with the built-in compiler when available; do not install a terminal TeX distribution for this task.
+
+## Current deployment and moved checkout
+
+The user moved the checkout to `/media/ae/New Volume/MasterThesis` on 2026-10-02. Quote this path. Docker still uses its own host storage filesystem; moving the project does not move Docker images/cache. Old native build/install outputs contain stale absolute paths; select fresh directories when rebuilding native code. Historical logs/inventories retain their original paths as evidence.
+
+`sudo bash tools/deploy.sh` builds published GitHub source, downloads and verifies the pinned NGC model, installs pinned TensorRT shared runtime/plugins/tools/headers, builds/tests with colcon, then launches the GPU node. Source edits must be pushed before they are included. No local SDK/model inputs are needed. Keep large assets ignored. See the latest progress entry and image inventory for verified build/GPU evidence and current container state. W09 remains in progress for full operational/CI acceptance.
 
 ## Available now
 
 Requirements: Python 3 and Git. No ROS, CUDA, GPU, model access or paid API is needed for checkpoint/status commands. Run from the repository root:
 
 ```bash
-cd /home/ae/Desktop/MasterThesis
+cd '/media/ae/New Volume/MasterThesis'
 python3 tools/recovery.py status
 ```
 
@@ -43,6 +49,6 @@ Source snapshots include tracked and nonignored untracked eligible UTF-8 text fi
 
 ## Copy into the next chat when ready to implement
 
-> Continue implementation in `/home/ae/Desktop/MasterThesis` using `IMPLEMENTATION_ARCHITECTURE.md`. First read `recovery/RESUME.md`, `recovery/PROGRESS.md` and `recovery/tasks.json`, run `python3 tools/recovery.py status`, and reconcile the actual working tree with the last completed checkpoint. Preserve all existing changes. Resume the interrupted substep or the earliest unblocked task; do not repeat completed work without a reason. Checkpoint before and after each coherent edit/test. Record exact verification evidence and remaining GPU/model blockers. Do not claim inference or real-time performance is verified without target-hardware evidence.
+> Continue implementation in `/media/ae/New Volume/MasterThesis` using `IMPLEMENTATION_ARCHITECTURE.md`. First read `recovery/RESUME.md`, `recovery/PROGRESS.md` and `recovery/tasks.json`, run `python3 tools/recovery.py status`, and reconcile the actual working tree with the last completed checkpoint. Preserve all existing changes. Resume the interrupted substep or the earliest unblocked task; do not repeat completed work without a reason. Checkpoint before and after each coherent edit/test. Record exact verification evidence and remaining GPU/model blockers. Do not claim inference or real-time performance is verified without target-hardware evidence.
 
 If the old chat is available, resuming it retains conversational context; these files also support a fresh chat. Availability/credits must first permit model work. The local recovery helper cannot increase quota or automatically continue the model after a stop.

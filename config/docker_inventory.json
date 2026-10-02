@@ -1,15 +1,15 @@
 {
   "image_tag": "pp-infer:jazzy-trt10",
-  "image_id": "sha256:91652c5b801917da7be35f68f487732f386369c065b76a1c4bea165d141d6a94",
+  "image_id": "sha256:0f96b3f1fa851e068584fa83edc48ad0dc2b6feea147d3474cfa4b002c1dffe2",
   "architecture": "amd64",
   "os": "linux",
-  "size_bytes_reported_by_docker": 4019625350,
+  "size_bytes_reported_by_docker": 4743502390,
   "model_sha256": "2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1",
   "tensorrt": "10.16.1.11 CUDA12.9",
   "cuda_shared_libraries": "12.9.1",
   "physically_tested_gpu": "RTX 4060 Laptop",
   "engine_portability": "Build/caches on first selected CUDA-visible GPU; key covers UUID/CC, CUDA API versions, NVIDIA driver version, ONNX hash and engine build recipe",
-  "verification": "Synthetic container GPU/ROS round trip and cache reuse; not model accuracy",
+  "verification": "Four colcon tests passed in both full builds; fresh engine generation, two isolated synthetic GPU/ROS round trips across a cached restart, expected container-conflict refusal, and final standard-image ROS round trip passed. Not model accuracy.",
   "host_requirements": [
     "Linux x86-64",
     "TensorRT10-supported NVIDIA GPU SM>=7.5",
@@ -22,5 +22,18 @@
     "Reference detection accuracy",
     "CUDA memory instrumentation"
   ],
-  "build": "Final full Dockerfile build from Ubuntu24 with pinned required CUDA packages; no full CUDA development base image"
+  "build": "Automatic Git clone, NGC ONNX checksum, pinned CUDA/TensorRT shared SDK/header packages, colcon build/test. Independent full Dockerfile-only build passed with no local source/SDK/model context.",
+  "current_checkout": "/media/ae/New Volume/MasterThesis",
+  "source_repository": "https://github.com/AhmedAliMohammed1/MasterThesis.git",
+  "source_ref": "main",
+  "source_commit": "8747cc77ceddcdbda5514e390a11395b8dd71aca",
+  "model_url": "https://api.ngc.nvidia.com/v2/models/nvidia/tao/pointpillarnet/versions/deployable_v1.1/files/pointpillars_deployable.onnx",
+  "sdk_source": "NVIDIA signed Ubuntu24.04 CUDA apt repository; TensorRT packages pinned to 10.16.1.11-1+cuda12.9",
+  "deployment_command": "sudo bash tools/deploy.sh",
+  "running_container": "pointpillars",
+  "ros_node": "/pointpillars",
+  "input_topic": "/point_cloud",
+  "output_topic": "/bbox",
+  "previous_verified_image_id": "sha256:91652c5b801917da7be35f68f487732f386369c065b76a1c4bea165d141d6a94",
+  "verified_local_date": "2026-10-02"
 }

@@ -6,7 +6,7 @@
   "target": {
     "os": "Ubuntu 24.04",
     "ros": "Jazzy",
-    "platform": "NVIDIA GeForce RTX 4060 Laptop GPU"
+    "platform": "Linux x86-64, TensorRT10-supported NVIDIA GPU SM>=7.5; physically verified on RTX 4060 Laptop"
   },
   "notes": [
     "This ledger is updated by the implementer; recovery.py does not enforce it.",
@@ -376,14 +376,15 @@
         "docker/",
         "src/device_info.cpp",
         "docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex",
-        "docs/LEGACY_FOXY_README.md"
+        "docs/LEGACY_FOXY_README.md",
+        "tools/deploy.sh"
       ],
       "acceptance": [
         "Clean-machine pinned setup/build/run rehearsal",
         "CPU/ROS/GPU validation reported distinctly",
         "Rollback and supervisor/fault handling exercised"
       ],
-      "next_action": "Documentation uses colcon throughout; reduced CPU/sanitizer/ROS workflows passed. Retry built-in PDF compilation when bundle retrieval works. W09 overall retains clean-machine/additional hardware, benchmark-dependent operational and CI acceptance work.",
+      "next_action": "Automatic downloads/Git build and one-command launch delivered; standard pointpillars container left running. Publish these deployment edits before GitHub bootstrap elsewhere. Retry built-in PDF compilation when sandbox works; obtain reference semantics and finish benchmark/operational/CI and additional hardware acceptance.",
       "evidence": [
         {
           "result": "Portable multistage full image build and colcon test passed; final entrypoint subsequently fixed by small image update.",
@@ -471,8 +472,83 @@
           "exit_code": 0,
           "log": ".recovery/verification/docs-colcon-command-checks.txt",
           "log_sha256": "b2ac28a692f02ce4ba24cdb7b075028df51036594eac4faedcaa8fc46ed4795e"
+        },
+        {
+          "result": "Initial automatic build: published Git source, signed pinned SDK download/install, ONNX hash and four colcon test modes passed. Log copy during folder move ends in initial builder output; full completed startup is recorded separately.",
+          "log": ".recovery/verification/automatic-deploy.txt",
+          "log_sha256": "95bd4fecfc1c13544702c47e2f383abadf635046e92b1a2963418ff0bcafa7ec"
+        },
+        {
+          "result": "One-command wrapper rebuild/startup from moved folder passed; stopped intentionally after GPU/ROS validation (docker run exited 143 on docker stop).",
+          "log": ".recovery/verification/automatic-deploy-restart.txt",
+          "log_sha256": "71722bd3485369eb561e0934fdb2aedf5a0a57cb327e07bb9103a3d95b43563f"
+        },
+        {
+          "result": "Fresh selected GPU engine generation passed; exactly one Engine generation completed occurrence.",
+          "log": ".recovery/verification/automatic-first-startup.txt",
+          "log_sha256": "a5ff7b1c883f3163cfdec9ac5381e283261c7a2cd7ec42e103cb9cebc57e1ec8",
+          "exit_code": 0
+        },
+        {
+          "result": "First exact documented synthetic ROS/GPU round trip passed; header preserved, one detection.",
+          "log": ".recovery/verification/automatic-ros-smoke.txt",
+          "log_sha256": "982d6e3b0f61c72ab382da13d154d9118e3eaa73f51bd73e76edf7cef0bc97d8",
+          "exit_code": 0
+        },
+        {
+          "result": "Second round trip passed after the wrapper rebuild and restart.",
+          "log": ".recovery/verification/automatic-ros-smoke-restart.txt",
+          "log_sha256": "982d6e3b0f61c72ab382da13d154d9118e3eaa73f51bd73e76edf7cef0bc97d8",
+          "exit_code": 0
+        },
+        {
+          "result": "Restart emitted GPU preflight without a second engine generation; cache reused.",
+          "log": ".recovery/verification/automatic-cache-reuse.txt",
+          "log_sha256": "e8bd0cfe904a071911071060a974fdc5c491d48616c32cad62d3954d7cf0a398",
+          "exit_code": 0
+        },
+        {
+          "result": "Wrapper preserved existing named container and returned expected exit 1 before build/run.",
+          "log": ".recovery/verification/automatic-conflict-check.txt",
+          "log_sha256": "45218c4d89b77b501f05a547055d3e8a4cd6bb18ef0d1c875bf369af164b4613",
+          "exit_code": 1
+        },
+        {
+          "result": "Independent full build from Dockerfile stdin with empty local context passed all downloads/checksum, four colcon tests and image export.",
+          "log": ".recovery/verification/automatic-dockerfile-only-build.txt",
+          "log_sha256": "7f4d4798c9fac256f5ace245121269ca149b9d24342d1663d8fbcfa34cf24c49",
+          "exit_code": 0
+        },
+        {
+          "result": "Final standard image built with wrapper and pointpillars container left running on default topics. Foreground docker run remains active; this is not a completed command exit.",
+          "log": ".recovery/verification/automatic-standard-deployment.txt",
+          "log_sha256": "e076db9a200ecdeb55da75df7e563485131fa5a0b2753b0ccbedd0c49c39101c"
+        },
+        {
+          "result": "Final fresh-build standard image synthetic GPU/ROS round trip passed with preserved header.",
+          "log": ".recovery/verification/automatic-standard-ros-smoke.txt",
+          "log_sha256": "982d6e3b0f61c72ab382da13d154d9118e3eaa73f51bd73e76edf7cef0bc97d8",
+          "exit_code": 0
+        },
+        {
+          "result": "Running /pointpillars subscribes /point_cloud and publishes /bbox.",
+          "log": ".recovery/verification/automatic-standard-node-info.txt",
+          "log_sha256": "13f5edbee1b49083dd77f48dd9f61efb4f5fddf2059ae358d817baedc7b6f93e",
+          "exit_code": 0
+        },
+        {
+          "result": "39 LaTeX shell blocks, Python, Markdown commands/links, deploy.sh syntax, whitespace and no Git-eligible file above 10 MiB passed.",
+          "log": ".recovery/verification/automatic-doc-command-checks.txt",
+          "log_sha256": "10b74d2f75fc7b3e1476bdb96cdaabe81d73303f80b30e9ac7cb71e848692e26",
+          "exit_code": 0
+        },
+        {
+          "result": "Built-in compiler sandbox connection closed before parsing. Three attempts after folder move; PDF compilation remains unverified.",
+          "log": ".recovery/verification/automatic-latex-compile.json",
+          "log_sha256": "d15de225c69d0155a2d11986f8a1c517d70598564d8e564727742053ee822277"
         }
       ]
     }
-  ]
+  ],
+  "current_checkout": "/media/ae/New Volume/MasterThesis"
 }
