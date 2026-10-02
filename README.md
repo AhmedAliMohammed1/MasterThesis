@@ -2,7 +2,7 @@
 
 This project receives LiDAR point clouds and publishes 3D detection messages using a pretrained PointPillars ONNX model and TensorRT 10.16.1.11. The current deployment uses Ubuntu 24.04 and Docker; the image builds the ROS package with colcon.
 
-The [A-to-Z LaTeX guide](docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex) explains the completed changes and gives plain-language steps and commands for driver installation, Docker/NVIDIA Container Toolkit setup, automatic Git/model/SDK downloads, build/run, inspection, bag playback, synthetic verification, transfer to another computer, native colcon development, troubleshooting, and interrupted-work recovery. Open the `.tex` file in the Codex editor for its PDF preview when the compiler is available. PDF compilation is unverified: the built-in compiler could not initialize; its latest error after the folder move is that the LaTeX sandbox connection closed. The source and command checks are saved.
+The [A-to-Z LaTeX guide](docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex) explains the completed changes and gives plain-language steps and commands for driver installation, Docker/NVIDIA Container Toolkit setup, automatic Git/model/SDK downloads, build/run, inspection, bag playback, synthetic verification, transfer to another computer, native colcon development, troubleshooting, and interrupted-work recovery. Open the `.tex` file in the Codex editor for its PDF preview when the compiler is available. PDF compilation is unverified: the built-in compiler could not initialize; its latest attempt could not download the uncached TeX bundle; earlier attempts after the folder move reported a closed sandbox connection. The source and command checks are saved.
 
 ## Build and run with one command
 
@@ -65,7 +65,7 @@ sudo docker exec pointpillars /entrypoint.sh ros2 topic list -t
 sudo docker exec pointpillars /entrypoint.sh ros2 topic echo /bbox --once
 ```
 
-The entrypoint loads ROS before running these utilities. The node needs a LiDAR publisher, compatible ROS bag, or the synthetic check in Step 10 of the guide. It does not produce camera images or provide a GUI viewer.
+The entrypoint loads ROS before running these utilities. The node needs a LiDAR publisher, compatible ROS bag, or the synthetic check in Step 10 of the guide. It does not produce camera images. The optional RViz viewer below displays its point clouds and boxes on the host desktop.
 
 Input fields must be scalar little-endian FLOAT32 `x`, `y`, `z`, and `intensity`. Organized clouds with valid row padding are supported. The tested engine supports 204800 points; the default byte limit is 64 MiB. The current subscription requests **reliable** delivery, so best-effort-only publishers may not match it.
 
@@ -78,9 +78,61 @@ sudo env POINT_CLOUD_TOPIC=/lidar/points ROS_DOMAIN_ID=7 \
 
 See [Docker details](docker/README.md) and the guide for configuration mounts and playback QoS overrides.
 
+## Download and play the sample bag, with matching camera video
+
+Start inference with `tools/deploy.sh`, then in another terminal run:
+
+```bash
+bash tools/rosbag_demo.sh
+```
+
+This prepares the same KITTI sequence04 bag used for verification, downloads its original drive's left-color camera frames, creates a camera MP4, and loops the LiDAR topic into `/point_cloud` with reliable QoS at half speed. It builds a small Ubuntu preparation image containing Python and FFmpeg when needed; no host ROS, FFmpeg or Python installation is required for this helper. Docker is required, and the inference image must already exist for playback. Run without sudo; the helper requests Docker access through sudo only if needed and preserves your ownership of generated files.
+
+Downloads use a pinned Hugging Face revision/checksum for the bag and a pinned object ETag for the original KITTI archive. Camera frames are fetched using ZIP byte ranges, avoiding a complete raw-data download. Completed frames are reused, partial bag downloads resume, and video promotion occurs after encoding/probing succeeds. Reruns verify and reuse prepared assets. The default folder is `../rosbags/kitti04` relative to the checkout; a generated `.gitignore` excludes its assets. Allow roughly3 GB there, plus Docker storage for the preparation image.
+
+The camera video is `kitti04_left_camera.mp4` in that folder. Open it with your video player. It shows the underlying scene from drive `2011_09_30_drive_0016`; it is **not annotated ground truth** and does not automatically synchronize with RViz or bag playback. The camera has285 frames; the bag has283 LiDAR frames. Original camera timestamps are saved, and its first frame precedes the first LiDAR scan by about0.210 seconds. The clip plays at recorded speed; the default bag playback is half speed. This helper does not publish camera images or overlay boxes on the video.
+
+Other modes and settings:
+
+```bash
+bash tools/rosbag_demo.sh prepare  # Assets/video only; no playback or inference image needed.
+bash tools/rosbag_demo.sh stop     # Stops only a player created by this helper.
+PP_DEMO_DIR="$HOME/rosbags/kitti04" PP_BAG_RATE=1 bash tools/rosbag_demo.sh
+```
+
+Match `ROS_DOMAIN_ID` and `POINT_CLOUD_TOPIC` to inference. A matching running player is reused; a different or stopped container with the same name is preserved and reported as a conflict. The helper's stop mode refuses to stop manually started/unlabeled containers; inspect and stop those explicitly. See `bash tools/rosbag_demo.sh --help` for image/container settings. Open the separate RViz viewer below while playback runs.
+
+Sources: [bag converter and sequence mapping](https://github.com/Jakubach/kitti_to_ros), [ready ROS bags](https://huggingface.co/datasets/kubchud/kitti_to_ros), [KITTI sensor/data description](https://www.cvlibs.net/datasets/kitti/raw_data.php). Preserve dataset attribution and applicable licensing terms with copied data.
+
+## Visualize points and boxes in RViz
+
+Keep inference and bag playback (or your LiDAR driver) running. On an Ubuntu desktop with **host ROS Jazzy and RViz** installed, run from this folder:
+
+```bash
+bash tools/visualize.sh
+```
+
+The saved [RViz view](rviz/pointpillars.rviz) shows `/point_cloud` and `/bbox` together, using the official [vision_msgs RViz plugin](https://github.com/ros-perception/vision_msgs/blob/ros2/vision_msgs_rviz_plugins/README.md). It uses reliable QoS and fixed frame `velodyne` for the tested KITTI bag. For another sensor frame/domain:
+
+```bash
+ROS_DOMAIN_ID=7 bash tools/visualize.sh -f your_lidar_frame
+```
+
+Run the viewer as your desktop user, without sudo. A Docker-only inference host does not need ROS or a display; this optional viewer does. Follow the guide's native ROS installation section if needed, then install:
+
+```bash
+sudo apt install ros-jazzy-rviz2 ros-jazzy-vision-msgs-rviz-plugins
+```
+
+If RViz is already installed but its vision display plugin is missing, the launcher downloads the official package from the host's configured ROS apt index and extracts it under ignored `.recovery/rviz`; it does not register a system package. Missing dependencies require the apt installation above. The launcher defaults Fast DDS to UDPv4 to avoid shared-memory ownership conflicts between root containers and desktop users; an explicit `FASTDDS_BUILTIN_TRANSPORTS` setting overrides this. Network/firewall/domain restrictions can still affect discovery.
+
+Use the mouse wheel to zoom and drag to rotate. Expand **Detections** to check its status or enable **Show Score**. Box colors identify numeric model IDs: orange `0`, blue `1`, yellow `2`; their semantic class names remain unverified. Intensity colors apply to points. All published boxes remain visible; this viewer adds no confidence filter. A sensor-frame-only bag can show a global TF warning because it supplies no transform tree. With both displays receiving data in the same `velodyne` frame, points and boxes can still render; do not substitute a different fixed frame without a valid transform.
+
+Real-bag integration passed 25 matched frames inside Docker and another 25 through the host viewer transport. The live RViz window rendered points and boxes. These checks establish message compatibility and visualization, **not detection accuracy**; labels, intensity normalization and box-coordinate conventions still need a known reference. The inference container remains headless and publishes `Detection3DArray` directly; no marker conversion is needed.
+
 ## Current implementation and limits
 
-The CPU geometry core and local ROS adapters are verified. Runtime migration uses TensorRT named tensors, validated input/output contracts, owned CUDA resources, and reusable buffers. Docker build, engine creation, synthetic ROS/GPU message flow, restart cache reuse, and invalid GPU selection checks passed on the available GPU.
+The CPU geometry core and local ROS adapters are verified. Runtime migration uses TensorRT named tensors, validated input/output contracts, owned CUDA resources, and reusable buffers. Docker build, engine creation, synthetic ROS/GPU message flow, restart cache reuse, and invalid GPU selection checks passed on the available GPU. Real KITTI bag message checks and live RViz rendering also passed.
 
 Training class order, intensity normalization, and coordinate semantics are unresolved. Defaults in `docker/node.yaml` are provisional `class_0`/`class_1`/`class_2` and intensity scale 1.0. Synthetic checks do not establish real-data accuracy. CUDA memory instrumentation was inconclusive; further runtime failure checks, the bounded worker, configurable sensor QoS, timing metrics, benchmark targets, and CI/operational acceptance remain unfinished.
 

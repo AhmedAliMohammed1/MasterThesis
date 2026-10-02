@@ -1,0 +1,86 @@
+Panels:
+- Class: rviz_common/Displays
+  Name: Displays
+  Property Tree Widget:
+    Expanded:
+    - /Global Options1
+    - /Global Status1
+    - /Detections1
+    Splitter Ratio: 0.5
+- Class: rviz_common/Views
+  Name: Views
+Visualization Manager:
+  Class: ''
+  Displays:
+  - Class: rviz_default_plugins/Grid
+    Name: Grid
+    Enabled: true
+    Cell Size: 5
+    Plane Cell Count: 20
+    Alpha: 0.25
+    Color: 120; 120; 120
+    Reference Frame: <Fixed Frame>
+  - Class: rviz_default_plugins/PointCloud2
+    Name: LiDAR
+    Enabled: true
+    Topic:
+      Value: /point_cloud
+      Depth: 5
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+      History Policy: Keep Last
+    Style: Points
+    Size (Pixels): 2
+    Size (m): 0.03
+    Alpha: 1
+    Decay Time: 0
+    Position Transformer: XYZ
+    Color Transformer: Intensity
+    Channel Name: intensity
+    Use rainbow: true
+    Autocompute Intensity Bounds: true
+  - Class: vision_msgs_rviz_plugins/Detection3DArray
+    Name: Detections
+    Enabled: true
+    Topic:
+      Value: /bbox
+      Depth: 5
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+      History Policy: Keep Last
+    Only Edge: true
+    Line Width: 0.04
+    Alpha: 1
+    Show Score: false
+    ConfigPath: rviz/class_colors.yaml
+    Namespaces:
+      bounding_box: true
+      score: true
+  Enabled: true
+  Global Options:
+    Fixed Frame: velodyne
+    Background Color: 24; 26; 30
+    Frame Rate: 20
+  Name: root
+  Tools:
+  - Class: rviz_default_plugins/Interact
+  - Class: rviz_default_plugins/MoveCamera
+  - Class: rviz_default_plugins/Select
+  - Class: rviz_default_plugins/FocusCamera
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 65
+      Pitch: 0.8
+      Yaw: 0.5
+      Focal Point:
+        X: 10
+        Y: 0
+        Z: 0
+      Target Frame: <Fixed Frame>
+      Name: Current View
+Window Geometry:
+  Width: 1280
+  Height: 800
+  X: 60
+  Y: 40

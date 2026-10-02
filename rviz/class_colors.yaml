@@ -1,0 +1,4 @@
+# Numeric model IDs, not verified semantic class names.
+"0": {r: 255, g: 150, b: 40}
+"1": {r: 70, g: 180, b: 255}
+"2": {r: 255, g: 230, b: 60}

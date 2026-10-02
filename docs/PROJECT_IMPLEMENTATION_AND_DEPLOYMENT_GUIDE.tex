@@ -27,7 +27,7 @@ The recommended route uses Ubuntu 24.04 and a supported NVIDIA GPU. Docker carri
 
 The code does not require an RTX 4060. This image targets Linux x86-64 with NVIDIA hardware supported by TensorRT 10.16 and enough GPU memory. It has been physically tested on one RTX 4060 Laptop GPU. ARM and Jetson need a separate platform build. There is no universal image for every PC or operating system.
 
-Build, engine generation, and synthetic ROS/GPU detection checks passed. These demonstrate integration, not real-world detection accuracy or real-time performance.
+Build, engine generation, synthetic ROS/GPU checks, real-bag message checks, and live RViz rendering passed. These demonstrate integration and display support, not real-world detection accuracy or real-time performance.
 \tableofcontents
 \newpage
 
@@ -302,7 +302,50 @@ sudo docker run --rm --network host --ipc host \
 \end{lstlisting}
 These examples assume one Linux host. Verify layout and model settings before judging detections. No real-data accuracy fixture was supplied.
 
-Docker images are packaged programs, not pictures. This node handles points/detections, not camera pictures, and has no GUI. RViz on a separate ROS workstation can show points. Boxes need a compatible Detection3DArray display or marker converter, which has not been added or verified.
+\subsection{Download and initialize the tested bag and camera clip}
+With Docker working and the inference image already built, run this from another terminal while inference continues:
+\begin{lstlisting}
+cd "$PROJECT_DIR"
+bash tools/rosbag_demo.sh
+\end{lstlisting}
+The helper downloads and verifies the tested KITTI sequence04 ROS2 bag, extracts it, prepares reliable playback settings, and starts looping \code{/velodyne_points} remapped to \code{/point_cloud}. It also retrieves the left-color camera frames from original drive \code{2011_09_30_drive_0016} and creates \path{kitti04_left_camera.mp4}. A separate Ubuntu preparation image installs Python and FFmpeg inside Docker; no host installation of those tools or ROS is needed for this helper. Run as your normal user. It uses sudo for Docker only when required, while retaining your file ownership.
+
+Assets default to \path{../rosbags/kitti04} beside the checkout, with a generated ignore file. Allow roughly 3 GB of asset space, plus Docker storage for the helper image. The bag is pinned by repository revision and SHA-256. Camera ZIP reads use byte ranges and an object ETag; individual frame CRCs are checked. Partial bag downloads resume, completed frames are reused, and only a successfully encoded/probed video is promoted. Interrupted work can be continued by repeating the command. Changed or corrupt completed assets are reported rather than silently overwritten.
+
+A matching running bag player is reused. A different or stopped same-name container causes a clear conflict; inspect it before stopping or removing it. Ctrl+C stops a player newly started in this terminal. Other modes/settings are:
+\begin{lstlisting}
+bash tools/rosbag_demo.sh prepare
+bash tools/rosbag_demo.sh stop
+PP_DEMO_DIR="$HOME/rosbags/kitti04" PP_BAG_RATE=1 \
+  bash tools/rosbag_demo.sh
+bash tools/rosbag_demo.sh --help
+\end{lstlisting}
+Prepare downloads data/video without playback and does not need the inference image. Stop affects only a player created and labeled by this helper; manually started players require an explicit Docker stop after inspection. Match \code{ROS_DOMAIN_ID} and \code{POINT_CLOUD_TOPIC} to inference. Default playback is half speed, domain0 and topic \code{/point_cloud}.
+
+Open the MP4 in a video player for the underlying camera view. The tested clip contains 285 camera frames, about 29.72 seconds at recorded speed, and the bag contains 283 LiDAR frames. Its first camera frame is about 0.210 seconds before the first LiDAR scan. Original camera timestamps are retained in \path{camera/image_02/timestamps.txt}. The raw camera is unsynchronized/unrectified: frame indices do not imply alignment with LiDAR. Independent video playback is not automatically synchronized with ROS playback, and the video is not annotated ground truth. Camera publishing and detection-box projection into the video are not provided by this helper.
+
+The converter and ready-bag links are \url{https://github.com/Jakubach/kitti_to_ros} and \url{https://huggingface.co/datasets/kubchud/kitti_to_ros}. KITTI's official sensor/data description is \url{https://www.cvlibs.net/datasets/kitti/raw_data.php}. Keep dataset attribution and applicable terms with shared assets. Exact provenance, integrity checks and preparation/playback evidence are in \path{config/demo_inventory.json}.
+
+Docker images are packaged programs, not pictures. This node handles points and detections, not camera pictures. Its container remains headless. The project now provides a saved RViz view and launcher on the host desktop, using the official \code{vision_msgs_rviz_plugins/Detection3DArray} display directly; no marker converter is required.
+
+\subsection{Show the point cloud and detection boxes in RViz}
+Keep the inference container and bag playback or LiDAR driver running. The optional viewer needs a graphical desktop with host ROS Jazzy and RViz. A computer used only for Docker inference does not need these packages. If host ROS is missing, follow the native ROS installation subsection later in this guide, then install:
+\begin{lstlisting}
+sudo apt install ros-jazzy-rviz2 ros-jazzy-vision-msgs-rviz-plugins
+cd "$PROJECT_DIR"
+bash tools/visualize.sh
+\end{lstlisting}
+Run the viewer as your normal desktop user, without sudo. On the tested computer, RViz was already installed. The missing official vision display plugin was downloaded through the configured ROS apt index and extracted locally under ignored \path{.recovery/rviz}; no system package installation was performed. The launcher reuses a system plugin when available, or prepares this local plugin when RViz and its dependencies already exist. Missing dependencies need the apt installation above.
+
+The saved \path{rviz/pointpillars.rviz} view displays \code{/point_cloud} and \code{/bbox}, with reliable QoS and fixed frame \code{velodyne}. That frame matches the tested KITTI bag. Mouse-wheel scrolling zooms; dragging rotates. Expand Detections to inspect status or enable Show Score. Box colors mean numeric model IDs: orange 0, blue 1, yellow 2. Semantic class names remain unresolved. Point colors represent intensity. All published boxes are displayed; no extra confidence filter is applied.
+
+For a different sensor frame and ROS domain, match the source:
+\begin{lstlisting}
+ROS_DOMAIN_ID=7 bash tools/visualize.sh -f your_lidar_frame
+\end{lstlisting}
+The launcher defaults Fast DDS to UDPv4. In the tested host/container setup, default shared-memory transport prevented delivery to the desktop viewer; UDP restored it. An explicit \code{FASTDDS_BUILTIN_TRANSPORTS} setting overrides this default. Network and firewall restrictions can still prevent discovery on other computers. A bag containing only the sensor frame may produce a global TF warning because there is no transform tree; points and boxes can still render in their shared sensor frame. A different fixed frame requires a valid transform.
+
+Verification matched 25 input/output frames inside Docker and another 25 through the host transport, checking headers, input capacity/layout, finite positive-size boxes, normalized quaternions, and class/score ranges. The live RViz window rendered both points and boxes. This confirms integration and display support, not real-data detection accuracy. Training semantics and a labeled reference remain necessary before claiming accuracy. See \path{config/visualization_inventory.json} and the recovery record for exact evidence.
 
 \section{Step 10: check the full path without a sensor}
 Use default topics with no other sensor/bag publishing. Wait for engine/node startup. In a second terminal:
@@ -743,7 +786,7 @@ W02 & Verified & CPU boundary/geometry and focused sanitizer checks passed. \\
 W03 & Verified & Local adapter checks passed; allocator limitation recorded. \\
 W04/W05 & In progress & Runtime/buffers/build/link and synthetic checks passed; reference/memory/failure checks remain. \\
 W06 & Pending & Bounded worker and pending-frame policy. \\
-W07 & Pending & Launch configuration, sensor QoS, and metrics. \\
+W07 & In progress & RViz viewer provided; launch configuration, sensor QoS, and metrics remain. \\
 W08 & Pending & Acceptance targets and benchmark. \\
 W09 & In progress & Docker/checks and this guide provided; CI/full operational acceptance remain. \\
 \bottomrule

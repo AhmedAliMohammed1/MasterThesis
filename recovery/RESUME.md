@@ -12,6 +12,18 @@ The user moved the checkout to `/media/ae/New Volume/MasterThesis` on 2026-10-02
 
 `sudo bash tools/deploy.sh` builds published GitHub source, downloads and verifies the pinned NGC model, installs pinned TensorRT shared runtime/plugins/tools/headers, builds/tests with colcon, then launches the GPU node. Source edits must be pushed before they are included. No local SDK/model inputs are needed. Keep large assets ignored. See the latest progress entry and image inventory for verified build/GPU evidence and current container state. W09 remains in progress for full operational/CI acceptance.
 
+## Current real-bag viewer state
+
+The KITTI sequence04 bag playback (`pointpillars-bag`) and inference (`pointpillars`) passed 25 matched frames inside Docker and another25 on the host with UDPv4. `bash tools/visualize.sh` opened a live RViz view of points and Detection3DArray boxes; the GUI was left running. Before starting another viewer, inspect current processes/windows. Source/configuration and optional plugin setup are documented in README. Numeric box colors are not semantic class labels; no accuracy validation was claimed. A global TF warning from sensor-only playback is recorded; the shared `velodyne` frame renders successfully. Do not add assumed world transforms.
+
+`config/visualization_inventory.json` indexes exact reports, screenshot, plugin version/hash and verification commands. The local plugin, diagnostic script and evidence under `.recovery` are excluded from snapshots; back them up separately. W07 visualization substep is delivered but full launch/QoS/metrics acceptance remains unfinished, as does W06. The user published deployment source at `ee07c5681e8c7266177f203313eea09a56a63f62`; visualization edits are not committed/pushed. The latest LaTeX compile again failed before parsing because its uncached bundle could not be downloaded.
+
+## Current sample-data helper
+
+`bash tools/rosbag_demo.sh` now prepares the pinned KITTI bag and matching drive camera MP4, then starts/reuses matching LiDAR playback. `prepare` saves assets only; `stop` stops only a helper-labeled player. Defaults use the existing `/media/ae/New Volume/rosbags/kitti04` folder beside this checkout. The current manually started player was intentionally preserved. Camera clip and timestamps are prepared; repeat runs verified cache reuse. A separate Docker image installs preparation libraries without host changes. Asset directories contain their own ignore file; assets/logs are excluded from checkpoints.
+
+`config/demo_inventory.json` records provenance, source/clip hashes, 285 camera frames, 283 LiDAR frames, eight passing recovery tests, actual isolated-domain playback/stop and full video decode. Camera starts about0.210s before LiDAR and the video is not synchronized or annotated ground truth; do not claim accuracy. Model contract, W06 and remaining W07 acceptance are still incomplete. Source/docs edits remain uncommitted; the latest LaTeX attempt again failed before parsing on the unavailable compiler bundle.
+
 ## Available now
 
 Requirements: Python 3 and Git. No ROS, CUDA, GPU, model access or paid API is needed for checkpoint/status commands. Run from the repository root:

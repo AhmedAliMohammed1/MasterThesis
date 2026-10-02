@@ -1,0 +1,133 @@
+{
+  "recorded_date": "2026-10-02",
+  "checkout": "/media/ae/New Volume/MasterThesis",
+  "asset_directory": "/media/ae/New Volume/rosbags/kitti04",
+  "command": "bash tools/rosbag_demo.sh",
+  "asset_manifest": {
+    "bag": {
+      "path": "2011_09_30_drive_0016_extract_ros2",
+      "url": "https://huggingface.co/datasets/kubchud/kitti_to_ros/resolve/410f471b4995acc94f728a9c590fb7645eff376e/kitti_seq04_ros2.zip",
+      "sha256": "6903a1c3f68cf327cbbd2f579803184c6158ef8a1c41c086b26a85d5cc84cecd",
+      "cloud_first_ns": 1317383440036777984,
+      "cloud_last_ns": 1317383469394780160,
+      "cloud_count": 283,
+      "topics": [
+        [
+          "/velodyne_points",
+          "sensor_msgs/msg/PointCloud2"
+        ],
+        [
+          "/imu/data",
+          "sensor_msgs/msg/Imu"
+        ]
+      ]
+    },
+    "camera": {
+      "raw_url": "https://s3.eu-central-1.amazonaws.com/avg-kitti/raw_data/2011_09_30_drive_0016/2011_09_30_drive_0016_extract.zip",
+      "raw_etag": "\"78d1f40e3341bd7ae246e49d6ed12094-206\"",
+      "raw_archive_size": 1724245728,
+      "downloaded_range_bytes_this_run": 598075104,
+      "camera": "image_02: left color, unsynced/unrectified",
+      "frame_count": 285,
+      "first_timestamp_ns": 1317383439826724608,
+      "last_timestamp_ns": 1317383469393389568,
+      "camera_start_minus_lidar_start_seconds": -0.210053376,
+      "video_path": "kitti04_left_camera.mp4",
+      "video_sha256": "e7fa83d3f5adab18eee2868fa0543146cb6d22a2c50745659ce16dc5da96d685",
+      "probe": {
+        "programs": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1392,
+            "height": 512
+          }
+        ],
+        "format": {
+          "duration": "29.720000"
+        }
+      },
+      "timing": "Camera timestamp intervals encoded; timestamps.txt retained. Independent video playback is not synchronized with ROS playback.",
+      "ground_truth": false,
+      "crc_verified": true
+    },
+    "accuracy_validated": false
+  },
+  "camera_clip": "/media/ae/New Volume/rosbags/kitti04/kitti04_left_camera.mp4",
+  "camera_clip_bytes": 24343762,
+  "tools_image": {
+    "tag": "pp-infer:demo-tools",
+    "id": "sha256:10433693eea0b4c3140fbdb6b3a738b8c233361eb6f066a97b8211f8ab39fb29",
+    "size_bytes": 213304303,
+    "dockerfile": "docker/demo-tools.Dockerfile",
+    "packages": "Ubuntu 24.04 apt: ca-certificates python3 ffmpeg; no host installation"
+  },
+  "verification": {
+    "prepare_exit_code": 0,
+    "repeat_prepare_exit_code": 0,
+    "existing_player_reused_exit_code": 0,
+    "recovery_tests_passed": 8,
+    "isolated_playback_domain": 99,
+    "isolated_player": "pointpillars-demo-check",
+    "isolated_player_valid_clouds": 3,
+    "isolated_player_stopped": true,
+    "manual_player_stop_refused_exit_code": 1,
+    "manual_player_preserved": true,
+    "full_video_decode_exit_code": 0,
+    "accuracy_validated": false,
+    "video_ros_playback_synchronized": false,
+    "pdf_compilation_verified": false
+  },
+  "evidence": [
+    {
+      "path": ".recovery/verification/demo-tools-build.txt",
+      "sha256": "d49ec69e54507085f0d66fae5fa7789fe79e4ec63df0fc12ca5be543c59260a2"
+    },
+    {
+      "path": ".recovery/verification/demo-prepare.txt",
+      "sha256": "386a6f2186da35a29e109ae22a37abc23295d7b41406d9e4a5ff42b6fc5df72c"
+    },
+    {
+      "path": ".recovery/verification/demo-reuse.txt",
+      "sha256": "91381a3d46eb07cb71e0e8d7cd88d73fbd921118ec02e81e28917749030d8d8e"
+    },
+    {
+      "path": ".recovery/verification/demo-final-prepare.txt",
+      "sha256": "88c65dd9c34afca266b2ff01d7c8ab4ac5344aeae5517aee2bd457f5e407c255"
+    },
+    {
+      "path": ".recovery/verification/demo-playback-check.txt",
+      "sha256": "6d997b0a86c120542311459ce1fd07b97ae1c3cab7c22cde8780b62107ac7412"
+    },
+    {
+      "path": ".recovery/verification/demo-cloud-check.txt",
+      "sha256": "6bd5a6d29fa08ee5ac3374de61bb769226de21ab2aaaf50452e8991c89690337"
+    },
+    {
+      "path": ".recovery/verification/demo-stop-check.txt",
+      "sha256": "a49c1b6b231da03a4511946ceba3cf52d07376d90ad7e749c8fca45de30208a5"
+    },
+    {
+      "path": ".recovery/verification/demo-stop-protection.txt",
+      "sha256": "9cc1be6b4d8499a5ea674546567e6e0b464b05e245aace07bc159929d6ad28ab"
+    },
+    {
+      "path": ".recovery/verification/demo-recovery-tests-final.txt",
+      "sha256": "3d996a314f9ecfb81991a8ab952e2c0a2964fc7321cbc0e763109ddf71ebd458"
+    },
+    {
+      "path": ".recovery/verification/demo-video-decode.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".recovery/verification/demo-source-checks.txt",
+      "sha256": "150860321697f5cf00995d918adf0ed19dcdff47497046399cfd661ca0d677dd"
+    },
+    {
+      "path": ".recovery/verification/demo-latex-compile.json",
+      "sha256": "13404c908c98c383bfd2f7d074c51eb443c1c86c4f1dd01783ebf9e7f3b595f5"
+    }
+  ],
+  "asset_ignored": true,
+  "source_uncommitted": true
+}

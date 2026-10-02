@@ -56,3 +56,11 @@ GPU indexes refer to the visible CUDA set. Workspace limits do not cap total GPU
 Class order, intensity scaling and coordinate semantics still need reference validation. Defaults remain generic labels and scale 1.0. Synthetic tests do not establish real-data accuracy. Bounded-worker integration, configurable QoS, CUDA memory instrumentation and operational acceptance remain unfinished.
 
 See the [A-to-Z LaTeX guide](../docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex), [README](../README.md) and [progress record](../recovery/PROGRESS.md) for setup, verification and limits.
+
+## Optional desktop visualization
+
+The inference image stays headless. Keep the node and a LiDAR/bag publisher running, then use `bash tools/visualize.sh` from this checkout on a ROS Jazzy desktop. The saved view displays `/point_cloud` and `/bbox` with the official vision_msgs plugin; no inference rebuild is needed. Host RViz must be installed. See the [viewer setup and limits](../README.md#visualize-points-and-boxes-in-rviz) for packages, fixed frame, domain and transport settings. GPU inference can stay on a separate compatible machine if ROS network discovery is configured.
+
+## Sample bag and camera clip helper
+
+After building the inference image, `bash tools/rosbag_demo.sh` downloads/verifies the tested KITTI bag, prepares a camera reference MP4 from its original drive and loops reliable LiDAR playback. `prepare` downloads assets only; `stop` stops only helper-owned playback. A separate `pp-infer:demo-tools` image supplies Python/FFmpeg without host installation. Matching active playback is reused; different existing containers are preserved. See the [sample instructions](../README.md#download-and-play-the-sample-bag-with-matching-camera-video) for storage, recovery, settings and the independent video's timing/accuracy limits.

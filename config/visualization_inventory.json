@@ -1,0 +1,128 @@
+{
+  "recorded_date": "2026-10-02",
+  "checkout": "/media/ae/New Volume/MasterThesis",
+  "source_commit": "ee07c5681e8c7266177f203313eea09a56a63f62",
+  "source_changes_uncommitted": true,
+  "inference_container": "pointpillars",
+  "inference_image_id": "sha256:bad53455e011629c52e1f1bf2cabe5c32959647b966e72c6ca20c299379e6232",
+  "bag_container": "pointpillars-bag",
+  "bag_directory": "/media/ae/New Volume/rosbags/kitti04/2011_09_30_drive_0016_extract_ros2",
+  "topics": {
+    "points": "/point_cloud",
+    "detections": "/bbox"
+  },
+  "fixed_frame": "velodyne",
+  "ros_domain_id": 0,
+  "viewer": {
+    "command": "bash tools/visualize.sh",
+    "host": "Ubuntu 24.04 x86-64 / ROS Jazzy / RViz",
+    "display_plugin": "vision_msgs_rviz_plugins/Detection3DArray",
+    "plugin_deb_version": "4.1.1-3noble.20260905.070851",
+    "plugin_deb_sha256": "73f713ddfd8442dda4f6da0fa7d315631ce1c63155fabf9406f613e8b25a6f25",
+    "package_source": "Official configured ROS apt index; apt-get download; dpkg-deb --extract locally without system registration",
+    "prefix": ".recovery/rviz/plugin/opt/ros/jazzy",
+    "transport": "FASTDDS_BUILTIN_TRANSPORTS=UDPv4",
+    "transport_result": "Default host transport received no clouds within 8 seconds; UDPv4 received data and discovered inference/playback. Live RViz then rendered both clouds and boxes.",
+    "color_ids": {
+      "0": "orange",
+      "1": "blue",
+      "2": "yellow"
+    },
+    "confidence_filter_added": false,
+    "tf_warning": "Global TF warning observed on sensor-frame-only playback; rendered points and boxes use their shared velodyne frame."
+  },
+  "container_stream_check": {
+    "matched_frames": 25,
+    "observed_clouds": 25,
+    "observed_outputs": 25,
+    "frame_ids": [
+      "velodyne"
+    ],
+    "point_counts": {
+      "min": 125007,
+      "max": 126701
+    },
+    "boxes_per_frame": {
+      "min": 65,
+      "max": 97,
+      "median": 83
+    },
+    "scores": {
+      "min": 0.10027382522821426,
+      "max": 0.6583541631698608,
+      "median": 0.16277071833610535
+    },
+    "elapsed_seconds": 5.11,
+    "invalid": [],
+    "accuracy_validated": false
+  },
+  "host_stream_check": {
+    "matched_frames": 25,
+    "observed_clouds": 26,
+    "observed_outputs": 25,
+    "frame_ids": [
+      "velodyne"
+    ],
+    "point_counts": {
+      "min": 125947,
+      "max": 126320
+    },
+    "boxes_per_frame": {
+      "min": 83,
+      "max": 109,
+      "median": 95
+    },
+    "scores": {
+      "min": 0.10001776367425919,
+      "max": 0.703790009021759,
+      "median": 0.16160419583320618
+    },
+    "elapsed_seconds": 5.18,
+    "invalid": [],
+    "accuracy_validated": false
+  },
+  "gui_rendering_verified": true,
+  "fresh_plugin_bootstrap_exit_code": 0,
+  "accuracy_validated": false,
+  "limitations": [
+    "Class labels, intensity normalization and coordinate semantics unresolved; no labeled accuracy reference",
+    "Other GPUs and clean hosts have not been tested",
+    "Viewer requires a host desktop, Jazzy/RViz and compatible ROS discovery",
+    "W06 worker and W07 launch/QoS/metrics remain incomplete",
+    "LaTeX compiler bundle unavailable; PDF compilation unverified"
+  ],
+  "evidence": [
+    {
+      "path": ".recovery/verification/rviz-real-bag-check.json",
+      "sha256": "82c75d344dffdf64e745aa969c6ba2f1b1cf704866d978c585375d7828f07049"
+    },
+    {
+      "path": ".recovery/verification/rviz-host-bag-check.json",
+      "sha256": "b1c8bf47e7a3bb751438086e7f8585e5ff0bf989c58a7fd08d68e185cb6e8f3d"
+    },
+    {
+      "path": ".recovery/verification/rviz-startup.txt",
+      "sha256": "35dae3f0eff0a07400a5b8b724a5456378ffb91ced2c58e4300b83d089b6c272"
+    },
+    {
+      "path": ".recovery/verification/rviz-current.png",
+      "sha256": "7748fd832d54a7bdede2748accc467daa7ec75dcede925a94482a14a841eb28f"
+    },
+    {
+      "path": ".recovery/verification/rviz-bootstrap-check.txt",
+      "sha256": "5ea362317c5239a3eb76e6495363b103f2ef5bbd9c0e73ee902ec72dfc581afe"
+    },
+    {
+      "path": ".recovery/verification/rviz-source-checks.txt",
+      "sha256": "3ba2202953194c05e878195e7e3622eb517f3b22e87cc5dd31148ba2dd4f746e"
+    },
+    {
+      "path": ".recovery/verification/rviz-latex-compile.json",
+      "sha256": "728e6ec7495bc03d2d32247ec3a677b3a457203b84b6e1157aa1a6b806e5a8c0"
+    },
+    {
+      "path": ".recovery/verification/inspect-live-bag.py",
+      "sha256": "2b51479b71613b82075ef0fa81b6e00f4233f21391c72cd3a68a7ea579dd3581"
+    }
+  ]
+}

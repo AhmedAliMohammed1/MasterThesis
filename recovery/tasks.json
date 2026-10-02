@@ -12,7 +12,8 @@
     "This ledger is updated by the implementer; recovery.py does not enforce it.",
     "Task state and evidence must agree with actual files and latest checkpoint.",
     "Substeps may use IDs such as W02.1 in checkpoints; one behavior/check per patch.",
-    "Implementation authorized; W02 and local W03 verified. TensorRT 10.16.1 SDK/plugin/engine and Docker synthetic checks passed; reference semantics, memory/failure checks, W06/W07, benchmarks and CI remain."
+    "Implementation authorized; W02 and local W03 verified. TensorRT 10.16.1 SDK/plugin/engine and Docker synthetic checks passed; reference semantics, memory/failure checks, W06/W07, benchmarks and CI remain.",
+    "2026-10-02: real-bag message integration and live RViz rendering verified. W07 viewer substep is independent of the pending W06 worker; full W07 acceptance remains incomplete."
   ],
   "state_values": [
     "pending",
@@ -320,7 +321,7 @@
     {
       "id": "W07",
       "title": "Launch configuration and trustworthy metrics",
-      "state": "pending",
+      "state": "in-progress",
       "depends_on": [
         "W06"
       ],
@@ -328,15 +329,56 @@
         "launch/pp_infer_launch.py",
         "config/pp_infer.yaml",
         "src/pp_inference_node.cpp",
-        "tests/ros/"
+        "tests/ros/",
+        "rviz/",
+        "tools/visualize.sh",
+        "config/visualization_inventory.json",
+        "tools/rosbag_demo.sh",
+        "tools/prepare_kitti_demo.py",
+        "docker/demo-tools.Dockerfile",
+        "tests/test_kitti_demo.py",
+        "config/demo_inventory.json"
       ],
       "acceptance": [
         "Installed launch arguments/YAML actually work",
         "QoS and clock compatibility checked",
         "Stage times, drop reasons and header preservation validated"
       ],
-      "next_action": "Expose verified config and separate monotonic residence from comparable source age.",
-      "evidence": []
+      "next_action": "RViz and reproducible sample bag/camera helper delivered. Resolve training semantics against a labeled reference and continue W06 plus full launch/QoS/metrics acceptance; review/push this uncommitted patch.",
+      "evidence": [
+        {
+          "command": "docker exec -i pointpillars /entrypoint.sh python3 - < .recovery/verification/inspect-live-bag.py",
+          "exit_code": 0,
+          "result": "25 real KITTI bag frames matched; headers, capacity/layout, finite positive boxes, quaternions and class/score ranges passed. Not accuracy evidence.",
+          "log": ".recovery/verification/rviz-real-bag-check.json",
+          "log_sha256": "82c75d344dffdf64e745aa969c6ba2f1b1cf704866d978c585375d7828f07049"
+        },
+        {
+          "command": "source /opt/ros/jazzy/setup.bash; FASTDDS_BUILTIN_TRANSPORTS=UDPv4 /usr/bin/python3 .recovery/verification/inspect-live-bag.py",
+          "exit_code": 0,
+          "result": "25 real bag frames matched through host transport with no invalid messages.",
+          "log": ".recovery/verification/rviz-host-bag-check.json",
+          "log_sha256": "b1c8bf47e7a3bb751438086e7f8585e5ff0bf989c58a7fd08d68e185cb6e8f3d"
+        },
+        {
+          "command": "bash tools/visualize.sh",
+          "result": "Live RViz point cloud and colored box rendering verified; GUI left running. Sensor-frame-only global TF warning recorded. Fresh isolated local-plugin download/extract/CLI bootstrap exited 0.",
+          "inventory": "config/visualization_inventory.json"
+        },
+        {
+          "command": "bash tools/rosbag_demo.sh prepare; bash tools/rosbag_demo.sh start; PP_BAG_CONTAINER=pointpillars-demo-check ROS_DOMAIN_ID=99 bash tools/rosbag_demo.sh start",
+          "result": "Pinned bag reuse/integrity passed; camera byte-range download and MP4 encoding/probe/full decoding passed; matching existing player reused without duplicate; isolated player supplied three valid reliable clouds and helper-owned stop passed.",
+          "inventory": "config/demo_inventory.json",
+          "exit_code": 0
+        },
+        {
+          "command": "python3 -m unittest discover -s tests -p 'test_kitti_demo.py' -v",
+          "exit_code": 0,
+          "result": "8 HTTP-range, resumable-download, corrupt-asset and timestamp tests passed.",
+          "log": ".recovery/verification/demo-recovery-tests-final.txt",
+          "log_sha256": "3d996a314f9ecfb81991a8ab952e2c0a2964fc7321cbc0e763109ddf71ebd458"
+        }
+      ]
     },
     {
       "id": "W08",
