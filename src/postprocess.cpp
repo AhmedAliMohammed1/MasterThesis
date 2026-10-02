@@ -15,202 +15,130 @@
  * limitations under the License.
  */
 
-#include <iostream>
-#include <vector>
+#include "pp_infer/postprocess.h"
+
 #include <algorithm>
-#include <math.h>
-#include <cuda_runtime_api.h>
-#include "../include/pp_infer/postprocess.h"
+#include <array>
+#include <cmath>
+#include <stdexcept>
 
-#define checkCudaErrors(status)                                   \
-{                                                                 \
-  if (status != 0)                                                \
-  {                                                               \
-    std::cout << "Cuda failure: " << cudaGetErrorString(status)   \
-              << " at line " << __LINE__                          \
-              << " in file " << __FILE__                          \
-              << " error status: " << status                      \
-              << std::endl;                                       \
-              abort();                                            \
-    }                                                             \
+namespace {
+struct Point2 { double x; double y; };
+using Corners = std::array<Point2, 4>;
+// Clipping a quadrilateral by four half-planes produces at most eight vertices.
+struct Polygon { std::array<Point2, 12> points{}; std::size_t size{0}; };
+
+bool valid_geometry(const Bndbox& box) noexcept {
+  return std::isfinite(box.x) && std::isfinite(box.y) && std::isfinite(box.z) &&
+    std::isfinite(box.l) && std::isfinite(box.w) && std::isfinite(box.h) &&
+    std::isfinite(box.rt) && box.l > 0 && box.w > 0 && box.h > 0;
 }
 
-const float ThresHold = 1e-8;
-
-inline float cross(const float2 p1, const float2 p2, const float2 p0) {
-    return (p1.x - p0.x) * (p2.y - p0.y) - (p2.x - p0.x) * (p1.y - p0.y);
+Corners corners(const Bndbox& box, double origin_x, double origin_y) {
+  const double c = std::cos(static_cast<double>(box.rt));
+  const double s = std::sin(static_cast<double>(box.rt));
+  const double l = static_cast<double>(box.l) / 2;
+  const double w = static_cast<double>(box.w) / 2;
+  Corners result{{{-l, -w}, {l, -w}, {l, w}, {-l, w}}};
+  for (auto& p : result) {
+    const double x = p.x;
+    p.x = x * c - p.y * s + (static_cast<double>(box.x) - origin_x);
+    p.y = x * s + p.y * c + (static_cast<double>(box.y) - origin_y);
+  }
+  return result;
 }
 
-inline int check_box2d(const Bndbox box, const float2 p) {
-    const float MARGIN = 1e-2;
-    float center_x = box.x;
-    float center_y = box.y;
-    float angle_cos = cos(-box.rt);
-    float angle_sin = sin(-box.rt);
-    float rot_x = (p.x - center_x) * angle_cos + (p.y - center_y) * (-angle_sin);
-    float rot_y = (p.x - center_x) * angle_sin + (p.y - center_y) * angle_cos;
-
-    return (fabs(rot_x) < box.l / 2 + MARGIN && fabs(rot_y) < box.w / 2 + MARGIN);
+double side(Point2 a, Point2 b, Point2 p) {
+  return (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
 }
 
-bool intersection(const float2 p1, const float2 p0, const float2 q1, const float2 q0, float2 &ans) {
-
-    if (( std::min(p0.x, p1.x) <= std::max(q0.x, q1.x) &&
-          std::min(q0.x, q1.x) <= std::max(p0.x, p1.x) &&
-          std::min(p0.y, p1.y) <= std::max(q0.y, q1.y) &&
-          std::min(q0.y, q1.y) <= std::max(p0.y, p1.y) ) == 0)
-        return false;
-
-
-    float s1 = cross(q0, p1, p0);
-    float s2 = cross(p1, q1, p0);
-    float s3 = cross(p0, q1, q0);
-    float s4 = cross(q1, p1, q0);
-
-    if (!(s1 * s2 > 0 && s3 * s4 > 0))
-        return false;
-
-    float s5 = cross(q1, p1, p0);
-    if (fabs(s5 - s1) > ThresHold) {
-        ans.x = (s5 * q0.x - s1 * q1.x) / (s5 - s1);
-        ans.y = (s5 * q0.y - s1 * q1.y) / (s5 - s1);
-
-    } else {
-        float a0 = p0.y - p1.y, b0 = p1.x - p0.x, c0 = p0.x * p1.y - p1.x * p0.y;
-        float a1 = q0.y - q1.y, b1 = q1.x - q0.x, c1 = q0.x * q1.y - q1.x * q0.y;
-        float D = a0 * b1 - a1 * b0;
-
-        ans.x = (b0 * c1 - b1 * c0) / D;
-        ans.y = (a1 * c0 - a0 * c1) / D;
+Polygon clip(const Polygon& input, Point2 a, Point2 b) {
+  Polygon output;
+  if (input.size == 0) return output;
+  auto append = [&output](Point2 p) {
+    if (output.size >= output.points.size())
+      throw std::runtime_error("Rotated intersection exceeded its bounded vertex capacity");
+    output.points[output.size++] = p;
+  };
+  Point2 previous = input.points[input.size - 1];
+  double previous_side = side(a, b, previous);
+  for (std::size_t i = 0; i < input.size; ++i) {
+    const Point2 current = input.points[i];
+    const double current_side = side(a, b, current);
+    if ((previous_side >= 0) != (current_side >= 0)) {
+      const double t = previous_side / (previous_side - current_side);
+      append({previous.x + t * (current.x - previous.x),
+              previous.y + t * (current.y - previous.y)});
     }
-
-    return true;
+    if (current_side >= 0) append(current);
+    previous = current;
+    previous_side = current_side;
+  }
+  return output;
 }
 
-inline void rotate_around_center(const float2 &center, const float angle_cos, const float angle_sin, float2 &p) {
-    float new_x = (p.x - center.x) * angle_cos + (p.y - center.y) * (-angle_sin) + center.x;
-    float new_y = (p.x - center.x) * angle_sin + (p.y - center.y) * angle_cos + center.y;
-    p = float2 {new_x, new_y};
+double area(const Polygon& polygon) {
+  if (polygon.size < 3) return 0;
+  double twice_area = 0;
+  const auto origin = polygon.points[0];
+  for (std::size_t i = 1; i + 1 < polygon.size; ++i)
+    twice_area += side(origin, polygon.points[i], polygon.points[i + 1]);
+  return std::abs(twice_area) / 2;
+}
+}  // namespace
+
+bool valid_box(const Bndbox& box) noexcept {
+  return valid_geometry(box) && std::isfinite(box.score) && box.id >= 0;
 }
 
-inline float box_overlap(const Bndbox &box_a, const Bndbox &box_b) {
-    float a_angle = box_a.rt, b_angle = box_b.rt;
-    float a_dx_half = box_a.l / 2, b_dx_half = box_b.l / 2, a_dy_half = box_a.w / 2, b_dy_half = box_b.w / 2;
-    float a_x1 = box_a.x - a_dx_half, a_y1 = box_a.y - a_dy_half;
-    float a_x2 = box_a.x + a_dx_half, a_y2 = box_a.y + a_dy_half;
-    float b_x1 = box_b.x - b_dx_half, b_y1 = box_b.y - b_dy_half;
-    float b_x2 = box_b.x + b_dx_half, b_y2 = box_b.y + b_dy_half;
-    float2 box_a_corners[5];
-    float2 box_b_corners[5];
-
-    float2 center_a = float2 {box_a.x, box_a.y};
-    float2 center_b = float2 {box_b.x, box_b.y};
-
-    float2 cross_points[16];
-    float2 poly_center =  {0, 0};
-    int cnt = 0;
-    bool flag = false;
-
-    box_a_corners[0] = float2 {a_x1, a_y1};
-    box_a_corners[1] = float2 {a_x2, a_y1};
-    box_a_corners[2] = float2 {a_x2, a_y2};
-    box_a_corners[3] = float2 {a_x1, a_y2};
-
-    box_b_corners[0] = float2 {b_x1, b_y1};
-    box_b_corners[1] = float2 {b_x2, b_y1};
-    box_b_corners[2] = float2 {b_x2, b_y2};
-    box_b_corners[3] = float2 {b_x1, b_y2};
-
-    float a_angle_cos = cos(a_angle), a_angle_sin = sin(a_angle);
-    float b_angle_cos = cos(b_angle), b_angle_sin = sin(b_angle);
-
-    for (int k = 0; k < 4; k++) {
-        rotate_around_center(center_a, a_angle_cos, a_angle_sin, box_a_corners[k]);
-        rotate_around_center(center_b, b_angle_cos, b_angle_sin, box_b_corners[k]);
-    }
-
-    box_a_corners[4] = box_a_corners[0];
-    box_b_corners[4] = box_b_corners[0];
-
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            flag = intersection(box_a_corners[i + 1], box_a_corners[i],
-                                box_b_corners[j + 1], box_b_corners[j],
-                                cross_points[cnt]);
-            if (flag) {
-                poly_center = {poly_center.x + cross_points[cnt].x, poly_center.y + cross_points[cnt].y};
-                cnt++;
-            }
-        }
-    }
-
-    for (int k = 0; k < 4; k++) {
-        if (check_box2d(box_a, box_b_corners[k])) {
-            poly_center = {poly_center.x + box_b_corners[k].x, poly_center.y + box_b_corners[k].y};
-            cross_points[cnt] = box_b_corners[k];
-            cnt++;
-        }
-        if (check_box2d(box_b, box_a_corners[k])) {
-            poly_center = {poly_center.x + box_a_corners[k].x, poly_center.y + box_a_corners[k].y};
-            cross_points[cnt] = box_a_corners[k];
-            cnt++;
-        }
-    }
-
-    poly_center.x /= cnt;
-    poly_center.y /= cnt;
-
-    float2 temp;
-    for (int j = 0; j < cnt - 1; j++) {
-        for (int i = 0; i < cnt - j - 1; i++) {
-            if (atan2(cross_points[i].y - poly_center.y, cross_points[i].x - poly_center.x) >
-                atan2(cross_points[i+1].y - poly_center.y, cross_points[i+1].x - poly_center.x)
-                ) {
-                temp = cross_points[i];
-                cross_points[i] = cross_points[i + 1];
-                cross_points[i + 1] = temp;
-            }
-        }
-    }
-
-    float area = 0;
-    for (int k = 0; k < cnt - 1; k++) {
-        float2 a = {cross_points[k].x - cross_points[0].x,
-                    cross_points[k].y - cross_points[0].y};
-        float2 b = {cross_points[k + 1].x - cross_points[0].x,
-                    cross_points[k + 1].y - cross_points[0].y};
-        area += (a.x * b.y - a.y * b.x);
-    }
-    return fabs(area) / 2.0;
+double rotated_bev_iou(const Bndbox& a, const Bndbox& b) {
+  if (!valid_geometry(a) || !valid_geometry(b)) return 0;
+  const auto subject = corners(a, a.x, a.y);
+  const auto boundary = corners(b, a.x, a.y);
+  // Reject separated projections before clipping, including extreme coordinates
+  // where a small box's corners can lose resolution far from the local origin.
+  for (bool x_axis : {true, false}) {
+    auto less = [x_axis](Point2 p, Point2 q) { return x_axis ? p.x < q.x : p.y < q.y; };
+    const auto bounds_a = std::minmax_element(subject.begin(), subject.end(), less);
+    const auto bounds_b = std::minmax_element(boundary.begin(), boundary.end(), less);
+    const auto value = [x_axis](Point2 p) { return x_axis ? p.x : p.y; };
+    if (value(*bounds_a.second) <= value(*bounds_b.first) ||
+        value(*bounds_b.second) <= value(*bounds_a.first)) return 0;
+  }
+  Polygon polygon;
+  std::copy(subject.begin(), subject.end(), polygon.points.begin());
+  polygon.size = subject.size();
+  for (std::size_t i = 0; i < boundary.size(); ++i)
+    polygon = clip(polygon, boundary[i], boundary[(i + 1) % boundary.size()]);
+  const double area_a = static_cast<double>(a.l) * a.w;
+  const double area_b = static_cast<double>(b.l) * b.w;
+  const double overlap = std::clamp(area(polygon), 0.0, std::min(area_a, area_b));
+  const double union_area = area_a + area_b - overlap;
+  return union_area > 0 ? std::clamp(overlap / union_area, 0.0, 1.0) : 0;
 }
 
-int nms_cpu(
-    std::vector<Bndbox> bndboxes,
-    const float nms_thresh,
-    std::vector<Bndbox> &nms_pred,
-    const int pre_nms_top_n)
-{
-    std::sort(bndboxes.begin(), bndboxes.end(),
-              [](Bndbox boxes1, Bndbox boxes2) { return boxes1.score > boxes2.score; });
-    std::vector<int> suppressed(std::min(int(bndboxes.size()), pre_nms_top_n), 0);
-    for (size_t i = 0; i < std::min(int(bndboxes.size()), pre_nms_top_n); i++) {
-        if (suppressed[i] == 1) {
-            continue;
-        }
-        nms_pred.emplace_back(bndboxes[i]);
-        for (size_t j = i + 1; j < std::min(int(bndboxes.size()), pre_nms_top_n); j++) {
-            if (suppressed[j] == 1) {
-                continue;
-            }
-            float sa = bndboxes[i].l * bndboxes[i].w;
-            float sb = bndboxes[j].l * bndboxes[j].w;
-            float s_overlap = box_overlap(bndboxes[i], bndboxes[j]);
-            float iou = s_overlap / fmaxf(sa + sb - s_overlap, ThresHold);
-
-            if (iou >= nms_thresh) {
-                suppressed[j] = 1;
-            }
-        }
+int nms_cpu(std::vector<Bndbox> boxes, const float threshold,
+            std::vector<Bndbox>& output, const int top_n, const bool class_aware) {
+  // Clear on every attempt, including invalid arguments, to prevent stale detections.
+  output.clear();
+  if (!std::isfinite(threshold) || threshold < 0 || threshold > 1 || top_n <= 0)
+    throw std::invalid_argument("NMS requires finite IoU in [0,1] and positive top_n");
+  for (const auto& box : boxes)
+    if (!valid_box(box)) throw std::invalid_argument("NMS received an invalid box/class/score");
+  // Equal scores retain original engine order; semantics are explicit and repeatable.
+  std::stable_sort(boxes.begin(), boxes.end(),
+    [](const Bndbox& a, const Bndbox& b) { return a.score > b.score; });
+  const std::size_t count = std::min(boxes.size(), static_cast<std::size_t>(top_n));
+  std::vector<bool> suppressed(count, false);
+  output.reserve(count);
+  for (std::size_t i = 0; i < count; ++i) {
+    if (suppressed[i]) continue;
+    output.push_back(boxes[i]);
+    for (std::size_t j = i + 1; j < count; ++j) {
+      if (suppressed[j] || (class_aware && boxes[i].id != boxes[j].id)) continue;
+      // Preserve the original >= threshold rule, including its threshold=0 behavior.
+      if (rotated_bev_iou(boxes[i], boxes[j]) >= threshold) suppressed[j] = true;
     }
-    return 0;
+  }
+  return 0;
 }

@@ -1,0 +1,244 @@
+{
+  "path": "/home/ae/Downloads/pointpillars_deployable.onnx",
+  "bytes": 5572374,
+  "sha256": "2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1",
+  "ir_version": 8,
+  "producer": "",
+  "producer_version": "",
+  "opsets": [
+    {
+      "domain": "",
+      "version": 11
+    }
+  ],
+  "inputs": [
+    {
+      "name": "points",
+      "dtype_id": 1,
+      "dtype": "FLOAT32",
+      "shape": [
+        "batch",
+        204800,
+        4
+      ]
+    },
+    {
+      "name": "num_points",
+      "dtype_id": 6,
+      "dtype": "INT32",
+      "shape": [
+        "batch"
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output_boxes",
+      "dtype_id": 1,
+      "dtype": "FLOAT32",
+      "shape": [
+        "batch",
+        393216,
+        9
+      ]
+    },
+    {
+      "name": "num_boxes",
+      "dtype_id": 6,
+      "dtype": "INT32",
+      "shape": [
+        "batch"
+      ]
+    }
+  ],
+  "operators": {
+    "BatchNormalization": 4,
+    "Concat": 1,
+    "Conv": 19,
+    "ConvTranspose": 3,
+    "DecodeBbox3DPlugin": 1,
+    "MatMul": 1,
+    "MaxPool": 1,
+    "PillarScatterPlugin": 1,
+    "Relu": 20,
+    "Reshape": 2,
+    "Transpose": 5,
+    "VoxelGeneratorPlugin": 1
+  },
+  "plugin_or_custom_domain_nodes": [
+    {
+      "name": "VoxelGeneratorPlugin_0",
+      "op_type": "VoxelGeneratorPlugin",
+      "domain": "",
+      "inputs": [
+        "points",
+        "num_points"
+      ],
+      "outputs": [
+        "voxels",
+        "voxel_coords",
+        "num_pillar"
+      ],
+      "attributes": [
+        {
+          "name": "max_voxels",
+          "type_id": 2,
+          "value": 10000
+        },
+        {
+          "name": "max_num_points_per_voxel",
+          "type_id": 2,
+          "value": 32
+        },
+        {
+          "name": "voxel_feature_num",
+          "type_id": 2,
+          "value": 10
+        },
+        {
+          "name": "point_cloud_range",
+          "type_id": 6,
+          "value": [
+            -51.20000076293945,
+            -51.20000076293945,
+            -1.399999976158142,
+            51.20000076293945,
+            51.20000076293945,
+            4.400000095367432
+          ]
+        },
+        {
+          "name": "voxel_size",
+          "type_id": 6,
+          "value": [
+            0.20000000298023224,
+            0.20000000298023224,
+            5.800000190734863
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PillarScatterPlugin_0",
+      "op_type": "PillarScatterPlugin",
+      "domain": "",
+      "inputs": [
+        "430",
+        "voxel_coords",
+        "num_pillar"
+      ],
+      "outputs": [
+        "493"
+      ],
+      "attributes": [
+        {
+          "name": "dense_shape",
+          "type_id": 7,
+          "value": [
+            512,
+            512
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DecodeBbox3DPlugin_0",
+      "op_type": "DecodeBbox3DPlugin",
+      "domain": "",
+      "inputs": [
+        "cls_preds",
+        "box_preds",
+        "dir_cls_preds"
+      ],
+      "outputs": [
+        "output_boxes",
+        "num_boxes"
+      ],
+      "attributes": [
+        {
+          "name": "point_cloud_range",
+          "type_id": 6,
+          "value": [
+            -51.20000076293945,
+            -51.20000076293945,
+            -1.399999976158142,
+            51.20000076293945,
+            51.20000076293945,
+            4.400000095367432
+          ]
+        },
+        {
+          "name": "num_dir_bins",
+          "type_id": 2,
+          "value": 2
+        },
+        {
+          "name": "dir_offset",
+          "type_id": 1,
+          "value": 0.7853900194168091
+        },
+        {
+          "name": "dir_limit_offset",
+          "type_id": 1,
+          "value": 0.0
+        },
+        {
+          "name": "score_thresh",
+          "type_id": 1,
+          "value": 0.10000000149011612
+        },
+        {
+          "name": "anchor_bottom_height",
+          "type_id": 6,
+          "value": [
+            -1.7799999713897705,
+            -0.6000000238418579,
+            -0.6000000238418579
+          ]
+        },
+        {
+          "name": "anchors",
+          "type_id": 6,
+          "value": [
+            3.9000000953674316,
+            1.600000023841858,
+            1.559999942779541,
+            0.0,
+            3.9000000953674316,
+            1.600000023841858,
+            1.559999942779541,
+            1.5700000524520874,
+            0.800000011920929,
+            0.6000000238418579,
+            1.7300000190734863,
+            0.0,
+            0.800000011920929,
+            0.6000000238418579,
+            1.7300000190734863,
+            1.5700000524520874,
+            1.7599999904632568,
+            0.6000000238418579,
+            1.7300000190734863,
+            0.0,
+            1.7599999904632568,
+            0.6000000238418579,
+            1.7300000190734863,
+            1.5700000524520874
+          ]
+        }
+      ]
+    }
+  ],
+  "validation": "Metadata extraction only; not checked/executed by ONNX or TensorRT. Plugin-name detection is heuristic.",
+  "related_training_artifact": {
+    "path": "/home/ae/Downloads/pointpillars_trainable.tlt",
+    "bytes": 135219699,
+    "sha256": "4e901182d10f40023bd5924ef8d5b7eca493901fc80029582a4c2abaf33e4f2f",
+    "validation": "Hashed only; not deserialized/decrypted or executed."
+  },
+  "unresolved": [
+    "No TensorRT engine or plugin libraries located in Downloads outside excluded IDE directories.",
+    "Class labels/order, intensity normalization and output coordinate convention require the training/export specification.",
+    "ONNX shapes are not a validated TensorRT engine contract; batch profile/runtime tensor metadata must be inspected after engine generation."
+  ]
+}

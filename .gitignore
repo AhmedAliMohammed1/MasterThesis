@@ -1,0 +1,47 @@
+# Local recovery snapshots and verification output.
+.recovery/
+tools/__pycache__/
+tests/__pycache__/
+# colcon generated outputs.
+/build/
+/install/
+/log/
+
+# Local pretrained model copied for Docker image construction.
+/docker/assets/
+
+# Downloaded SDK installers and repositories (keep independent backups).
+*.deb
+*.rpm
+
+# Trained models and GPU-specific TensorRT engines.
+*.onnx
+*.tlt
+*.etlt
+*.engine
+*.plan
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# Sensor recordings and exported source/container archives.
+*.bag
+*.db3
+*.mcap
+*.tar
+*.tar.gz
+*.tgz
+*.tar.xz
+*.zip
+
+# Python caches and generated LaTeX output; keep editable source tracked.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+/docs/*.aux
+/docs/*.log
+/docs/*.out
+/docs/*.toc
+/docs/*.synctex.gz
+/docs/*.pdf

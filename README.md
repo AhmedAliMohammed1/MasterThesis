@@ -1,137 +1,100 @@
-# ROS2 node for TAO-PointPillars
+# PointPillars inference for ROS 2 Jazzy
 
-This is a ROS2 node for 3D object detection in point clouds using [TAO-PointPillars](https://catalog.ngc.nvidia.com/orgs/nvidia/teams/tao/models/pointpillarnet) for inference with TensorRT.
+This project receives LiDAR point clouds and publishes 3D detection messages using a pretrained PointPillars ONNX model and TensorRT 10.16.1.11. The current deployment uses Ubuntu 24.04 and Docker; the image builds the ROS package with colcon.
 
-<p align="middle">
-<img src="images/feature_gif.gif"  height="75%" width="75%">
-</p>
+The [A-to-Z LaTeX guide](docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex) explains the completed changes and gives plain-language steps and commands for driver installation, Docker/NVIDIA Container Toolkit setup, model and SDK preparation, build/run, inspection, bag playback, synthetic verification, transfer to another computer, native colcon development, troubleshooting, and interrupted-work recovery. Open the `.tex` file in the Codex editor for its PDF preview when the compiler is available. Current PDF compilation is unverified: the built-in compiler could not download its TeX bundle; the source and command checks are saved.
 
-Node details:
-- Input: Takes point cloud data in [PointCloud2](http://docs.ros.org/en/lunar/api/sensor_msgs/html/msg/PointCloud2.html) format on the topic `/point_cloud`. Each point in the data must contain 4 features - (x, y, z) position coordinates and intensity. ROS2 bags for testing the node, provided by Zvision, can be found [here](https://github.com/ZVISION-lidar/zvision_ugv_data).
-- Output: Outputs inference results in [Detection3DArray](http://docs.ros.org/en/lunar/api/vision_msgs/html/msg/Detection3DArray.html) format on the topic `/bbox`. This contains the class ID, score and 3D bounding box information of detected objects.
-- Inference model: You can train a model on your own dataset using [NVIDIA TAO Toolkit](https://developer.nvidia.com/tao-toolkit) following instructions [here](https://docs.nvidia.com/tao/tao-toolkit/text/point_cloud/index.html). We used a TensorRT engine generated from a TAO-PointPillars model trained to detect objects of 3 classes - Vehicle, Pedestrian and Cyclist. 
+## Start on this machine
 
-<p align="center" width="100%">
-<img src="images/workflow_1.PNG"  height="75%" width="75%">
-</p>
+Run from `/home/ae/Desktop/MasterThesis`, where the model and extracted SDK are already prepared:
 
-## Requirements
-Tested on Ubuntu 20.04 and ROS2 Foxy.
-- TensorRT 8.2(or above)
-- TensorRT OSS 22.02 (see how to install below)
+```bash
+sudo docker build -t pp-infer:jazzy-trt10 .
+sudo docker run --rm --init --name pointpillars \
+  --gpus all --network host --ipc host \
+  -v pp-engines:/var/lib/pp_infer \
+  pp-infer:jazzy-trt10
 ```
-git clone -b 22.02 https://github.com/NVIDIA/TensorRT.git TensorRT
-cd TensorRT
-git submodule update --init --recursive
-mkdir -p build && cd build
-cmake .. -DCUDA_VERSION=$CUDA_VERSION -DGPU_ARCHS=$GPU_ARCHS
-make nvinfer_plugin -j$(nproc)
-make nvinfer_plugin_static -j$(nproc)
-cp libnvinfer_plugin.so.8.2.* /usr/lib/$ARCH-linux-gnu/libnvinfer_plugin.so.8.2.3
-cp libnvinfer_plugin_static.a /usr/lib/$ARCH-linux-gnu/libnvinfer_plugin_static.a
+
+The build runs four colcon test modes. First startup builds an FP32 batch-one engine on the selected GPU. Later starts reuse a matching engine in the volume. GPU access is required for running, not building. Stop with Ctrl+C. Stop an earlier instance on the same topics before launching another.
+
+| Item | Name |
+| --- | --- |
+| ROS package / executable | `pp_infer` / `pp_infer` |
+| Container node | `/pointpillars` |
+| Input | `/point_cloud` — `sensor_msgs/msg/PointCloud2` |
+| Output | `/bbox` — `vision_msgs/msg/Detection3DArray` |
+
+The native command is `ros2 run pp_infer pp_infer` with an engine and parameter file; there is no `ros2 node run` command. Without a name override, native startup retains `/minimal_publisher`. Use the explicit startup procedure in the guide; the historical launch file has old absolute paths and unverified model settings.
+
+## Prepare another computer
+
+Use Ubuntu 24.04 on Linux x86-64 with a supported NVIDIA GPU, enough GPU memory, a compatible driver, Docker, and NVIDIA Container Toolkit configured for Docker. The guide starts from installing the driver and provides each command. Host ROS, TensorRT, and CUDA development packages are unnecessary when using the image.
+
+TensorRT 10.x lists compute capability 7.5 or newer as its hardware floor. Only the RTX 4060 Laptop has been physically tested here; other targets need validation. ARM64/Jetson requires a separate image, and this Linux host-network recipe has not been validated on Windows/WSL2. See [NVIDIA's support matrix](https://docs.nvidia.com/deeplearning/tensorrt/10.x.x/getting-started/support-matrix.html).
+
+For a source build, obtain this updated working tree and prepare these ignored build inputs using Steps 5–6 of the guide:
+
+- `docker/assets/pointpillars.onnx` — the supplied deployable ONNX, verified by hash.
+- `.recovery/sdk/tensorrt-10.16.1/usr` — extracted TensorRT headers, shared libraries, and `trtexec`.
+
+A Dockerfile or source-only copy does not include those ignored files. The current changes have not been published as a new Git commit or registry image; cloning the original upstream repository will not reproduce them. Plan for roughly 40 GB free during a source build; this is an allowance, not a measured minimum.
+
+Alternatively, transfer the built image with `docker save` and `docker load`, then run it on the receiving computer. The guide gives both commands. The image contains the model and libraries and builds its own target engine; do not assume engines transfer between different GPUs. Keep SDK/model licensing terms with redistributed artifacts.
+
+## Check the running application
+
+Use another terminal:
+
+```bash
+sudo docker ps
+sudo docker image ls pp-infer
+sudo docker logs --tail 80 pointpillars
+sudo docker exec pointpillars /entrypoint.sh ros2 node list
+sudo docker exec pointpillars /entrypoint.sh ros2 node info /pointpillars
+sudo docker exec pointpillars /entrypoint.sh ros2 topic list -t
+sudo docker exec pointpillars /entrypoint.sh ros2 topic echo /bbox --once
 ```
-- [TAO Converter](https://docs.nvidia.com/tao/tao-toolkit/text/tensorrt.html#installing-the-tao-converter)
-- [ROS2 Foxy](https://docs.ros.org/en/foxy/Installation.html)
 
-## Usage
+The entrypoint loads ROS before running these utilities. The node needs a LiDAR publisher, compatible ROS bag, or the synthetic check in Step 10 of the guide. It does not produce camera images or provide a GUI viewer.
 
-1. This project assumes that you have already trained your model using NVIDIA TAO Toolkit and have an **.etlt** file. If not, please refer [here](https://docs.nvidia.com/tao/tao-toolkit/text/point_cloud/index.html) for information on how to do this. The pre-trained PointPillars model used by this project can be found [here](https://catalog.ngc.nvidia.com/orgs/nvidia/teams/tao/models/pointpillarnet/files).
-2. Use **tao-converter** to generate a TensorRT engine from your model. For instance:
+Input fields must be scalar little-endian FLOAT32 `x`, `y`, `z`, and `intensity`. Organized clouds with valid row padding are supported. The tested engine supports 204800 points; the default byte limit is 64 MiB. The current subscription requests **reliable** delivery, so best-effort-only publishers may not match it.
+
+Add `-e POINT_CLOUD_TOPIC=/lidar/points`, `-e DETECTIONS_TOPIC=/detections`, or `-e ROS_DOMAIN_ID=7` before the image name to match your data source. Use `-e PP_GPU_INDEX=1` to select a GPU within the container-visible CUDA set. `-e PP_WORKSPACE_MIB=256` reduces builder workspace, not total GPU memory. See [Docker details](docker/README.md) and the guide for configuration mounts and playback QoS overrides.
+
+## Current implementation and limits
+
+The CPU geometry core and local ROS adapters are verified. Runtime migration uses TensorRT named tensors, validated input/output contracts, owned CUDA resources, and reusable buffers. Docker build, engine creation, synthetic ROS/GPU message flow, restart cache reuse, and invalid GPU selection checks passed on the available GPU.
+
+Training class order, intensity normalization, and coordinate semantics are unresolved. Defaults in `docker/node.yaml` are provisional `class_0`/`class_1`/`class_2` and intensity scale 1.0. Synthetic checks do not establish real-data accuracy. CUDA memory instrumentation was inconclusive; further runtime failure checks, the bounded worker, configurable sensor QoS, timing metrics, benchmark targets, and CI/operational acceptance remain unfinished.
+
+See [architecture](IMPLEMENTATION_ARCHITECTURE.md), [progress](recovery/PROGRESS.md), [task ledger](recovery/tasks.json), and [native SDK/build record](docs/local_runtime.md). The [old Foxy/TensorRT 8 README](docs/LEGACY_FOXY_README.md) is historical and is not the current installation procedure.
+
+## Continue after an interruption
+
+```bash
+python3 tools/recovery.py status
+python3 tools/recovery.py checkpoint \
+  --task W09 --state in-progress \
+  --next 'Continue the interrupted substep and record actual verification.' \
+  --evidence 'Current work remains unfinished.'
 ```
-tao-converter  -k $KEY  \
-               -e $USER_DIR/trt.engine \
-               -p points,1x204800x4,1x204800x4,1x204800x4 \
-               -p num_points,1,1,1 \
-               -t fp16 \
-               $USER_DIR/model.etlt
 
+Read [RESUME.md](recovery/RESUME.md) before continuing. Checkpoints preserve eligible source and detect drift; they do not reset files, restore automatically, run tests, or extend model credits. SDKs, engines, models, bags, and logs require independent backups.
+
+## CPU-only development checks
+
+```bash
+colcon build --packages-select pp_infer \
+  --build-base .recovery/colcon-doc/core/build \
+  --install-base .recovery/colcon-doc/core/install \
+  --cmake-args -DPP_BUILD_RUNTIME=OFF -DPP_BUILD_ROS_ADAPTER=OFF \
+  -DCMAKE_BUILD_TYPE=Debug
+colcon test --packages-select pp_infer \
+  --build-base .recovery/colcon-doc/core/build \
+  --install-base .recovery/colcon-doc/core/install \
+  --ctest-args --output-on-failure
+colcon test-result --test-result-base .recovery/colcon-doc/core/build --verbose
 ```
-Argument definitions:
-- -k: User-specific encoding key to save or load an etlt model.
-- -e: Location where you want to store the resulting TensorRT engine.
-- -p points: (N x P x 4), where N is the batch size, P is the maximum number of points in a point cloud file, 4 is the number of features per point.
-- -p num_points: (N,), where N is the batch size as above.
-- -t: Desired engine data type. The options are fp32 or fp16 (default value is fp32). 
 
-3. Source your ROS2 environment:
-`source /opt/ros/foxy/setup.bash`
-4. Create a ROS2 workspace (more information can be found [here](https://docs.ros.org/en/foxy/Tutorials/Beginner-Client-Libraries/Creating-A-Workspace/Creating-A-Workspace.html)):
-```
-mkdir -p pointpillars_ws/src
-cd pointpillars_ws/src
-```
-Clone this repository in `pointpillars_ws/src`. The directory structure should look like this:
-```
-.
-+- pointpillars_ws
-   +- src
-      +- CMakeLists.txt
-      +- package.xml
-      +- include
-      +- launch
-      +- src
-```
-5. Resolve missing dependencies by running the following command from `pointpillars_ws`:
-
-`rosdep install -i --from-path src --rosdistro foxy -y`
-
-6. Specify parameters including the path to your TensorRT engine in the launch file. Please see [Modifying parameters in the launch file](https://github.com/NVIDIA-AI-IOT/ros2_tao_pointpillars#modifying-parameters-in-the-launch-file) below for how to do this.
-
-7. Build and source the package files:
-```
-colcon build --packages-select pp_infer
-. install/setup.bash
-```
-8. Run the node using the launch file:
-`ros2 launch pp_infer pp_infer_launch.py`
-9. Make sure data is being published on the **/point_cloud** topic. If your point cloud data is being published on a different topic name, you can remap it to **/point_cloud** (please see [Modifying parameters in the launch file](https://github.com/NVIDIA-AI-IOT/ros2_tao_pointpillars#modifying-parameters-in-the-launch-file) below). For good performance, point cloud input data should be from the same lidar and configuration that was used for training the model.
-10. Inference results will be published on the **/bbox** topic as Detection3DArray messages. Each Detection3DArray message has the following information:
-- header: The time stamp and frame id following [this](http://docs.ros.org/en/lunar/api/std_msgs/html/msg/Header.html) format.
-- detections: List of detected objects with following information for each:
-   - class ID 
-   - score
-   - X, Y and Z coordinates of object bounding box center
-   - length, width and height of bounding box
-   - yaw (orientation) of bounding box in 3D Euclidean space
-
-The resulting bounding box coordinates follow the coordinate system below with origin at the center of lidar:
-
-<p align="center" width="100%">
-<img src="images/coordinate_system.PNG"  height="50%" width="50%">
-</p>
-
-
-## Modifying parameters in the launch file
-Parameters such as the engine path and detection threshold can be specified in the launch file `pp_infer_launch.py` under the `launch` folder. Below is a description of each parameter:
-- nms_iou_thresh: NMS IOU threshold.
-- pre_nms_top_n: Top `n` boxes to use for NMS.
-- class_names: List of object classes detected by the model.
-- model_path: Path to PointPillars model (not required if TensorRT engine is specified in engine_path below).
-- engine_path: Path to TensorRT engine generated using tao-converter.
-- data_type: Data type (fp32 or fp16).
-- intensity_scale: Float specifying scale factor for dividing intensity. For example, if model is trained on data with point intensity in the range [0.0 - 1.0] and input data at inference has intensity in the range [1 - 255], this parameter should be set to 255.0 so that input data matches training data.
-
-Remappings: This node subscribes to the **/point_cloud** topic, but topic names can be changed through remapping. If your point cloud is coming from a different topic name, you can modify the following line in `pp_infer_launch.py`:
-
-`remappings=[('/point_cloud', '/my_topic_name')]`
-
-Change the second argument to the topic name of your choice and it will be remapped to **/point_cloud**. 
-
-After specifying your parameters, build and source the package again before launching the node as per step 7 above.
-
-
-<p align="center">
- <img src="/images/car_detection.PNG" alt="results_img" height="75%" width="75%"/>
-    <br>
-    <em>Top left is an image from the zvision camera's point of view; at the bottom is a point cloud from the zvision lidar; and top right is the detection results using TAO-PointPillars.</em>
-</p>
-
-## Limitations
-- Inference batch size: Currently the TensorRT engine for PointPillars model can only run for batch size 1.
-- Detection3DArray visualization: RViz currently does not support Detection3DArray messages. We provide a simple workflow to visualize results of this node [here](https://github.com/NVIDIA-AI-IOT/viz_3Dbbox_ros2_pointpillars).
-
-## Related projects
-[viz_3Dbbox_ros2_pointpillars](https://github.com/NVIDIA-AI-IOT/viz_3Dbbox_ros2_pointpillars): A visualization tool for 3D bounding box results of TAO-PointPillars.
-
-## Support
-Please reach out regarding issues and suggestions [here](https://github.com/NVIDIA-AI-IOT/ros2_tao_pointpillars/issues).
+All current build instructions use colcon. The CPU-only configuration has no install target, so its skipped-install warning is expected. The guide also includes ROS adapter and sanitizer configurations in separate directories, native runtime commands, and the GPU smoke check. CMake remains a build dependency behind colcon; `--cmake-args` passes package configuration options.

@@ -34,18 +34,17 @@
 #include <sstream>
 #include <unistd.h>
 #include <string>
+#include <limits>
 
 #include "cuda_runtime.h"
-#include "../include/pp_infer/pointpillar.h"
+#include "pp_infer/pointpillar.h"
+#include "pp_infer/ros_adapter.hpp"
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "vision_msgs/msg/detection3_d_array.hpp"
 #include "pcl_conversions/pcl_conversions.h"
-#include "../include/pp_infer/point_cloud2_iterator.hpp"
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 
 using std::placeholders::_1;
@@ -54,45 +53,23 @@ using namespace std::chrono_literals;
 /* This example creates a subclass of Node and uses std::bind() to register a
  * member function as a callback from the timer. */
 
-#define checkCudaErrors(status)                                   \
-{                                                                 \
-  if (status != 0)                                                \
-  {                                                               \
-    std::cout << "Cuda failure: " << cudaGetErrorString(status)   \
-              << " at line " << __LINE__                          \
-              << " in file " << __FILE__                          \
-              << " error status: " << status                      \
-              << std::endl;                                       \
-              abort();                                            \
-    }                                                             \
-}
-
 class MinimalPublisher : public rclcpp::Node
 {
 public:
   MinimalPublisher()
   : Node("minimal_publisher")
   {
-    this->declare_parameter("class_names");
-    this->declare_parameter<float>("nms_iou_thresh", 0.01);
-    this->declare_parameter<int>("pre_nms_top_n", 4096);
-    this->declare_parameter<std::string>("model_path", "");
-    this->declare_parameter<std::string>("engine_path", "");
-    this->declare_parameter<std::string>("data_type", "fp16");
-    this->declare_parameter<float>("intensity_scale", 1.0);
-    
+    const auto config = pp_infer::declare_processing_config(*this);
+    class_names = config.classes;
+    nms_iou_thresh = config.nms_threshold;
+    pre_nms_top_n = config.top_n;
+    model_path = config.model_path;
+    engine_path = config.engine_path;
+    data_type = config.build_precision;
+    intensity_scale = config.intensity_scale;
+    max_cloud_bytes = config.maximum_cloud_bytes;
 
-    rclcpp::Parameter class_names_param = this->get_parameter("class_names");
-    class_names = class_names_param.as_string_array();
-    nms_iou_thresh = this->get_parameter("nms_iou_thresh").as_double();
-    pre_nms_top_n = this->get_parameter("pre_nms_top_n").as_int();
-    model_path = this->get_parameter("model_path").as_string();
-    engine_path = this->get_parameter("engine_path").as_string();
-    data_type = this->get_parameter("data_type").as_string();
-    intensity_scale = this->get_parameter("intensity_scale").as_double();
-    
-    cudaStream_t stream = NULL;
-    pointpillar = new PointPillar(model_path, engine_path, stream, data_type);
+    pointpillar = std::make_unique<PointPillar>(engine_path);
 
     publisher_ = this->create_publisher<vision_msgs::msg::Detection3DArray>("bbox", 700);
 
@@ -109,123 +86,35 @@ private:
   std::string model_path;
   std::string engine_path;
   std::string data_type;
-  float intensity_scale;
-  tf2::Quaternion myQuaternion;
-  cudaStream_t stream = NULL;
-  PointPillar* pointpillar;  
+  double intensity_scale;
+  std::size_t max_cloud_bytes;
+  pcl::PointCloud<pcl::PointXYZI> cloud_scratch;
+  std::vector<float> packed_points;
+  std::unique_ptr<PointPillar> pointpillar;
 
 
   void topic_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg)
-  { 
-    assert(data_type == "fp32" || data_type == "fp16");
-    cudaEvent_t start, stop;
-    float elapsedTime = 0.0f;
-    cudaStream_t stream = NULL;
-
-    checkCudaErrors(cudaEventCreate(&start));
-    checkCudaErrors(cudaEventCreate(&stop));
-    checkCudaErrors(cudaStreamCreate(&stream));
-
-    std::vector<Bndbox> nms_pred;
-    nms_pred.reserve(100);
-
-    pcl::PointCloud<pcl::PointXYZI>::Ptr pcl_cloud(new pcl::PointCloud<pcl::PointXYZI>);
-    pcl::fromROSMsg(*msg, *pcl_cloud);
-
-      unsigned int num_point_values = pcl_cloud->size();
-
-      unsigned int points_size = pcl_cloud->points.size();
-
-      std::vector<float> pcl_data;
-
-      for (const auto& point : pcl_cloud->points) {
-        pcl_data.push_back(point.x);
-        pcl_data.push_back(point.y);
-        pcl_data.push_back(point.z);
-        pcl_data.push_back(point.intensity/intensity_scale);
-      }
-
-      float* points = static_cast<float *>(pcl_data.data());
-      
-      
-      //Use 4 because PCL has padding (4th value now has intensity information)
-      unsigned int points_data_size = points_size * sizeof(float) * 4;
-
-
-      float *points_data = nullptr;
-      unsigned int *points_num = nullptr;
-      //unsigned int points_data_size = points_size * num_point_values * sizeof(float);
-      checkCudaErrors(cudaMallocManaged((void **)&points_data, points_data_size));
-      checkCudaErrors(cudaMallocManaged((void **)&points_num, sizeof(unsigned int)));
-      checkCudaErrors(cudaMemcpy(points_data, points, points_data_size, cudaMemcpyDefault));
-      checkCudaErrors(cudaMemcpy(points_num, &points_size, sizeof(unsigned int), cudaMemcpyDefault));
-      checkCudaErrors(cudaDeviceSynchronize());
-
-      cudaEventRecord(start, stream);
-
-      
-      pointpillar->doinfer(
-        points_data, points_num, nms_pred,
-        nms_iou_thresh,
-        pre_nms_top_n,
-        class_names,
-        do_profile
-      );
-
-      auto pc_detection_arr = std::make_shared<vision_msgs::msg::Detection3DArray>();
-      std::vector<vision_msgs::msg::Detection3D> detections;
-      for(int i=0; i<nms_pred.size(); i++) {
-        vision_msgs::msg::Detection3D detection;
-        detection.results.resize(1); 
-        vision_msgs::msg::ObjectHypothesisWithPose hyp;
-        vision_msgs::msg::BoundingBox3D bbox;
-        geometry_msgs::msg::Pose center;
-        geometry_msgs::msg::Vector3 size;
-        geometry_msgs::msg::Point position;	
-	      geometry_msgs::msg::Quaternion orientation;
-        
-        detection.bbox.center.position.x = nms_pred[i].x;
-        detection.bbox.center.position.y = nms_pred[i].y;
-        detection.bbox.center.position.z = nms_pred[i].z;
-        detection.bbox.size.x = nms_pred[i].l;
-        detection.bbox.size.y = nms_pred[i].w;
-        detection.bbox.size.z = nms_pred[i].h;
-
-        myQuaternion.setRPY(0, 0, nms_pred[i].rt);
-        orientation = tf2::toMsg(myQuaternion);
-
-        detection.bbox.center.orientation = orientation;
-
-        hyp.id = std::to_string(nms_pred[i].id);
-        hyp.score = nms_pred[i].score;
-        
-        detection.header = msg->header;
-        
-        detection.results[0] = hyp;
-        detections.push_back(detection);
-      }
-
-      pc_detection_arr->header = msg->header;
-      pc_detection_arr->detections = detections;
-      publisher_->publish(*pc_detection_arr);
-
-      cudaEventRecord(stop, stream);
-      cudaEventSynchronize(stop);
-      cudaEventElapsedTime(&elapsedTime, start, stop);
-
-      auto message = std_msgs::msg::String();
-      message.data = "TIME: " + std::to_string(elapsedTime) + " ms, Objects detected: " + std::to_string(nms_pred.size());
-      RCLCPP_INFO(this->get_logger(), "%s", message.data.c_str());
-
-      checkCudaErrors(cudaFree(points_data));
-      checkCudaErrors(cudaFree(points_num));
-      nms_pred.clear();
-    
-
-  checkCudaErrors(cudaEventDestroy(start));
-  checkCudaErrors(cudaEventDestroy(stop));
-  checkCudaErrors(cudaStreamDestroy(stream));
-
+  {
+    std::size_t valid_points;
+    try {
+      valid_points = pp_infer::pack_xyzi(*msg,
+        {pointpillar->getPointCapacity(), max_cloud_bytes, intensity_scale},
+        cloud_scratch, packed_points);
+    } catch (const std::exception& error) {
+      RCLCPP_WARN(this->get_logger(), "Dropping invalid point cloud: %s", error.what());
+      return;
+    }
+    if (valid_points == 0) {
+      publisher_->publish(pp_infer::make_detections(msg->header, {}, class_names));
+      return;
+    }
+    try {
+      const auto detections = pointpillar->infer(packed_points.data(), valid_points,
+        nms_iou_thresh, pre_nms_top_n, class_names.size(), do_profile);
+      publisher_->publish(pp_infer::make_detections(msg->header, detections, class_names));
+    } catch (const std::exception& error) {
+      RCLCPP_ERROR(this->get_logger(), "Inference failed; frame dropped: %s", error.what());
+    }
   }
 
   rclcpp::TimerBase::SharedPtr timer_;

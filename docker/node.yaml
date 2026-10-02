@@ -1,0 +1,8 @@
+/**:
+  ros__parameters:
+    class_names: [class_0, class_1, class_2]
+    intensity_scale: 1.0
+    data_type: fp32
+    nms_iou_thresh: 0.01
+    pre_nms_top_n: 4096
+    max_cloud_bytes: 67108864

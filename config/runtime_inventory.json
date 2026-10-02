@@ -1,0 +1,50 @@
+{
+  "version": "10.16.1.11-1+cuda12.9",
+  "installation": "Project-local extraction, not a dpkg/apt system install",
+  "sdk_root": "/home/ae/Desktop/MasterThesis/.recovery/sdk/tensorrt-10.16.1/usr",
+  "package": {
+    "path": "/home/ae/Downloads/nv-tensorrt-local-repo-ubuntu2404-10.16.1-cuda-12.9_1.0-1_amd64.deb",
+    "bytes": 5168856786,
+    "sha256": "9f465423f47e739c1db159cb9dd2c8991cbff13380e1a358476c40321bff07fe"
+  },
+  "engine": {
+    "path": "/home/ae/Desktop/MasterThesis/.recovery/engines/pointpillars-fp32.smoke.engine",
+    "bytes": 8965628,
+    "sha256": "422de0884b89c665f4133ef86dab4f8d8eceb3d4c3d502a1861410d7f7a24f23",
+    "status": "Synthetic runtime smoke passed; not accuracy validated",
+    "build_flags": [
+      "batch=1",
+      "workspace=1024MiB",
+      "--noTF32",
+      "--skipInference"
+    ],
+    "onnx_sha256": "2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1"
+  },
+  "plugins": [
+    {
+      "name": "VoxelGeneratorPlugin",
+      "version": "1",
+      "namespace": ""
+    },
+    {
+      "name": "PillarScatterPlugin",
+      "version": "1",
+      "namespace": ""
+    },
+    {
+      "name": "DecodeBbox3DPlugin",
+      "version": "1",
+      "namespace": ""
+    }
+  ],
+  "cuda_toolkit": "12.0.140",
+  "gpu": "RTX 4060 Laptop",
+  "driver": "595.71.05",
+  "limitations": [
+    "Class labels/order and intensity normalization unresolved",
+    "No reference accuracy fixture",
+    "No system package registration",
+    "W06 bounded worker remains pending",
+    "Installed Compute Sanitizer 12.0 failed to instrument; no memory validation pass"
+  ]
+}

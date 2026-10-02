@@ -1,0 +1,478 @@
+{
+  "schema_version": 1,
+  "updated_local_date": "2026-10-02",
+  "timezone": "Europe/Berlin",
+  "baseline_commit": "2301135",
+  "target": {
+    "os": "Ubuntu 24.04",
+    "ros": "Jazzy",
+    "platform": "NVIDIA GeForce RTX 4060 Laptop GPU"
+  },
+  "notes": [
+    "This ledger is updated by the implementer; recovery.py does not enforce it.",
+    "Task state and evidence must agree with actual files and latest checkpoint.",
+    "Substeps may use IDs such as W02.1 in checkpoints; one behavior/check per patch.",
+    "Implementation authorized; W02 and local W03 verified. TensorRT 10.16.1 SDK/plugin/engine and Docker synthetic checks passed; reference semantics, memory/failure checks, W06/W07, benchmarks and CI remain."
+  ],
+  "state_values": [
+    "pending",
+    "in-progress",
+    "blocked",
+    "verified"
+  ],
+  "acceptance_targets": {
+    "gpu_model": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "gpu_memory_bytes": 8585740288,
+    "lidar_rate_hz": null,
+    "maximum_cloud_points": null,
+    "maximum_cloud_bytes": null,
+    "maximum_source_age_ms": null,
+    "maximum_deadline_miss_fraction": null,
+    "minimum_published_rate_hz": null,
+    "maximum_drop_fraction": null,
+    "host_memory_budget_bytes": null,
+    "gpu_memory_budget_bytes": null,
+    "accuracy_metric": null,
+    "accuracy_dataset": null,
+    "maximum_accuracy_regression": null,
+    "known_fixture_tolerance": null,
+    "benchmark_duration_minutes": 30
+  },
+  "tasks": [
+    {
+      "id": "W00",
+      "title": "Architecture and development recovery",
+      "state": "verified",
+      "depends_on": [],
+      "file_scope": [
+        "IMPLEMENTATION_ARCHITECTURE.md",
+        "recovery/",
+        "tools/recovery.py",
+        "tests/test_recovery.py",
+        ".gitignore"
+      ],
+      "acceptance": [
+        "Recovery fixture tests pass",
+        "Initial checkpoint and drift check succeed",
+        "Production source remains unchanged"
+      ],
+      "next_action": "W00 delivered. On implementation continuation, start W02 while W01 GPU/model prerequisites are resolved.",
+      "evidence": [
+        {
+          "command": "python3 -m unittest discover -s tests -p 'test_recovery.py' -v",
+          "exit_code": 0,
+          "result": "12 tests passed",
+          "log": ".recovery/verification/recovery-tests.txt",
+          "log_sha256": "fc094b1484ad6780f1f40d94cfd265e7dbeddae35c5a33b8d7e6b33b6a3b9fee"
+        },
+        {
+          "command": "python3 tools/recovery.py status",
+          "exit_code": 0,
+          "result": "Initial real checkpoint integrity OK; no drift; HEAD unchanged"
+        },
+        {
+          "result": "Independent architecture/recovery review; local documentation links and ledger dependency ordering valid; production sources unchanged"
+        }
+      ]
+    },
+    {
+      "id": "W01",
+      "title": "Pin platform and model contract",
+      "state": "blocked",
+      "depends_on": [],
+      "file_scope": [
+        "config/environment.lock.json",
+        "config/model_contract.json",
+        "evidence of engine/plugin smoke test",
+        "config/model_inventory.json",
+        "config/environment_inventory.json",
+        "tools/inspect_onnx_metadata.py"
+      ],
+      "acceptance": [
+        "Working target GPU and pinned runtime/plugin stack",
+        "Known fixture matches reference",
+        "Hardware/model requirements recorded"
+      ],
+      "next_action": "SDK/plugin/engine synthetic smoke passed using project-local extraction; resolve training class order, intensity normalization and coordinate semantics, then validate a known accuracy fixture. System apt installation was not performed.",
+      "evidence": [
+        {
+          "command": "nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader (outside sandbox)",
+          "exit_code": 0,
+          "result": "RTX 4060 Laptop GPU; driver 595.71.05; 8188 MiB. Earlier sandbox device-access failure is not a host driver failure."
+        },
+        {
+          "command": "python3 tools/inspect_onnx_metadata.py /home/ae/Downloads/pointpillars_deployable.onnx",
+          "exit_code": 0,
+          "result": "Read-only ONNX inventory saved; required plugin operators and I/O metadata extracted. Not an ONNX/TRT validation.",
+          "inventory": "config/model_inventory.json"
+        },
+        {
+          "result": "Actual TensorRT 10.16.1.11 loaded on GPU; three required plugin creators version 1 present. ONNX parsed and batch-one FP32/noTF32 engine built successfully. Package/engine hashes and paths in config/runtime_inventory.json. Not reference accuracy evidence."
+        }
+      ]
+    },
+    {
+      "id": "W02",
+      "title": "CPU build boundary and geometry correctness",
+      "state": "verified",
+      "depends_on": [
+        "W00"
+      ],
+      "file_scope": [
+        "CMakeLists.txt",
+        "package.xml",
+        "src/postprocess.cpp",
+        "include/pp_infer/postprocess.h",
+        "tests/core/"
+      ],
+      "acceptance": [
+        "CPU-only build/test works without ROS/CUDA/TensorRT",
+        "NMS geometry/parameter cases and sanitizer checks pass"
+      ],
+      "next_action": "W02 complete; proceed to W03 ROS adapter/config fixtures.",
+      "evidence": [
+        {
+          "command": "cmake -S . -B .recovery/build/core -DPP_BUILD_RUNTIME=OFF -DPP_BUILD_ROS_ADAPTER=OFF -DCMAKE_BUILD_TYPE=Debug -DPP_ENABLE_SANITIZERS=ON && cmake --build .recovery/build/core -j2",
+          "exit_code": 0,
+          "result": "CPU core builds without ROS/CUDA/TensorRT"
+        },
+        {
+          "command": "ASAN_OPTIONS=detect_leaks=0 ctest --test-dir .recovery/build/core -V",
+          "exit_code": 0,
+          "result": "15 cases plus 2000 randomized pairs passed with ASan/UBSan; LSan unavailable under ptrace",
+          "log": ".recovery/verification/w02-core.txt",
+          "log_sha256": "78e293eba9166025f85a00a3e686f685acd5420a50a10b0b4fda40afb1cf334e"
+        }
+      ]
+    },
+    {
+      "id": "W03",
+      "title": "PointCloud2 and Jazzy adapter correctness",
+      "state": "verified",
+      "depends_on": [
+        "W02"
+      ],
+      "file_scope": [
+        "src/pp_inference_node.cpp",
+        "src/pointcloud_adapter.cpp",
+        "include/pp_infer/model_contract.hpp",
+        "tests/ros/"
+      ],
+      "acceptance": [
+        "Malformed/empty/oversize/organized cloud fixtures pass",
+        "Typed parameters and Jazzy message/header/class/pose mapping pass with fake inference"
+      ],
+      "next_action": "Local ROS adapters/configuration are verified; W04/W05 must validate integration against actual TensorRT I/O/engine semantics.",
+      "evidence": [
+        {
+          "command": "source /opt/ros/jazzy/setup.bash && ctest --test-dir .recovery/build/ros --output-on-failure (PP_ENABLE_SANITIZERS=OFF)",
+          "exit_code": 0,
+          "result": "3 CTest tests/modes passed: 15 core, 11 data, 2 local parameter cases; DDS delivery not verified",
+          "log": ".recovery/verification/w03-normal.txt",
+          "log_sha256": "e9f0670fc63f0426b1eab9e56244aef223319a9acab2b265a7544b45c0a982e3"
+        },
+        {
+          "command": "ASAN_OPTIONS=detect_leaks=0 ctest --test-dir .recovery/build/ros --output-on-failure (PP_ENABLE_SANITIZERS=ON)",
+          "exit_code": 0,
+          "result": "2 CTest tests/modes passed: core and 11 data cases; node parameter tests intentionally run in normal build",
+          "log": ".recovery/verification/w03-sanitized-data.txt",
+          "log_sha256": "6b5e45b805de1ae6d49a27b33909727ce5357fbbdb96955938a4b8f049399911"
+        },
+        {
+          "result": "Installed rcutils allocator type-mismatch under ASan node creation is retained as a limitation, not suppressed.",
+          "log": ".recovery/verification/w03-system-allocator-asan.txt",
+          "log_sha256": "5196e24569e5d144178f3ec7a4a642655d9e54ff5446cfe0b77bed434cbae069"
+        }
+      ]
+    },
+    {
+      "id": "W04",
+      "title": "Validated TensorRT runtime and resource ownership",
+      "state": "in-progress",
+      "depends_on": [
+        "W01",
+        "W02"
+      ],
+      "file_scope": [
+        "src/pointpillar.cpp",
+        "include/pp_infer/pointpillar.h",
+        "include/pp_infer/cuda_resources.hpp",
+        "CMakeLists.txt",
+        "tests/runtime/"
+      ],
+      "acceptance": [
+        "Build on pinned stack",
+        "Wrong engine/plugin/dtype/shape failures are explicit",
+        "RAII startup/shutdown and profiler lifetime verified"
+      ],
+      "next_action": "Full SDK build/link and synthetic GPU smoke passed. Remaining acceptance: incompatible engine/dtype/shape and resource failure injection; W01 reference contract remains unresolved. Installed CUDA memcheck did not instrument.",
+      "evidence": [
+        {
+          "command": "g++ -std=c++17 -Wall -Wextra -Wpedantic -fsyntax-only -Iinclude -isystem /tmp/pp-trt10-headers src/pointpillar.cpp",
+          "exit_code": 0,
+          "result": "Compile-only passed against official NVIDIA release/10.16 headers and installed CUDA headers; no SDK libraries/link or GPU execution.",
+          "log": ".recovery/verification/w04-runtime-syntax.txt",
+          "log_sha256": "8b139479446adc802f57bc2504b8a70899cffbeefec96f5171fcd09fabd50bed"
+        },
+        {
+          "command": "g++ -std=c++17 -Wall -Wextra -Wpedantic -fsyntax-only [existing ROS adapter include/define flags] src/pp_inference_node.cpp",
+          "exit_code": 0,
+          "result": "ROS node compile-only passed; exact flags in log.",
+          "log": ".recovery/verification/w04-node-syntax.txt",
+          "log_sha256": "99057d4eca78bcb59503ef0e2e50e7db294803e12e03537d8f52dae94e243698"
+        },
+        {
+          "command": "ASAN_OPTIONS=detect_leaks=0 ctest --test-dir .recovery/build/core --output-on-failure",
+          "exit_code": 0,
+          "result": "2 tests passed: existing geometry and new output contract with invalid count/class/box/score coverage.",
+          "log": ".recovery/verification/w04-core-tests.txt",
+          "log_sha256": "23c59dca203e6d0ac6bf11c716d0180ca838a7d8ce6ba600da6d9d5b4548aafd"
+        },
+        {
+          "command": "source /opt/ros/jazzy/setup.bash; ctest --test-dir .recovery/build/ros --output-on-failure",
+          "exit_code": 0,
+          "result": "4 tests/modes passed in normal build: geometry, output contract, ROS data and local parameters.",
+          "log": ".recovery/verification/w04-ros-tests.txt",
+          "log_sha256": "2d05d06d566fc4ad6c774229678f9246b9b2cfd29a941bfc45b547e289b5c18b"
+        },
+        {
+          "command": "cmake configuration with project-local TensorRT include/library paths; cmake --build .recovery/build/runtime -j2",
+          "exit_code": 0,
+          "result": "Actual TensorRT 10.16.1.11 SDK full runtime/ROS executable build and link passed; fixed SDK macro-alias version check.",
+          "log": ".recovery/verification/w04-sdk-build.txt",
+          "log_sha256": "80be99fcbf0d13f2fb6eca2e30231320319be1a702e2dcfe6bcd44c3345ee981"
+        },
+        {
+          "command": "source tools/env_tensorrt.sh; .recovery/build/runtime/runtime_smoke .recovery/engines/pointpillars-fp32.smoke.engine (GPU-accessible execution)",
+          "exit_code": 0,
+          "result": "Exit 0; capacity 204800; oversized rejection, 10 synthetic frames, profiler toggle, empty results and destructor completed without TRT API errors. Synthetic labels/intensities are fixtures, not training metadata.",
+          "log": ".recovery/verification/w04-gpu-smoke.txt",
+          "log_sha256": "7f54b37d76d1d8ab057dcb5f4cef8f380d12c34c923b2a30b3e04181cd072381"
+        },
+        {
+          "command": "source /opt/ros/jazzy/setup.bash; source tools/env_tensorrt.sh; ctest --test-dir .recovery/build/runtime --output-on-failure",
+          "exit_code": 0,
+          "result": "All four CPU/ROS CTest modes passed in actual SDK build.",
+          "log": ".recovery/verification/w04-sdk-tests.txt",
+          "log_sha256": "ea161808314a7092a5a36aade38802a051478b0bde590a8abd6a060cb16578f7"
+        },
+        {
+          "result": "PASS: live ROS PointCloud2 -> TensorRT -> Detection3DArray; preserved header; detections= 1",
+          "exit_code": 0,
+          "log": ".recovery/verification/node-ros-smoke.txt",
+          "log_sha256": "4315fdcbeeccc4a538923c57df66cefae09b7b374333818592afbaab11c560b3",
+          "limitations": "Synthetic live ROS round trip only; unverified model labels and normalization. Node running PID7485 at startup."
+        }
+      ]
+    },
+    {
+      "id": "W05",
+      "title": "Reusable buffers and safe inference",
+      "state": "in-progress",
+      "depends_on": [
+        "W03",
+        "W04"
+      ],
+      "file_scope": [
+        "src/pointpillar.cpp",
+        "include/pp_infer/pointpillar.h",
+        "tests/runtime/"
+      ],
+      "acceptance": [
+        "Known-fixture parity on target GPU",
+        "Capacity and failure injection checks pass",
+        "No stale results after enqueue/copy/synchronization failures",
+        "Memory validation passes"
+      ],
+      "next_action": "Repeated synthetic GPU inference passed; known-fixture accuracy, CUDA memory validation and failure injection still required.",
+      "evidence": [
+        {
+          "command": "compute-sanitizer --injection-path /usr/lib/nvidia-cuda-toolkit/compute-sanitizer --tool memcheck --error-exitcode 1 .recovery/build/runtime/runtime_smoke .recovery/engines/pointpillars-fp32.smoke.engine",
+          "exit_code": 255,
+          "result": "Installed sanitizer failed before first instrumented API call; not a pass or evidence of runtime memory correctness. Initial attempts failed injection-library lookup.",
+          "log": ".recovery/verification/w05-gpu-memcheck.txt",
+          "log_sha256": "051dc54fcf27a827c5beccf3c05c21b8c76a626bb49fcb37c1c9e1e6c7fb93e6"
+        }
+      ]
+    },
+    {
+      "id": "W06",
+      "title": "Bounded latest-frame processing",
+      "state": "pending",
+      "depends_on": [
+        "W03",
+        "W05"
+      ],
+      "file_scope": [
+        "src/pp_inference_node.cpp",
+        "include/pp_infer/latest_frame_slot.hpp",
+        "tests/worker/"
+      ],
+      "acceptance": [
+        "One active and at most one pending frame",
+        "Single context owner under overload",
+        "Replacement and shutdown/fault tests pass",
+        "Target overload run confirms bounded queueing"
+      ],
+      "next_action": "Implement slot/worker lifecycle; a standalone fake-worker harness may be prepared earlier.",
+      "evidence": []
+    },
+    {
+      "id": "W07",
+      "title": "Launch configuration and trustworthy metrics",
+      "state": "pending",
+      "depends_on": [
+        "W06"
+      ],
+      "file_scope": [
+        "launch/pp_infer_launch.py",
+        "config/pp_infer.yaml",
+        "src/pp_inference_node.cpp",
+        "tests/ros/"
+      ],
+      "acceptance": [
+        "Installed launch arguments/YAML actually work",
+        "QoS and clock compatibility checked",
+        "Stage times, drop reasons and header preservation validated"
+      ],
+      "next_action": "Expose verified config and separate monotonic residence from comparable source age.",
+      "evidence": []
+    },
+    {
+      "id": "W08",
+      "title": "Target benchmark and evidence-based optimization",
+      "state": "pending",
+      "depends_on": [
+        "W01",
+        "W07"
+      ],
+      "file_scope": [
+        "tools/benchmark tooling",
+        "tests/fixtures metadata",
+        "benchmark reports"
+      ],
+      "acceptance": [
+        "Agreed percentile/deadline/drop criteria pass",
+        "Representative nominal and overload replay pass",
+        "30-minute memory/thermal run passes",
+        "Detection accuracy tolerance passes"
+      ],
+      "next_action": "Set numerical acceptance targets and collect baseline before optimization.",
+      "evidence": []
+    },
+    {
+      "id": "W09",
+      "title": "Reproducible operational guide and CI",
+      "state": "in-progress",
+      "depends_on": [
+        "W08"
+      ],
+      "file_scope": [
+        "README.md",
+        "docs/deployment.md",
+        "CI configuration",
+        "Dockerfile",
+        ".dockerignore",
+        "docker/",
+        "src/device_info.cpp",
+        "docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex",
+        "docs/LEGACY_FOXY_README.md"
+      ],
+      "acceptance": [
+        "Clean-machine pinned setup/build/run rehearsal",
+        "CPU/ROS/GPU validation reported distinctly",
+        "Rollback and supervisor/fault handling exercised"
+      ],
+      "next_action": "Documentation uses colcon throughout; reduced CPU/sanitizer/ROS workflows passed. Retry built-in PDF compilation when bundle retrieval works. W09 overall retains clean-machine/additional hardware, benchmark-dependent operational and CI acceptance work.",
+      "evidence": [
+        {
+          "result": "Portable multistage full image build and colcon test passed; final entrypoint subsequently fixed by small image update.",
+          "log": ".recovery/verification/docker-build-portable.txt",
+          "log_sha256": "36115e0325824677c335dfebbefca3b87d07dc8dccfff13f90c34b471049338b"
+        },
+        {
+          "result": "Final entrypoint image update passed; source Dockerfile uses same corrected entrypoint.",
+          "log": ".recovery/verification/docker-entrypoint-fix.txt",
+          "log_sha256": "64494cfc47a4fe472b9f247048cb02752335b8d33f705893cbbc6b81aec7ec5e"
+        },
+        {
+          "result": "Container ROS -> GPU -> detections passed with header preserved.",
+          "log": ".recovery/verification/docker-ros-smoke.txt",
+          "log_sha256": "1cb65ed1bee0fd3b581bece7ce61b313289567943f4343d0e2d5101e5c587691"
+        },
+        {
+          "result": "Second ROS round trip passed; restart log contains only one engine generation across two starts.",
+          "log": ".recovery/verification/docker-ros-restart-smoke.txt",
+          "log_sha256": "1cb65ed1bee0fd3b581bece7ce61b313289567943f4343d0e2d5101e5c587691"
+        },
+        {
+          "result": "Invalid GPU index rejected with clear CUDA startup error; expected nonzero container exit.",
+          "log": ".recovery/verification/docker-invalid-gpu.txt",
+          "log_sha256": "291273ac6fd2df2d5e79743160d6d537a1ff08fbb1da9737ea9d86f538692165"
+        },
+        {
+          "result": "Final exact Dockerfile full build passed; all four colcon tests passed. Pinned minimal CUDA components replace oversized development base.",
+          "log": ".recovery/verification/docker-build-final.txt",
+          "log_sha256": "b6321f9b3d92c3535bca955722105f03fab5790abe22fe193c6fac3c78288b12"
+        },
+        {
+          "result": "Final image fresh engine generation and synthetic ROS/GPU round trip passed.",
+          "log": ".recovery/verification/docker-final-smoke.txt",
+          "log_sha256": "1cb65ed1bee0fd3b581bece7ce61b313289567943f4343d0e2d5101e5c587691"
+        },
+        {
+          "result": "Final image second round trip passed; one engine generation across both starts verifies cache reuse.",
+          "log": ".recovery/verification/docker-final-restart-smoke.txt",
+          "log_sha256": "1cb65ed1bee0fd3b581bece7ce61b313289567943f4343d0e2d5101e5c587691"
+        },
+        {
+          "result": "33 shell blocks parsed; two Python heredocs parsed; nine local links and model hash verified. Installation/extraction blocks not executed.",
+          "log": ".recovery/verification/docs-command-checks.txt",
+          "log_sha256": "be84434e7aaf391f36a18f2f62f38b036e32005c218caae8f492198fa85c50b9",
+          "exit_code": 0
+        },
+        {
+          "result": "Exact documented synthetic command passed in isolated domain 91; header preserved, one detection; temporary container cleaned.",
+          "log": ".recovery/verification/docs-container-smoke.txt",
+          "log_sha256": "982d6e3b0f61c72ab382da13d154d9118e3eaa73f51bd73e76edf7cef0bc97d8",
+          "exit_code": 0
+        },
+        {
+          "result": "Installed image CLI confirms playback remap and QoS override options.",
+          "log": ".recovery/verification/docs-bag-help.txt",
+          "log_sha256": "589564a6daba21cfb3e8963f2519ac79f6dba58838e47705eda60248004683b0",
+          "exit_code": 0
+        },
+        {
+          "result": "Built-in compiler failed before source parsing because its TeX bundle is uncached and could not be downloaded. PDF compilation/layout unverified.",
+          "log": ".recovery/verification/docs-latex-compile.json",
+          "log_sha256": "f250a397a4b835f4daa68d3162718ed108f3c9720350b64f74577f8ea714ffbe"
+        },
+        {
+          "result": "Summary: 2 tests, 0 errors, 0 failures, 0 skipped",
+          "exit_code": 0,
+          "log": ".recovery/verification/docs-colcon-core-results.txt",
+          "log_sha256": "782a37bbb3541187258b2ee5d46183e63e91f173ffbac2a05bee84a9e85ccf40"
+        },
+        {
+          "result": "Summary: 2 tests, 0 errors, 0 failures, 0 skipped",
+          "exit_code": 0,
+          "log": ".recovery/verification/docs-colcon-sanitized-results.txt",
+          "log_sha256": "782a37bbb3541187258b2ee5d46183e63e91f173ffbac2a05bee84a9e85ccf40"
+        },
+        {
+          "result": "Summary: 4 tests, 0 errors, 0 failures, 0 skipped",
+          "exit_code": 0,
+          "log": ".recovery/verification/docs-colcon-ros-results.txt",
+          "log_sha256": "30486a8587e236385d36bec31bf4130ae9ac039f0a8ea70e17730d3ddd8e46a7"
+        },
+        {
+          "result": "PASS: 34 LaTeX shell blocks parsed with bash -n; embedded Python parsed; current Markdown command blocks and local links checked; build/pp_infer/runtime_smoke exists; git diff --check passed. No direct cmake/ctest commands in the current guide, README or native runtime guide.",
+          "exit_code": 0,
+          "log": ".recovery/verification/docs-colcon-command-checks.txt",
+          "log_sha256": "b2ac28a692f02ce4ba24cdb7b075028df51036594eac4faedcaa8fc46ed4795e"
+        }
+      ]
+    }
+  ]
+}

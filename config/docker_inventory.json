@@ -1,0 +1,26 @@
+{
+  "image_tag": "pp-infer:jazzy-trt10",
+  "image_id": "sha256:91652c5b801917da7be35f68f487732f386369c065b76a1c4bea165d141d6a94",
+  "architecture": "amd64",
+  "os": "linux",
+  "size_bytes_reported_by_docker": 4019625350,
+  "model_sha256": "2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1",
+  "tensorrt": "10.16.1.11 CUDA12.9",
+  "cuda_shared_libraries": "12.9.1",
+  "physically_tested_gpu": "RTX 4060 Laptop",
+  "engine_portability": "Build/caches on first selected CUDA-visible GPU; key covers UUID/CC, CUDA API versions, NVIDIA driver version, ONNX hash and engine build recipe",
+  "verification": "Synthetic container GPU/ROS round trip and cache reuse; not model accuracy",
+  "host_requirements": [
+    "Linux x86-64",
+    "TensorRT10-supported NVIDIA GPU SM>=7.5",
+    "Compatible NVIDIA driver",
+    "Docker with NVIDIA Container Toolkit"
+  ],
+  "not_validated": [
+    "Other physical GPUs",
+    "ARM/Jetson",
+    "Reference detection accuracy",
+    "CUDA memory instrumentation"
+  ],
+  "build": "Final full Dockerfile build from Ubuntu24 with pinned required CUDA packages; no full CUDA development base image"
+}

@@ -1,0 +1,34 @@
+{
+  "status": "inventory_only_not_a_compatible_stack_lock",
+  "observed_local_date": "2026-10-01",
+  "os": "Ubuntu 24.04.4",
+  "architecture": "x86_64",
+  "ros_directory": "/opt/ros/jazzy",
+  "compiler": "GNU 13.3.0",
+  "cmake": "3.28.3",
+  "cuda_compiler": "12.0.140",
+  "nvidia_pci": {
+    "display_bus": "0000:01:00.0",
+    "vendor_id": "0x10de",
+    "device_id": "0x28e0"
+  },
+  "gpu_runtime_validation": "nvidia-smi passed outside sandbox; CUDA/TensorRT inference not tested",
+  "tensorrt": "NvInfer.h not found in /usr/include; other locations not ruled out",
+  "selected_driver": null,
+  "selected_cuda": null,
+  "selected_tensorrt": null,
+  "selected_plugins": null,
+  "notes": [
+    "Installed compiler/toolkit versions are observed facts, not chosen compatibility pins.",
+    "No driver, CUDA or TensorRT installation performed.",
+    "Sandbox does not expose /dev/nvidia*; read-only escalated nvidia-smi succeeded. No driver repair is needed based on this query."
+  ],
+  "gpu_name_from_lspci": "GeForce RTX 4060 Max-Q / Mobile",
+  "pci_driver_link": "/sys/bus/pci/drivers/nvidia",
+  "nvidia_device_nodes": [],
+  "nvidia_kernel_version_file_present": true,
+  "gpu_name_verified": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "gpu_memory_mib": 8188,
+  "driver_version_verified": "595.71.05",
+  "nvidia_kernel_module_version": "595.71.05"
+}

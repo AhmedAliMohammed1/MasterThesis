@@ -15,352 +15,152 @@
  * limitations under the License.
  */
 
-#include <iostream>
+#include "pp_infer/pointpillar.h"
+#include "pp_infer/cuda_resources.hpp"
+#include "pp_infer/model_contract.hpp"
+#include "pp_infer/output_contract.hpp"
+#include <NvInfer.h>
+#include <NvInferPlugin.h>
+#include <array>
+#include <cmath>
+#include <cstdint>
 #include <fstream>
-#include <vector>
-#include <iomanip>
-#include<map>
-#include<algorithm>
-#include "cuda_runtime.h"
-#include "NvInfer.h"
-#include "NvOnnxConfig.h"
-#include "NvOnnxParser.h"
-#include "NvInferRuntime.h"
-#include "NvInferPlugin.h"
-#include "../include/pp_infer/pointpillar.h"
+#include <iostream>
+#include <limits>
+#include <stdexcept>
 
-#define checkCudaErrors(status)                                   \
-{                                                                 \
-  if (status != 0)                                                \
-  {                                                               \
-    std::cout << "Cuda failure: " << cudaGetErrorString(status)   \
-              << " at line " << __LINE__                          \
-              << " in file " << __FILE__                          \
-              << " error status: " << status                      \
-              << std::endl;                                       \
-              abort();                                            \
-    }                                                             \
+namespace {
+class Logger final : public nvinfer1::ILogger {
+ public:
+  void log(Severity severity, const char* message) noexcept override {
+    if (severity <= Severity::kWARNING) std::cerr << "TensorRT: " << message << '\n';
+  }
+};
+struct Profiler final : nvinfer1::IProfiler {
+  float total_ms{};
+  bool enabled{};
+  void reportLayerTime(const char*, float ms) noexcept override { if (enabled) total_ms += ms; }
+};
+constexpr std::array<const char*, 4> names{"points", "num_points", "output_boxes", "num_boxes"};
+std::vector<char> read_engine(const std::string& path) {
+  std::ifstream input(path, std::ios::binary | std::ios::ate);
+  if (!input) throw std::runtime_error("Cannot open engine: " + path + "; build it offline with trtexec");
+  const auto length = input.tellg();
+  if (length <= 0 || length > (std::streamoff(1) << 30))
+    throw std::runtime_error("Engine must be nonempty and at most 1 GiB");
+  std::vector<char> bytes(static_cast<std::size_t>(length));
+  input.seekg(0);
+  if (!input.read(bytes.data(), length)) throw std::runtime_error("Incomplete engine read");
+  return bytes;
+}
 }
 
+struct PointPillar::Impl {
+  // Declaration order retains logger/runtime/engine/profiler until context dies.
+  Logger logger;
+  std::unique_ptr<nvinfer1::IRuntime> runtime;
+  std::unique_ptr<nvinfer1::ICudaEngine> engine;
+  Profiler profiler;
+  pp_infer::CudaStream stream;
+  std::unique_ptr<nvinfer1::IExecutionContext> context;
+  std::array<std::unique_ptr<pp_infer::DeviceBuffer>, 4> buffers;
+  std::vector<float> host_boxes;
+  std::size_t points{}, boxes{};
+  bool faulted{};
 
-struct SimpleProfiler : public nvinfer1::IProfiler
-{
-    struct Record
-    {
-        float time{0};
-        int count{0};
-    };
-
-    virtual void reportLayerTime(const char* layerName, float ms) noexcept
-    {
-        mProfile[layerName].count++;
-        mProfile[layerName].time += ms;
-        if (std::find(mLayerNames.begin(), mLayerNames.end(), layerName) == mLayerNames.end())
-        {
-            mLayerNames.push_back(layerName);
-        }
+  explicit Impl(const std::string& path) {
+    if (!initLibNvInferPlugins(&logger, "")) throw std::runtime_error("Plugin initialization failed");
+    runtime.reset(nvinfer1::createInferRuntime(logger));
+    if (!runtime) throw std::runtime_error("TensorRT runtime creation failed");
+    const auto bytes = read_engine(path);
+    engine.reset(runtime->deserializeCudaEngine(bytes.data(), bytes.size()));
+    if (!engine) throw std::runtime_error("Engine deserialization failed; verify TensorRT version and PointPillars plugins");
+    if (engine->getNbIOTensors() != 4 || engine->getNbOptimizationProfiles() != 1)
+      throw std::runtime_error("Require four named I/O tensors and one batch-one profile");
+    for (std::size_t i = 0; i < names.size(); ++i) {
+      const auto mode = i < 2 ? nvinfer1::TensorIOMode::kINPUT : nvinfer1::TensorIOMode::kOUTPUT;
+      const auto type = i % 2 == 0 ? nvinfer1::DataType::kFLOAT : nvinfer1::DataType::kINT32;
+      if (engine->getTensorIOMode(names[i]) != mode || engine->getTensorDataType(names[i]) != type ||
+          engine->getTensorLocation(names[i]) != nvinfer1::TensorLocation::kDEVICE ||
+          engine->getTensorFormat(names[i]) != nvinfer1::TensorFormat::kLINEAR ||
+          engine->isShapeInferenceIO(names[i]))
+        throw std::runtime_error(std::string("Unsupported tensor contract: ") + names[i]);
     }
-
-    SimpleProfiler(const char* name, const std::vector<SimpleProfiler>& srcProfilers = std::vector<SimpleProfiler>())
-        : mName(name)
-    {
-        for (const auto& srcProfiler : srcProfilers)
-        {
-            for (const auto& rec : srcProfiler.mProfile)
-            {
-                auto it = mProfile.find(rec.first);
-                if (it == mProfile.end())
-                {
-                    mProfile.insert(rec);
-                }
-                else
-                {
-                    it->second.time += rec.second.time;
-                    it->second.count += rec.second.count;
-                }
-            }
-        }
+    auto shape = engine->getTensorShape("points");
+    if (shape.nbDims != 3 || (shape.d[0] != -1 && shape.d[0] != 1) || shape.d[1] <= 0 || shape.d[2] != 4 ||
+        shape.d[1] > std::numeric_limits<std::int32_t>::max())
+      throw std::runtime_error("Require points [batch, P, 4] with fixed positive INT32 capacity");
+    points = static_cast<std::size_t>(shape.d[1]);
+    context.reset(engine->createExecutionContext());
+    if (!context) throw std::runtime_error("Context creation failed");
+    shape.d[0] = 1;
+    if (!context->setInputShape("points", shape) || !context->setInputShape("num_points", nvinfer1::Dims{1, {1}}) ||
+        context->inferShapes(0, nullptr) != 0)
+      throw std::runtime_error("Batch-one shape resolution failed");
+    const auto count_shape = context->getTensorShape("num_boxes");
+    const auto input_count_shape = context->getTensorShape("num_points");
+    shape = context->getTensorShape("output_boxes");
+    if (input_count_shape.nbDims != 1 || input_count_shape.d[0] != 1 ||
+        count_shape.nbDims != 1 || count_shape.d[0] != 1 ||
+        shape.nbDims != 3 || shape.d[0] != 1 || shape.d[1] <= 0 || shape.d[2] != 9 ||
+        shape.d[1] > std::numeric_limits<std::int32_t>::max())
+      throw std::runtime_error("Require output_boxes [1, B, 9] and counts [1]");
+    boxes = static_cast<std::size_t>(shape.d[1]);
+    host_boxes.resize(pp_infer::checked_product(boxes, 9));
+    const std::array<std::size_t, 4> sizes{
+      pp_infer::checked_product(points, 4 * sizeof(float)), sizeof(std::int32_t),
+      pp_infer::checked_product(host_boxes.size(), sizeof(float)), sizeof(std::int32_t)};
+    for (std::size_t i = 0; i < names.size(); ++i) {
+      buffers[i] = std::make_unique<pp_infer::DeviceBuffer>(sizes[i]);
+      if (!context->setTensorAddress(names[i], buffers[i]->get()))
+        throw std::runtime_error(std::string("Cannot bind tensor: ") + names[i]);
     }
-
-    friend std::ostream& operator<<(std::ostream& out, const SimpleProfiler& value)
-    {
-        out << "========== " << value.mName << " profile ==========" << std::endl;
-        float totalTime = 0;
-        std::string layerNameStr = "TensorRT layer name";
-        int maxLayerNameLength = std::max(static_cast<int>(layerNameStr.size()), 70);
-        for (const auto& elem : value.mProfile)
-        {
-            totalTime += elem.second.time;
-            maxLayerNameLength = std::max(maxLayerNameLength, static_cast<int>(elem.first.size()));
-        }
-
-        auto old_settings = out.flags();
-        auto old_precision = out.precision();
-        // Output header
-        {
-            out << std::setw(maxLayerNameLength) << layerNameStr << " ";
-            out << std::setw(12) << "Runtime, "
-                << "%"
-                << " ";
-            out << std::setw(12) << "Invocations"
-                << " ";
-            out << std::setw(12) << "Runtime, ms" << std::endl;
-        }
-        for (size_t i = 0; i < value.mLayerNames.size(); i++)
-        {
-            const std::string layerName = value.mLayerNames[i];
-            auto elem = value.mProfile.at(layerName);
-            out << std::setw(maxLayerNameLength) << layerName << " ";
-            out << std::setw(12) << std::fixed << std::setprecision(1) << (elem.time * 100.0F / totalTime) << "%"
-                << " ";
-            out << std::setw(12) << elem.count << " ";
-            out << std::setw(12) << std::fixed << std::setprecision(2) << elem.time << std::endl;
-        }
-        out.flags(old_settings);
-        out.precision(old_precision);
-        out << "========== " << value.mName << " total runtime = " << totalTime << " ms ==========" << std::endl;
-
-        return out;
-    }
-
-private:
-    std::string mName;
-    std::vector<std::string> mLayerNames;
-    std::map<std::string, Record> mProfile;
+    context->setProfiler(&profiler);
+  }
+  ~Impl() { cudaStreamSynchronize(stream.get()); }
 };
 
-
-TRT::~TRT(void)
-{
-  context->destroy();
-  engine->destroy();
-  checkCudaErrors(cudaEventDestroy(start));
-  checkCudaErrors(cudaEventDestroy(stop));
-}
-
-TRT::TRT(
-  std::string modelFile,
-  std::string modelCache,
-  cudaStream_t stream,
-  const std::string& data_type
-):stream_(stream)
-{
-  initLibNvInferPlugins(&gLogger_, "");
-  std::fstream trtCache(modelCache, std::ifstream::in);
-  checkCudaErrors(cudaEventCreate(&start));
-  checkCudaErrors(cudaEventCreate(&stop));
-  if (!trtCache.is_open())
-  {
-    std::cout << "Loading Model: " << modelFile << std::endl;
-    std::cout << "Building TRT engine from the model."<<std::endl;
-    // define builder
-    auto builder = (nvinfer1::createInferBuilder(gLogger_));
-
-    // define network
-    const auto explicitBatch = 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
-    auto network = (builder->createNetworkV2(explicitBatch));
-
-    // define onnxparser
-    auto parser = (nvonnxparser::createParser(*network, gLogger_));
-    if (!parser->parseFromFile(modelFile.data(), static_cast<int>(nvinfer1::ILogger::Severity::kWARNING)))
-    {
-        std::cerr << ": Failed to parse onnx model file, please check the onnx version and trt support op!"
-                  << std::endl;
-        exit(-1);
+PointPillar::PointPillar(const std::string& path) : impl_(std::make_unique<Impl>(path)) {}
+PointPillar::~PointPillar() = default;
+std::size_t PointPillar::getPointCapacity() const { return impl_->points; }
+std::vector<Bndbox> PointPillar::infer(const float* xyzi, std::size_t count,
+                                    float threshold, int top_n, std::size_t classes, bool profile) {
+  auto& state = *impl_;
+  if (state.faulted) throw std::runtime_error("GPU runtime faulted; restart the node");
+  if (count > state.points || (count && !xyzi) || !classes || top_n <= 0 ||
+      !std::isfinite(threshold) || threshold < 0 || threshold > 1)
+    throw std::invalid_argument("Invalid inference input or NMS configuration");
+  if (!count) return {};
+  const std::int32_t encoded_count = static_cast<std::int32_t>(count);
+  std::int32_t detected{};
+  const auto stream = state.stream.get();
+  try {
+    // Fixed capacity input: clear padding, then copy only valid points.
+    pp_infer::cuda_check(cudaMemsetAsync(state.buffers[0]->get(), 0, state.points * 4 * sizeof(float), stream), "clear points");
+    pp_infer::cuda_check(cudaMemcpyAsync(state.buffers[0]->get(), xyzi, count * 4 * sizeof(float), cudaMemcpyHostToDevice, stream), "copy points");
+    pp_infer::cuda_check(cudaMemcpyAsync(state.buffers[1]->get(), &encoded_count, sizeof(encoded_count), cudaMemcpyHostToDevice, stream), "copy count");
+    pp_infer::cuda_check(cudaMemsetAsync(state.buffers[3]->get(), 0, sizeof(detected), stream), "clear output count");
+    state.profiler.total_ms = 0;
+    // TensorRT 10.16 rejects null in setProfiler. Retain the owned profiler;
+    // callbacks collect timings only when requested (TRT callback overhead remains).
+    state.profiler.enabled = profile;
+    state.context->setEnqueueEmitsProfile(true);
+    if (!state.context->enqueueV3(stream)) throw std::runtime_error("TensorRT enqueueV3 failed");
+    pp_infer::cuda_check(cudaMemcpyAsync(&detected, state.buffers[3]->get(), sizeof(detected), cudaMemcpyDeviceToHost, stream), "copy output count");
+    pp_infer::cuda_check(cudaStreamSynchronize(stream), "complete inference");
+    pp_infer::checked_detection_count(detected, state.boxes);
+    if (detected) {
+      pp_infer::cuda_check(cudaMemcpyAsync(state.host_boxes.data(), state.buffers[2]->get(),
+        static_cast<std::size_t>(detected) * 9 * sizeof(float), cudaMemcpyDeviceToHost, stream), "copy boxes");
+      pp_infer::cuda_check(cudaStreamSynchronize(stream), "complete boxes");
     }
-    // dynamic shape
-    nvinfer1::IOptimizationProfile* profile = builder->createOptimizationProfile();
-    // define config
-    auto networkConfig = builder->createBuilderConfig();
-    if(data_type == "fp16") {
-        networkConfig->setFlag(nvinfer1::BuilderFlag::kFP16);
-        std::cout << "Enabled FP16 data type!" << std::endl;
-    }
-    nvinfer1::Dims dims{};
-    dims.nbDims = 3;
-    dims.d[0] = 1;
-    auto input0_dims = network->getInput(0)->getDimensions();
-    dims.d[1] = input0_dims.d[1];
-    dims.d[2] = 4;
-    profile->setDimensions("points", nvinfer1::OptProfileSelector::kMIN, dims);
-    profile->setDimensions("points", nvinfer1::OptProfileSelector::kOPT, dims);
-    profile->setDimensions("points", nvinfer1::OptProfileSelector::kMAX, dims);
-    dims.nbDims = 1;
-    dims.d[0] = 1;
-    profile->setDimensions("num_points", nvinfer1::OptProfileSelector::kMIN, dims);
-    profile->setDimensions("num_points", nvinfer1::OptProfileSelector::kOPT, dims);
-    profile->setDimensions("num_points", nvinfer1::OptProfileSelector::kMAX, dims);
-    networkConfig->addOptimizationProfile(profile);
-    // set max workspace
-    networkConfig->setMaxWorkspaceSize(size_t(1) << 30);
-
-    engine = (builder->buildEngineWithConfig(*network, *networkConfig));
-
-    if (engine == nullptr)
-    {
-      std::cerr << ": engine init null!" << std::endl;
-      exit(-1);
-    }
-
-    // serialize the engine, then close everything down
-    auto trtModelStream = (engine->serialize());
-    std::string modelCacheSave = modelFile + ".cache";
-    std::fstream trtOut(modelCacheSave, std::ifstream::out);
-    if (!trtOut.is_open())
-    {
-       std::cout << "Can't store trt cache.\n";
-       exit(-1);
-    }
-    trtOut.write((char*)trtModelStream->data(), trtModelStream->size());
-    trtOut.close();
-    trtModelStream->destroy();
-
-    networkConfig->destroy();
-    parser->destroy();
-    network->destroy();
-    builder->destroy();
-  } else {
-    std::cout << "Loading existing TRT Engine: "
-              << modelCache
-              << std::endl;
-    char *data;
-    unsigned int length;
-    // get length of file:
-    trtCache.seekg(0, trtCache.end);
-    length = trtCache.tellg();
-    trtCache.seekg(0, trtCache.beg);
-    data = (char *)malloc(length);
-    if (data == NULL ) {
-       std::cout << "Can't malloc data.\n";
-       exit(-1);
-    }
-    trtCache.read(data, length);
-    // create context
-    auto runtime = nvinfer1::createInferRuntime(gLogger_);
-    if (runtime == nullptr) {
-        std::cerr << ": runtime null!" << std::endl;
-        exit(-1);
-    }
-    engine = (runtime->deserializeCudaEngine(data, length, 0));
-    if (engine == nullptr) {
-        std::cerr << ": engine null!" << std::endl;
-        exit(-1);
-    }
-    free(data);
-    trtCache.close();
+  } catch (...) {
+    cudaStreamSynchronize(stream);  // Drain references to stack/input data before unwinding.
+    state.faulted = true;
+    throw;
   }
-
-  context = engine->createExecutionContext();
-
+  auto raw = pp_infer::decode_boxes(state.host_boxes.data(), static_cast<std::size_t>(detected), classes);
+  std::vector<Bndbox> result;
+  nms_cpu(raw, threshold, result, top_n);
+  return result;
 }
-
-int TRT::doinfer(void**buffers, bool do_profile)
-{
-  int status;
-  SimpleProfiler profiler("perf");
-  if(do_profile)
-      context->setProfiler(&profiler);
-  status = context->enqueueV2(buffers, stream_, &start);
-  if(do_profile)
-      std::cout << profiler;
-  if (!status)
-  {
-      return false;
-  }
-  return true;
-}
-
-nvinfer1::Dims TRT::get_binding_shape(int index)
-{
-  return context->getBindingDimensions(index);
-}
-
-int TRT::getPointSize() {
-    return context->getBindingDimensions(0).d[2];
-}
-
-PointPillar::PointPillar(
-  std::string modelFile,
-  std::string engineFile,
-  cudaStream_t stream,
-  const std::string& data_type
-):stream_(stream)
-{
-
-  checkCudaErrors(cudaEventCreate(&start));
-  checkCudaErrors(cudaEventCreate(&stop));
-
-  trt_.reset(new TRT(modelFile, engineFile, stream_, data_type));
-
-  //output of TRT
-  box_size = (trt_->get_binding_shape(2).d[1]) * 9 * sizeof(float);
-  checkCudaErrors(cudaMallocManaged((void **)&box_output, box_size));
-  checkCudaErrors(cudaMallocManaged((void **)&box_num, sizeof(int)));
-  res.reserve(100);
-}
-
-PointPillar::~PointPillar(void)
-{
-  trt_.reset();
-
-  checkCudaErrors(cudaFree(box_output));
-  checkCudaErrors(cudaFree(box_num));
-  checkCudaErrors(cudaEventDestroy(start));
-  checkCudaErrors(cudaEventDestroy(stop));
-}
-
-int PointPillar::getPointSize() {
-  return trt_->getPointSize();
-}
-
-std::vector<Bndbox> PointPillar::doinfer(
-  void*points_data,
-  unsigned int* points_size,
-  std::vector<Bndbox> &nms_pred,
-  float nms_iou_thresh,
-  int pre_nms_top_n,
-  std::vector<std::string>& class_names,
-  bool do_profile
-)
-{
-#if PERFORMANCE_LOG
-  float doinferTime = 0.0f;
-  cudaEventRecord(start, stream_);
-#endif
-  void *buffers[] = {points_data, points_size, box_output, box_num};
-
-  trt_->doinfer(buffers, do_profile);
-
-#if PERFORMANCE_LOG
-  checkCudaErrors(cudaEventRecord(stop, stream_));
-  checkCudaErrors(cudaEventSynchronize(stop));
-  checkCudaErrors(cudaEventElapsedTime(&doinferTime, start, stop));
-  std::cout<<"TIME: doinfer: "<< doinferTime <<" ms." <<std::endl;
-#endif
-  cudaDeviceSynchronize();
-  int num_obj = box_num[0];
-  for (int i = 0; i < num_obj; i++) {
-    auto Bb = Bndbox(
-      box_output[i * 9],
-      box_output[i * 9 + 1],
-      box_output[i * 9 + 2],
-      box_output[i * 9 + 3],
-      box_output[i * 9 + 4],
-      box_output[i * 9 + 5],
-      box_output[i * 9 + 6],
-      box_output[i * 9 + 7],
-      box_output[i * 9 + 8]
-    );
-    res.push_back(Bb);
-  }
-  nms_cpu(res, nms_iou_thresh, nms_pred, pre_nms_top_n);
-  /*for(int i=0; i<nms_pred.size(); i++) {
-    printf("%s, %f, %f, %f, %f, %f, %f, %f, %f\n",
-      class_names[nms_pred[i].id].c_str(), nms_pred[i].x,
-      nms_pred[i].y, nms_pred[i].z, nms_pred[i].l, nms_pred[i].w,
-      nms_pred[i].h, nms_pred[i].rt, nms_pred[i].score);
-  }*/
-  res.clear();
-return nms_pred;
-}
-

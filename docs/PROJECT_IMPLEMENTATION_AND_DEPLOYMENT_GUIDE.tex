@@ -1,0 +1,760 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern,textcomp}
+\usepackage[margin=22mm]{geometry}
+\usepackage{longtable,booktabs,array}
+\usepackage{xcolor,listings,enumitem}
+\usepackage[unicode,hidelinks]{hyperref}
+\usepackage{url}
+\definecolor{codebackground}{RGB}{246,247,249}
+\lstset{basicstyle=\ttfamily\footnotesize,backgroundcolor=\color{codebackground},
+ frame=single,rulecolor=\color{gray!35},breaklines=true,columns=fullflexible,
+ keepspaces=true,showstringspaces=false,upquote=true,tabsize=2}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\setlength{\emergencystretch}{3em}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\title{PointPillars: From a Fresh Computer to a Running ROS Node\\
+\large Implementation record, deployment commands, and recovery guide}
+\author{MasterThesis project: \code{pp_infer}}
+\date{2 October 2026}
+\begin{document}
+\maketitle
+This guide records the completed work and explains how another person can reproduce it. You do not need to understand C++ to follow the Docker deployment. Read each step, run its commands, and check the expected result before moving on.
+
+The recommended route uses Ubuntu 24.04 and a supported NVIDIA GPU. Docker carries the application and libraries. The computer supplies the driver. After one-time host setup and preparation of build inputs, two commands build the image and run the node.
+
+The code does not require an RTX 4060. This image targets Linux x86-64 with NVIDIA hardware supported by TensorRT 10.16 and enough GPU memory. It has been physically tested on one RTX 4060 Laptop GPU. ARM and Jetson need a separate platform build. There is no universal image for every PC or operating system.
+
+Build, engine generation, and synthetic ROS/GPU detection checks passed. These demonstrate integration, not real-world detection accuracy or real-time performance.
+\tableofcontents
+\newpage
+
+\section{Terms in plain language}
+\begin{longtable}{p{0.20\textwidth}p{0.73\textwidth}}
+\toprule Term & Meaning here \\ \midrule
+Driver & Host software that lets the computer use its NVIDIA GPU. It lives outside Docker. \\
+CUDA & NVIDIA's GPU computing libraries and tools. Docker carries the required application libraries. \\
+TAO & NVIDIA's toolkit for training, adapting, and exporting models. It is different from TensorRT. Deploying this pretrained export does not require another training run. \\
+ONNX & The exported model file used to build the engine. \\
+TensorRT / SDK & TensorRT prepares and runs the model on a GPU. Its development kit supplies headers, libraries, and tools. Pretrained models still need an inference runtime. \\
+Engine & Generated TensorRT file prepared for a selected GPU and software stack. \\
+ROS 2 & Framework used to pass point clouds and detection messages. We use Jazzy. \\
+Node / topic & A node is a running program; a topic is a named message channel. \\
+Image / container & An image packages the application; a container is a running instance. \\
+Colcon & ROS build tool, already used inside the Docker build. \\
+Checkpoint & Saved source, progress, and next action for continuing interrupted development. \\
+\bottomrule
+\end{longtable}
+
+\section{What was done}
+The original repository targeted Foxy and TensorRT 8. The current work moves the build and inference path to Ubuntu 24.04, Jazzy, and TensorRT 10.16.1.11. Historical instructions are preserved in \path{docs/LEGACY_FOXY_README.md}.
+
+Three layers separate responsibilities: a CPU geometry core, a ROS message adapter, and a GPU inference runtime. Most geometry and input behavior can therefore be checked without a GPU.
+\begin{center}
+\fbox{LiDAR or bag $\rightarrow$ PointCloud2 $\rightarrow$ input validation}\\[8pt]
+$\downarrow$\\[8pt]
+\fbox{Reusable GPU buffers $\rightarrow$ TensorRT $\rightarrow$ box filtering}\\[8pt]
+$\downarrow$\\[8pt]
+\fbox{Detection3DArray on \code{/bbox}}
+\end{center}
+\begin{enumerate}
+\item Colcon builds the normal runtime and the reduced CPU/ROS test configurations. Runtime compilation requires TensorRT major version 10.
+\item Oriented box overlap/suppression use separate CPU code with validated inputs and stable ties. Class-agnostic suppression remains the default.
+\item The ROS adapter validates fields and byte limits, handles row padding, filters nonfinite points, and preserves output headers.
+\item The runtime uses named tensors and \code{enqueueV3}; startup validates tensor names, types, shapes, profile, and storage format.
+\item Engine, context, buffers, profiler, and stream have explicit owners. Buffers and one stream are reused; copies and output bounds are checked. CUDA failure faults the runtime until restart.
+\item Downloads were inspected and hashed. TensorRT was extracted locally without registering host apt/dpkg packages. All three required plugins were present; an OSS rebuild was unnecessary.
+\item Docker compiles with colcon and runs four test modes. The runtime stage contains ROS, GPU libraries, plugins, model, and executable. Compilers stay in the build stage.
+\item Startup inspects the selected GPU, builds an engine there, and caches it by model/GPU/driver/software/recipe identity.
+\item A Python helper saves source checkpoints and reports drift without resetting files or changing the Git index. The ledger records unfinished work.
+\end{enumerate}
+The node still processes callbacks synchronously with reliable delivery and queue depth 700. The planned worker with a bounded pending-frame slot is not implemented. The architecture plan is broader than the completed work.
+
+\subsection{Recorded baseline}
+\begin{longtable}{p{0.30\textwidth}p{0.63\textwidth}}
+\toprule Component & Recorded value \\ \midrule
+Host & Ubuntu 24.04.4, x86-64 \\
+ROS & Jazzy \\
+GPU & RTX 4060 Laptop, 8188 MiB reported memory \\
+Host driver & 595.71.05; already working \\
+Host tools & GCC 13.3, CMake 3.28.3, CUDA compiler 12.0.140 \\
+TensorRT & 10.16.1.11, CUDA 12.9 package variant \\
+Docker CUDA & CUDA 12.9 Update 1 components; exact pins in Dockerfile \\
+Image & \code{pp-infer:jazzy-trt10} \\
+Package / executable & \code{pp_infer} / \code{pp_infer} \\
+Container node & \code{/pointpillars} \\
+Input / output & \code{/point_cloud} / \code{/bbox} \\
+\bottomrule
+\end{longtable}
+Driver, Docker, and GPU integration were already installed. This work did not reinstall the driver. TensorRT was extracted without a system installation. Image identity is in \path{config/docker_inventory.json}. Future rebuilds can differ because Ubuntu tags and ROS repository packages change.
+
+\section{Choose a route}
+Build from source when editing the project: complete Steps 1--6, then the two commands in Step 7.
+
+For a computer that only runs the application, receive a built image: complete Steps 1--4, then Section~\ref{sec:transfer}. It needs no source, SDK download, host ROS, host TensorRT, or CUDA development toolkit.
+
+\section{Step 1: check the computer}
+Start with Ubuntu 24.04 installed. Open Terminal with Ctrl+Alt+T:
+\begin{lstlisting}
+cat /etc/os-release
+uname -m
+lspci | grep -Ei 'nvidia|vga|3d'
+df -h "$HOME"
+\end{lstlisting}
+Look for version 24.04, architecture \code{x86_64}, and NVIDIA hardware. Install \code{pciutils} if needed. TensorRT 10.x lists capability 7.5 or newer as a hardware floor [S4]. This is necessary, but not proof that every such GPU works with this model and its legacy plugins.
+
+Plan for at least 40 GB free for source-build downloads, extraction, and Docker layers. This is an allowance, not a measured minimum. The recorded image reports about 4.0 GB; building needs extra space. An earlier attempt filled the disk; the final Dockerfile installs only needed CUDA components.
+
+For another operating system, install Ubuntu normally and arrange backups before partition changes. OS installation is not automated here. Windows/WSL2, macOS, ARM, and Jetson have not been validated with this recipe.
+
+\section{Step 2: download and install the NVIDIA driver}
+Try \code{nvidia-smi} first. Keep an existing suitable working driver. A conservative target is 575.57.08 or newer, the corresponding Linux driver for CUDA 12.9 Update 1 [S5]. Older drivers may work through compatibility modes, but that path has not been validated here.
+
+On fresh Ubuntu, download the suitable driver through Ubuntu packages [S1]:
+\begin{lstlisting}
+sudo apt update
+sudo apt upgrade
+sudo apt install ubuntu-drivers-common pciutils
+ubuntu-drivers devices
+sudo ubuntu-drivers install
+sudo reboot
+\end{lstlisting}
+Save work before rebooting. If prompted for a Secure Boot key, follow enrollment prompts at restart. Log in and run \code{nvidia-smi}. If the recommended branch is too old, select a newer supported branch using Ubuntu's guide. Do not assume the original computer's driver number is correct for every GPU.
+
+The CUDA Version field in \code{nvidia-smi} describes driver capability, not an installed host CUDA development toolkit.
+
+\section{Step 3: install Docker}
+If \code{sudo docker version} already works, use that installation. Otherwise, on fresh Ubuntu 24.04, add Docker's official repository [S2]:
+\begin{lstlisting}
+sudo apt update
+sudo apt install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+  -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+sudo tee /etc/apt/sources.list.d/docker.sources <<'EOF'
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: noble
+Components: stable
+Architectures: amd64
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+sudo apt update
+sudo apt install docker-ce docker-ce-cli containerd.io \
+  docker-buildx-plugin docker-compose-plugin
+sudo systemctl enable --now docker
+sudo docker run --rm hello-world
+\end{lstlisting}
+The last command should print success. For conflicts with an existing container installation, review [S2]. These commands assume a fresh host. We use sudo so a new user needs no group-permission changes.
+
+\section{Step 4: connect Docker to the GPU}
+Install NVIDIA Container Toolkit [S3]:
+\begin{lstlisting}
+sudo apt install ca-certificates curl gnupg
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
+  sudo gpg --dearmor \
+  -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+curl -fsSL \
+  https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+  sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+  sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+sudo apt update
+sudo apt install nvidia-container-toolkit
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+nvidia-ctk --version
+sudo docker info --format '{{json .Runtimes}}'
+\end{lstlisting}
+Look for NVIDIA in the runtime list. Restarting Docker can affect existing containers. Skip repeated setup if integration already works. Step 8 checks GPU access with the project image.
+
+\section{Step 5: obtain updated source and model}
+\label{sec:assets}
+Receive the updated folder from the maintainer. Changes are currently in a modified working tree; no new commit or registry image has been published. Cloning the original upstream repository does not reproduce them.
+
+Install the small host utilities used for asset preparation and recovery:
+\begin{lstlisting}
+sudo apt install python3 git dpkg tar
+\end{lstlisting}
+Put the supplied folder at \path{~/pointpillars}, for example:
+\begin{lstlisting}
+PROJECT_DIR="$HOME/pointpillars"
+cd "$PROJECT_DIR"
+test -f Dockerfile
+test -f docker/entrypoint.sh
+test -f tools/env_tensorrt.sh
+\end{lstlisting}
+On the original machine, use \code{PROJECT_DIR=/home/ae/Desktop/MasterThesis}. Replace the example with the actual folder and set it again in new terminals. Successful test commands print nothing. Use \code{$HOME} rather than a tilde inside quotes.
+
+Obtain the matching ONNX from the maintainer or NVIDIA's PointPillarNet catalog [S6]. The tested file is \path{pointpillars_deployable.onnx}. Another export needs separate shape, plugin, and accuracy checks. Keep licensing information. The trainable \code{.tlt} is not required.
+
+Assuming the file is in Downloads:
+\begin{lstlisting}
+cd "$PROJECT_DIR"
+mkdir -p docker/assets
+cp "$HOME/Downloads/pointpillars_deployable.onnx" \
+  docker/assets/pointpillars.onnx
+printf '%s  %s\n' \
+  '2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1' \
+  'docker/assets/pointpillars.onnx' | sha256sum --check
+python3 tools/inspect_onnx_metadata.py docker/assets/pointpillars.onnx
+\end{lstlisting}
+The hash should say \code{OK}. Metadata reading is not a full ONNX validator. Inputs: \code{points} FLOAT32 [batch, 204800, 4], \code{num_points} INT32 [batch]. Outputs: \code{output_boxes} FLOAT32 [batch, 393216, 9], \code{num_boxes} INT32 [batch].
+
+\section{Step 6: prepare TensorRT libraries and development headers}
+Skip this if receiving a built image. The original machine already has the SDK; verify it rather than extracting again.
+
+Download the Ubuntu 24.04, CUDA 12.9, TensorRT 10.16.1 local repository DEB, approximately 5.17 GB, using a browser or:
+\begin{lstlisting}
+mkdir -p "$HOME/Downloads"
+TRT_DEB="$HOME/Downloads/nv-tensorrt-local-repo-ubuntu2404-10.16.1-cuda-12.9_1.0-1_amd64.deb"
+TRT_URL='https://developer.download.nvidia.com/compute/tensorrt/10.16.1/local_installers'
+curl -fL -C - \
+  "$TRT_URL/nv-tensorrt-local-repo-ubuntu2404-10.16.1-cuda-12.9_1.0-1_amd64.deb" \
+  -o "$TRT_DEB"
+printf '%s  %s\n' \
+  '9f465423f47e739c1db159cb9dd2c8991cbff13380e1a358476c40321bff07fe' \
+  "$TRT_DEB" | sha256sum --check
+\end{lstlisting}
+If the hash differs, compare release/inventory before proceeding. Do not mix SDK versions. TensorRT 11 is not a drop-in replacement for this runtime and its legacy plugins.
+
+\subsection{Extract locally without system installation}
+The outer DEB contains component DEBs. Extract selected headers and shared libraries together, without maintainer scripts or apt registration. Static libraries are omitted because this project uses shared libraries.
+
+Copy the complete block into Bash. It stops on errors and leaves temporary repository files on failure for inspection. Use a clean destination or the already verified SDK, not mixed versions:
+\begin{lstlisting}
+cd "$PROJECT_DIR"
+(
+  set -euo pipefail
+  shopt -s nullglob
+  sdk_root="$PWD/.recovery/sdk/tensorrt-10.16.1"
+  mkdir -p "$sdk_root"
+  sdk_repo_dir=$(mktemp -d "$PWD/.recovery/sdk/repository.XXXXXX")
+  dpkg-deb --extract "$TRT_DEB" "$sdk_repo_dir"
+  sdk_version='10.16.1.11-1+cuda12.9'
+  components=(
+    libnvinfer10 libnvinfer-dev libnvinfer-headers-dev
+    libnvinfer-plugin10 libnvinfer-plugin-dev
+    libnvinfer-headers-plugin-dev
+    libnvonnxparsers10 libnvonnxparsers-dev libnvinfer-bin
+    python3-libnvinfer libnvinfer-safe-headers-dev
+    libnvinfer-lean10 libnvinfer-vc-plugin10 libnvinfer-dispatch10
+  )
+  for component in "${components[@]}"; do
+    packages=( "$sdk_repo_dir"/var/nv-tensorrt-local-repo-*/"${component}_${sdk_version}"_*.deb )
+    if (( ${#packages[@]} != 1 )); then
+      printf 'Expected one package for %s; found %s\n' \
+        "$component" "${#packages[@]}" >&2
+      exit 1
+    fi
+    dpkg-deb --fsys-tarfile "${packages[0]}" | \
+      tar --exclude='*.a' -xf - -C "$sdk_root"
+  done
+  test -f "$sdk_root/usr/include/x86_64-linux-gnu/NvInfer.h"
+  test -f "$sdk_root/usr/bin/trtexec"
+  test -e "$sdk_root/usr/lib/x86_64-linux-gnu/libnvinfer.so"
+  test -e "$sdk_root/usr/lib/x86_64-linux-gnu/libnvinfer_plugin.so"
+  rm -r -- "$sdk_repo_dir"
+)
+\end{lstlisting}
+The removal affects only the temporary repository made by this block. It retains the original DEB and local SDK. Do not substitute another path. Resolve failures before continuing.
+
+Verify inputs:
+\begin{lstlisting}
+cd "$PROJECT_DIR"
+test -s docker/assets/pointpillars.onnx
+test -f .recovery/sdk/tensorrt-10.16.1/usr/include/x86_64-linux-gnu/NvInfer.h
+ls .recovery/sdk/tensorrt-10.16.1/usr/lib/x86_64-linux-gnu/libnvinfer*.so*
+\end{lstlisting}
+The Dockerfile copies them and downloads CUDA build dependencies. Host TensorRT installation, CUDA toolkit, and engine generation are unnecessary for Docker deployment. Git/source checkpoints exclude SDK/model directories; retain independent backups.
+
+\section{Step 7: build and run with two commands}
+From the prepared project folder:
+\begin{lstlisting}
+sudo docker build -t pp-infer:jazzy-trt10 .
+sudo docker run --rm --init --name pointpillars \
+  --gpus all --network host --ipc host \
+  -v pp-engines:/var/lib/pp_infer \
+  pp-infer:jazzy-trt10
+\end{lstlisting}
+The first downloads dependencies, compiles with colcon, runs four test modes, and builds the image. It needs network access but no GPU.
+
+The second prints the selected GPU, creates a batch-one FP32 engine on first startup, then starts the node. Other GPUs may take longer. Wait for startup before testing. Open another terminal for inspection.
+
+The \code{pp-engines} volume retains engines after container removal. Matching launches reuse them. Stop using Ctrl+C or \code{sudo docker stop pointpillars}. Stop any previous instance on the same topics first.
+
+\subsection{Engine recovery and portability}
+The same CUDA selection is used for preflight, builder, and inference. The recipe is FP32, batch one, no TF32, and 1024 MiB default workspace. Cache identity includes model hash, GPU UUID/capability, driver, CUDA API versions, TensorRT, and recipe. A lock serializes builds. Temporary output is renamed only on success, so interruption does not accept partial engines.
+
+The image moves between compatible machines; the engine is rebuilt for each GPU/software identity. NVIDIA documents engine portability limits [S4]. Do not assume the old GPU engine is portable. A subsequently corrupted cache file can still fail to load: identify it, back it up, and remove only that file before retrying. This startup mechanism is separate from source checkpoints.
+
+\section{Step 8: see images, nodes, and topics}
+In another terminal:
+\begin{lstlisting}
+sudo docker ps
+sudo docker image ls pp-infer
+sudo docker logs --tail 80 pointpillars
+sudo docker exec pointpillars /entrypoint.sh nvidia-smi
+sudo docker exec pointpillars /entrypoint.sh ros2 pkg executables pp_infer
+sudo docker exec pointpillars /entrypoint.sh ros2 node list
+sudo docker exec pointpillars /entrypoint.sh ros2 node info /pointpillars
+sudo docker exec pointpillars /entrypoint.sh ros2 topic list -t
+\end{lstlisting}
+Look for executable \code{pp_infer}, helper \code{pp_device_info}, node \code{/pointpillars}, input \code{/point_cloud}, and output \code{/bbox}. Types are \code{sensor_msgs/msg/PointCloud2} and \code{vision_msgs/msg/Detection3DArray}.
+
+The command is \code{ros2 run PACKAGE EXECUTABLE}: \code{ros2 run pp_infer pp_infer}. There is no \code{ros2 node run}. Docker adds engine/configuration and sets the name. Direct native startup without an override retains \code{/minimal_publisher}.
+
+The entrypoint utility commands load ROS without another inference instance. If using \code{docker exec -it pointpillars bash}, source \path{/opt/ros/jazzy/setup.bash} and \path{/workspace/install/setup.bash} first.
+
+\section{Step 9: connect a sensor or replay a bag}
+The container does not generate LiDAR measurements. Start the manufacturer-specific driver separately or replay a compatible bag. There is no universal command for every LiDAR.
+
+Stop the earlier instance, then select your topic:
+\begin{lstlisting}
+sudo docker run --rm --init --name pointpillars \
+  --gpus all --network host --ipc host \
+  -e POINT_CLOUD_TOPIC=/lidar/points -e ROS_DOMAIN_ID=0 \
+  -v pp-engines:/var/lib/pp_infer pp-infer:jazzy-trt10
+\end{lstlisting}
+Match the publisher's domain, middleware, and discovery settings. Host networking does not bypass network restrictions between computers. Inspect in another terminal:
+\begin{lstlisting}
+sudo docker exec pointpillars /entrypoint.sh \
+  ros2 topic info /lidar/points --verbose
+sudo docker exec pointpillars /entrypoint.sh ros2 topic echo /bbox --once
+\end{lstlisting}
+An empty array may be valid. No message can mean missing input, QoS mismatch, or runtime failure.
+
+Each point needs scalar little-endian FLOAT32 \code{x}, \code{y}, \code{z}, and \code{intensity}. Valid organized clouds with padding work; malformed/oversized/capacity-exceeding clouds are rejected. Engine capacity is 204800 points; Docker's byte limit defaults to 64 MiB.
+
+The subscription requests reliable delivery. Best-effort-only publishers can appear in the topic list without matching. Configure publisher/playback for reliable delivery; configurable sensor QoS remains unfinished.
+
+\subsection{Bag playback}
+Inspect a complete bag directory, then replace the recorded topic:
+\begin{lstlisting}
+sudo docker run --rm -v "$HOME/bags/example:/bag:ro" \
+  pp-infer:jazzy-trt10 ros2 bag info /bag
+sudo docker run --rm --network host --ipc host \
+  -e ROS_DOMAIN_ID=0 -v "$HOME/bags/example:/bag:ro" \
+  pp-infer:jazzy-trt10 ros2 bag play /bag \
+  --remap /recorded/points:=/point_cloud
+\end{lstlisting}
+Run playback alongside inference. Mount metadata and data files together. For recorded best-effort QoS, use an override [S7] keyed by the original topic:
+\begin{lstlisting}
+cat > "$HOME/bags/playback_qos.yaml" <<'EOF'
+/recorded/points:
+  reliability: reliable
+  durability: volatile
+  history: keep_last
+  depth: 5
+EOF
+sudo docker run --rm --network host --ipc host \
+  -e ROS_DOMAIN_ID=0 -v "$HOME/bags/example:/bag:ro" \
+  -v "$HOME/bags/playback_qos.yaml:/qos.yaml:ro" \
+  pp-infer:jazzy-trt10 ros2 bag play /bag \
+  --qos-profile-overrides-path /qos.yaml \
+  --remap /recorded/points:=/point_cloud
+\end{lstlisting}
+These examples assume one Linux host. Verify layout and model settings before judging detections. No real-data accuracy fixture was supplied.
+
+Docker images are packaged programs, not pictures. This node handles points/detections, not camera pictures, and has no GUI. RViz on a separate ROS workstation can show points. Boxes need a compatible Detection3DArray display or marker converter, which has not been added or verified.
+
+\section{Step 10: check the full path without a sensor}
+Use default topics with no other sensor/bag publishing. Wait for engine/node startup. In a second terminal:
+\begin{lstlisting}
+sudo docker exec -i pointpillars /entrypoint.sh python3 - <<'PY'
+import struct
+import time
+import rclpy
+from sensor_msgs.msg import PointCloud2, PointField
+from vision_msgs.msg import Detection3DArray
+
+rclpy.init()
+node = rclpy.create_node('pointpillars_reproduction_check')
+received = []
+sub = node.create_subscription(Detection3DArray, '/bbox', received.append, 10)
+pub = node.create_publisher(PointCloud2, '/point_cloud', 10)
+msg = PointCloud2()
+msg.header.frame_id = 'synthetic_reproduction_check'
+msg.height, msg.width = 1, 128
+msg.point_step, msg.row_step = 16, 2048
+msg.fields = [PointField(name=name, offset=i * 4,
+    datatype=PointField.FLOAT32, count=1)
+    for i, name in enumerate(['x', 'y', 'z', 'intensity'])]
+msg.data = b''.join(struct.pack('<ffff', 5 + (i % 16) * .1,
+    (i // 16) * .1, 0, .5) for i in range(128))
+msg.is_dense = True
+sent = False
+ready = None
+deadline = time.monotonic() + 30
+while time.monotonic() < deadline:
+    rclpy.spin_once(node, timeout_sec=.1)
+    if sent and any(item.header == msg.header for item in received):
+        break
+    if pub.get_subscription_count() and node.count_publishers('/bbox'):
+        if ready is None:
+            ready = time.monotonic()
+        if not sent and time.monotonic() - ready > 1:
+            msg.header.stamp = node.get_clock().now().to_msg()
+            pub.publish(msg)
+            sent = True
+matches = [item for item in received if item.header == msg.header]
+assert sent and matches, 'No matching output; check startup, topics and QoS'
+print('PASS: ROS -> TensorRT -> detections; header preserved;',
+      len(matches[0].detections), 'detections')
+node.destroy_node()
+rclpy.shutdown()
+PY
+\end{lstlisting}
+The count is diagnostic, not an accuracy expectation. The recorded test returned one box. Success means matching output arrived through the full path.
+
+For cache verification, stop the container, repeat Step 7's run command, inspect logs, and repeat this check. Cache reuse skips builder output. Recorded validation passed twice with one engine generation across a restart.
+
+\section{Step 11: move the image to another computer}
+\label{sec:transfer}
+On the sender:
+\begin{lstlisting}
+sudo docker image inspect pp-infer:jazzy-trt10 \
+  --format '{{.Id}} {{.Os}}/{{.Architecture}}'
+sudo docker save -o "$HOME/pp-infer-jazzy-trt10.tar" pp-infer:jazzy-trt10
+sha256sum "$HOME/pp-infer-jazzy-trt10.tar" \
+  > "$HOME/pp-infer-jazzy-trt10.tar.sha256"
+\end{lstlisting}
+Copy the tar and checksum. On the receiver, run sha256sum and compare digests; the sender's path in the checksum file may differ.
+
+After driver, Docker, and toolkit setup, the receiver uses two commands:
+\begin{lstlisting}
+sudo docker load -i "$HOME/pp-infer-jazzy-trt10.tar"
+sudo docker run --rm --init --name pointpillars \
+  --gpus all --network host --ipc host \
+  -v pp-engines:/var/lib/pp_infer pp-infer:jazzy-trt10
+\end{lstlisting}
+The ONNX generates a target engine. Do not transfer the old GPU engine as the deployment artifact. Retain the archive or use an authorized registry. No image publication occurred. Check SDK/model redistribution terms before sharing.
+
+\subsection{Source handover}
+Package changed source explicitly:
+\begin{lstlisting}
+cd "$PROJECT_DIR"
+tar --exclude='docker/assets' --exclude='__pycache__' \
+  -czf "$HOME/pp-infer-source.tar.gz" \
+  Dockerfile .dockerignore .gitignore CMakeLists.txt package.xml \
+  include src tests launch docker docs tools config recovery \
+  README.md IMPLEMENTATION_ARCHITECTURE.md PROJECT_REVIEW_AND_UPDATE_PLAN.md \
+  LICENSE CLA.md
+\end{lstlisting}
+On the receiver:
+\begin{lstlisting}
+mkdir -p "$HOME/pointpillars"
+tar -xzf "$HOME/pp-infer-source.tar.gz" -C "$HOME/pointpillars"
+\end{lstlisting}
+Use an empty destination. This excludes SDK/model, Git history, and checkpoints. Transfer downloads separately for Steps 5--6. For checkpoint development from the archive, run \code{git init}, review source, and establish a new baseline commit. Alternatively provide reviewed Git history and the working tree separately. A new baseline differs from the original checkpoint base.
+
+\section{Step 12: adjust deployment settings}
+Add options before the image name:
+\begin{longtable}{p{0.46\textwidth}p{0.47\textwidth}}
+\toprule Option & Purpose \\ \midrule
+\code{-e POINT_CLOUD_TOPIC=/lidar/points} & Input topic. \\
+\code{-e DETECTIONS_TOPIC=/detections} & Output topic. \\
+\code{-e ROS_DOMAIN_ID=7} & Publisher's domain. \\
+\code{-e PP_GPU_INDEX=1} & GPU within the container-visible CUDA set. \\
+\code{-e PP_WORKSPACE_MIB=256} & Builder workspace limit; changes cache key, not total GPU memory. \\
+\bottomrule
+\end{longtable}
+Invalid GPU selection fails before startup. Supported GPUs can still lack memory.
+
+The YAML uses \code{class_0}, \code{class_1}, \code{class_2}, and intensity scale 1.0. These are provisional: training class order, normalization, and box coordinates remain unresolved. Obtain export/training specifications and a known reference first. The scale divides input intensity; do not assume 255 is correct because old instructions used it.
+
+Edit a copy, then mount it:
+\begin{lstlisting}
+cp docker/node.yaml deployment.yaml
+nano deployment.yaml
+sudo docker run --rm --init --name pointpillars \
+  --gpus all --network host --ipc host \
+  -v pp-engines:/var/lib/pp_infer \
+  -v "$PWD/deployment.yaml:/opt/pp_infer/node.yaml:ro" \
+  pp-infer:jazzy-trt10
+\end{lstlisting}
+Startup supplies the engine path. Parameters are read-only after startup; restart after editing. Other precision modes need matching recipes and validation.
+
+\section{Optional: native development with colcon}
+Docker is the complete recommended deployment route. Native development needs host Jazzy, C++/CUDA development files, and the Step 6 SDK. The following subsection covers a fresh native ROS installation [S8].
+
+\subsection{Install ROS Jazzy if the native host does not have it}
+Skip this subsection on the Docker route or an already configured ROS host. These commands configure a fresh Ubuntu 24.04 native development host using the ROS repository package [S8]. A different existing UTF-8 locale is also acceptable.
+\begin{lstlisting}
+sudo apt update
+sudo apt install locales software-properties-common curl python3
+sudo locale-gen en_US en_US.UTF-8
+sudo update-locale LANG=en_US.UTF-8
+export LANG=en_US.UTF-8
+sudo add-apt-repository universe
+pp_ros_source_version=$(curl -fsSL \
+  https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | \
+  python3 -c 'import json,sys; print(json.load(sys.stdin)["tag_name"])')
+curl -fL \
+  "https://github.com/ros-infrastructure/ros-apt-source/releases/download/$pp_ros_source_version/ros2-apt-source_$pp_ros_source_version.noble_all.deb" \
+  -o /tmp/pp-ros2-apt-source.deb
+sudo dpkg -i /tmp/pp-ros2-apt-source.deb
+sudo apt update
+sudo apt upgrade
+sudo apt install ros-jazzy-ros-base
+source /opt/ros/jazzy/setup.bash
+ros2 --help
+\end{lstlisting}
+Review normal apt prompts and restart if a kernel/driver update requires it. The repository package version above is resolved at installation time; record it for your deployment. Use the official instructions if an existing repository conflicts. Continue below for the compiler, message packages, CUDA, and project build.
+
+
+With the ROS repository configured:
+\begin{lstlisting}
+sudo apt update
+sudo apt install build-essential cmake python3-colcon-common-extensions \
+  ros-jazzy-vision-msgs ros-jazzy-pcl-conversions libpcl-dev
+\end{lstlisting}
+Keep a suitable existing toolkit; the original host used 12.0.140. To match the container recipe on a new native host:
+\begin{lstlisting}
+curl -fsSL \
+  https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb \
+  -o /tmp/pp-cuda-keyring.deb
+sudo dpkg -i /tmp/pp-cuda-keyring.deb
+sudo apt update
+sudo apt install \
+  cuda-cudart-dev-12-9=12.9.79-1 cuda-nvcc-12-9=12.9.86-1 \
+  cuda-nvrtc-12-9=12.9.86-1 libcublas-12-9=12.9.1.4-1 \
+  libnvjitlink-12-9=12.9.86-1
+export CUDAToolkit_ROOT=/usr/local/cuda-12.9
+export LD_LIBRARY_PATH="/usr/local/cuda-12.9/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+\end{lstlisting}
+These components do not request a replacement driver. Review changes if pinned versions disappear. Optional native installation is unnecessary for image use.
+
+Build and test:
+\begin{lstlisting}
+cd "$PROJECT_DIR"
+source /opt/ros/jazzy/setup.bash
+source tools/env_tensorrt.sh
+colcon build --packages-select pp_infer --cmake-args \
+  -DCMAKE_BUILD_TYPE=Release -DPython3_EXECUTABLE=/usr/bin/python3
+source install/setup.bash
+colcon test --packages-select pp_infer
+colcon test-result --verbose
+\end{lstlisting}
+Source ROS, the SDK helper, and overlay in every new terminal. The helper exposes paths; it does not install packages.
+
+\subsection{Native engine and configuration}
+Build on the target GPU and promote only on success:
+\begin{lstlisting}
+mkdir -p .recovery/engines .recovery/run
+trtexec --onnx=docker/assets/pointpillars.onnx \
+  --minShapes=points:1x204800x4,num_points:1 \
+  --optShapes=points:1x204800x4,num_points:1 \
+  --maxShapes=points:1x204800x4,num_points:1 \
+  --device=0 --memPoolSize=workspace:1024 --noTF32 --skipInference \
+  --saveEngine=.recovery/engines/pointpillars-fp32.pending.engine && \
+  mv .recovery/engines/pointpillars-fp32.pending.engine \
+     .recovery/engines/pointpillars-fp32.engine
+python3 - <<'PY'
+from pathlib import Path
+engine = Path('.recovery/engines/pointpillars-fp32.engine').resolve()
+assert engine.is_file(), 'Build the engine successfully first'
+text = Path('docker/node.yaml').read_text()
+Path('.recovery/run/node.yaml').write_text(
+    text + '    engine_path: ' + str(engine) + '\n')
+PY
+ros2 run pp_infer pp_infer --ros-args \
+  --params-file .recovery/run/node.yaml -r __node:=pointpillars
+\end{lstlisting}
+This retains provisional smoke settings; real data needs verified settings. The original host used \path{.recovery/engines/pointpillars-fp32.smoke.engine}; new machines build their own.
+
+The old \path{launch/pp_infer_launch.py} contains historical absolute paths and unverified labels/scaling. It is not the validated startup method.
+
+\section{Repeat development checks with colcon}
+Run these commands from the project folder. Each reduced build uses its own build and install directories so its options do not change your normal runtime build. CPU checks do not prove GPU execution or model accuracy.
+
+Colcon is the command you run. The package still uses CMake internally, so \code{--cmake-args} passes configuration options to that backend; you do not need separate CMake or CTest commands.
+
+\subsection{CPU-only checks}
+These need colcon and a C++ compiler, but not ROS libraries, CUDA, or TensorRT:
+\begin{lstlisting}
+cd "$PROJECT_DIR"
+colcon build --packages-select pp_infer \
+  --build-base .recovery/colcon-doc/core/build \
+  --install-base .recovery/colcon-doc/core/install \
+  --cmake-args -DPP_BUILD_RUNTIME=OFF -DPP_BUILD_ROS_ADAPTER=OFF \
+  -DCMAKE_BUILD_TYPE=Debug
+colcon test --packages-select pp_infer \
+  --build-base .recovery/colcon-doc/core/build \
+  --install-base .recovery/colcon-doc/core/install \
+  --ctest-args --output-on-failure
+colcon test-result \
+  --test-result-base .recovery/colcon-doc/core/build --verbose
+\end{lstlisting}
+This reduced configuration builds test executables without an install target. Colcon may warn that installation was skipped; that is expected here. Do not source its install directory to run the inference node. Check the test-result command: a successful build alone does not mean the tests passed.
+
+\subsection{CPU address and undefined-behavior checks}
+Use a separate configuration:
+\begin{lstlisting}
+colcon build --packages-select pp_infer \
+  --build-base .recovery/colcon-doc/core-sanitized/build \
+  --install-base .recovery/colcon-doc/core-sanitized/install \
+  --cmake-args -DPP_BUILD_RUNTIME=OFF -DPP_BUILD_ROS_ADAPTER=OFF \
+  -DPP_ENABLE_SANITIZERS=ON -DCMAKE_BUILD_TYPE=Debug
+ASAN_OPTIONS=detect_leaks=0 colcon test --packages-select pp_infer \
+  --build-base .recovery/colcon-doc/core-sanitized/build \
+  --install-base .recovery/colcon-doc/core-sanitized/install \
+  --ctest-args --output-on-failure
+colcon test-result \
+  --test-result-base .recovery/colcon-doc/core-sanitized/build --verbose
+\end{lstlisting}
+Recorded CPU checks cover 15 geometry cases, 2000 random comparisons, and output contracts. LeakSanitizer is disabled in the traced environment; leak checking is not established. The same installation warning applies to this CPU-only configuration.
+
+\subsection{ROS adapters without GPU inference}
+Source Jazzy first. This build tests message handling without loading an engine:
+\begin{lstlisting}
+source /opt/ros/jazzy/setup.bash
+colcon build --packages-select pp_infer \
+  --build-base .recovery/colcon-doc/ros/build \
+  --install-base .recovery/colcon-doc/ros/install \
+  --cmake-args -DPP_BUILD_RUNTIME=OFF -DPP_BUILD_ROS_ADAPTER=ON \
+  -DCMAKE_BUILD_TYPE=Debug -DPython3_EXECUTABLE=/usr/bin/python3
+colcon test --packages-select pp_infer \
+  --build-base .recovery/colcon-doc/ros/build \
+  --install-base .recovery/colcon-doc/ros/install \
+  --ctest-args --output-on-failure
+colcon test-result \
+  --test-result-base .recovery/colcon-doc/ros/build --verbose
+\end{lstlisting}
+Four normal modes cover geometry, output contract, adapter data, and parameters. Fixtures include 11 data and two parameter cases. An installed ROS allocator produced an ASan type mismatch during node creation. Parameter checks run in the normal build; instrumented data tests exclude node construction rather than suppressing the error globally.
+
+\subsection{Repeated GPU inference after the normal colcon build}
+With native dependencies and a target engine ready, use the normal runtime build:
+\begin{lstlisting}
+source /opt/ros/jazzy/setup.bash
+source tools/env_tensorrt.sh
+colcon build --packages-select pp_infer --cmake-args \
+  -DPP_BUILD_RUNTIME=ON -DPP_BUILD_ROS_ADAPTER=ON \
+  -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release \
+  -DPython3_EXECUTABLE=/usr/bin/python3
+source install/setup.bash
+colcon test --packages-select pp_infer --ctest-args --output-on-failure
+colcon test-result --verbose
+./build/pp_infer/runtime_smoke \
+  .recovery/engines/pointpillars-fp32.engine
+\end{lstlisting}
+The smoke executable is a build artifact, not an installed ROS node. Its path above follows colcon's default build directory. If using a custom build base, use that base followed by \path{pp_infer/runtime_smoke}. Select the engine you successfully generated on this GPU.
+
+Recorded GPU checks exercised capacity rejection, ten frames, profiling, empty output, and destruction. Compute Sanitizer 12.0 failed before meaningful instrumentation; GPU memory checking remains inconclusive.
+
+
+\section{Recovery after credits or session interruption}
+Recovery cannot buy credits or continue an unavailable model. It preserves development state for a person or later session.
+
+With Python 3 and Git:
+\begin{lstlisting}
+cd "$PROJECT_DIR"
+python3 tools/recovery.py status
+git status --short
+git diff
+git diff --cached
+\end{lstlisting}
+Read \path{recovery/RESUME.md}, \path{recovery/PROGRESS.md}, and \path{recovery/tasks.json}. Check for running interrupted builds/containers before retrying. Preserve changes; continue the interrupted substep or earliest ready task.
+
+Checkpoint before edits or long commands:
+\begin{lstlisting}
+python3 tools/recovery.py checkpoint \
+  --task W09 --state in-progress \
+  --next 'Build the image, record results, then run the GPU/ROS check.' \
+  --evidence 'Not tested after the current change.'
+\end{lstlisting}
+After edits, run affected checks, record exact commands, exit codes, and logs, then checkpoint. Mark a task verified only when its acceptance criteria pass. The helper records assertions, not tests. W09 remains in progress because CI/operational acceptance remain.
+
+Immutable checkpoints under \path{.recovery/checkpoints} save eligible source, patches, Git identity, and hashes. Status checks integrity/drift. No reset, restore, staging, or commit occurs. Manually recover selected content after comparing differences.
+
+Caps: 1 MiB per text file, 16 MiB total, 32 MiB per patch. SDKs, engines, models, bags, generated files, likely credentials, and oversized files are excluded. Symlinks are recorded, not followed. Logs under \path{.recovery} are not recursively copied. Independently back up DEB, ONNX, image archives, logs, and bags. Local checkpoints do not protect against disk loss.
+
+Helper checks:
+\begin{lstlisting}
+python3 -m unittest discover -s tests -p 'test_recovery.py' -v
+\end{lstlisting}
+Twelve tests passed in the recorded work. Give a later session this instruction:
+\begin{quote}
+Continue this project. Read recovery/RESUME.md, recovery/PROGRESS.md, and recovery/tasks.json. Run recovery status, reconcile current files with the last checkpoint, preserve changes, and resume unfinished work. Checkpoint before and after edits and record actual test evidence.
+\end{quote}
+
+\section{Troubleshooting}
+\begin{longtable}{p{0.31\textwidth}p{0.62\textwidth}}
+\toprule Symptom & Next action \\ \midrule
+Host GPU check fails & Resolve driver/kernel/Secure Boot setup. Docker cannot supply the kernel driver. \\
+Docker permission denied & Use sudo; check \code{sudo systemctl status docker}. \\
+GPU runtime missing & Check toolkit/configuration; restart Docker appropriately. \\
+Missing model/SDK at build & Check Steps 5--6; build from project root. \\
+Disk full & Inspect \code{df -h} and \code{sudo docker system df}. Remove only identified disposable outputs, not unrelated images/volumes. \\
+Unsupported GPU & Check selection/support. Older GPUs or ARM/Jetson need another stack/image. \\
+GPU out of memory & Reduce other workloads appropriately; try smaller builder workspace. Runtime memory remains uncapped. \\
+Plugin missing & Confirm SDK/model. Required version-1 creators: VoxelGeneratorPlugin, PillarScatterPlugin, DecodeBbox3DPlugin, with empty namespace. Do not substitute TensorRT 8 libraries. \\
+Name already in use & Inspect \code{sudo docker ps -a}; stop the intended previous instance. \\
+No output & Check input/topic/domain/QoS/layout/logs; supply a source or smoke check. \\
+Incorrect detections & Verify labels, normalization, units, coordinates, and reference data before thresholds. \\
+Bad cached engine & Identify, back up, and remove only that cache file; restart. \\
+Native package missing & Source ROS/overlay, SDK helper, and needed CUDA libraries. \\
+\bottomrule
+\end{longtable}
+
+\section{Evidence and remaining work}
+\begin{longtable}{p{0.13\textwidth}p{0.20\textwidth}p{0.58\textwidth}}
+\toprule Task & State & Meaning \\ \midrule
+W00 & Verified & Architecture and local recovery checked. \\
+W01 & Blocked & Inventory/plugins/engine smoke exist; training semantics/reference sample missing. \\
+W02 & Verified & CPU boundary/geometry and focused sanitizer checks passed. \\
+W03 & Verified & Local adapter checks passed; allocator limitation recorded. \\
+W04/W05 & In progress & Runtime/buffers/build/link and synthetic checks passed; reference/memory/failure checks remain. \\
+W06 & Pending & Bounded worker and pending-frame policy. \\
+W07 & Pending & Launch configuration, sensor QoS, and metrics. \\
+W08 & Pending & Acceptance targets and benchmark. \\
+W09 & In progress & Docker/checks and this guide provided; CI/full operational acceptance remain. \\
+\bottomrule
+\end{longtable}
+Final Docker build passed four colcon modes. Fresh engine generation and two synthetic GPU/ROS round trips passed on the RTX 4060. One engine was generated across the restart. Invalid GPU selection failed clearly. Inventories/log hashes are in config and recovery records; logs remain under \path{.recovery/verification}.
+
+Next obtain the export/training contract and known labeled fixture. Verify semantics, complete memory/failure checks, implement worker/configuration, and measure latency/rate/drops/memory/accuracy against agreed targets. Repeat relevant checks on each target GPU before calling it validated.
+
+\section{Project records}
+\begin{longtable}{p{0.48\textwidth}p{0.45\textwidth}}
+\toprule File & Purpose \\ \midrule
+\path{README.md} & Current quick start/status. \\
+\path{Dockerfile}, \path{.dockerignore} & Build/packaging and allowed context. \\
+\path{docker/entrypoint.sh} & GPU/cache/node startup. \\
+\path{docker/node.yaml} & Provisional settings. \\
+\path{IMPLEMENTATION_ARCHITECTURE.md} & Staged design. \\
+\path{docs/local_runtime.md} & Original SDK/native record. \\
+\path{config/*_inventory.json} & Environment/model/runtime/image records. \\
+\path{tools/env_tensorrt.sh} & Local SDK environment. \\
+\path{tools/inspect_onnx_metadata.py} & Metadata reader. \\
+\path{tools/recovery.py} & Checkpoint/status helper. \\
+\path{recovery/RESUME.md} & Continuation procedure. \\
+\path{recovery/PROGRESS.md} & Work/evidence. \\
+\path{recovery/tasks.json} & Milestones/dependencies. \\
+\bottomrule
+\end{longtable}
+
+\section{Official references}
+Ubuntu, Docker, NVIDIA Toolkit, CUDA, and TensorRT guidance were checked on 2 October 2026. Availability can change. Project-specific commands come from source/inventories. ROS links provide additional native-install/playback details.
+\begin{description}[style=nextline]
+\item[S1: Ubuntu NVIDIA drivers]
+\url{https://ubuntu.com/server/docs/how-to/graphics/install-nvidia-drivers/}
+\item[S2: Docker Engine on Ubuntu]
+\url{https://docs.docker.com/engine/install/ubuntu/}
+\item[S3: NVIDIA Container Toolkit]
+\url{https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html}
+\item[S4: TensorRT 10.x support/portability]
+\url{https://docs.nvidia.com/deeplearning/tensorrt/10.x.x/getting-started/support-matrix.html}
+\item[S5: CUDA 12.9 Update 1 release notes]
+\url{https://docs.nvidia.com/cuda/archive/12.9.1/cuda-toolkit-release-notes/index.html}
+\item[S6: PointPillarNet catalog]
+\url{https://catalog.ngc.nvidia.com/orgs/nvidia/teams/tao/models/pointpillarnet}
+\item[S7: ROS Jazzy bag QoS overrides]
+\url{https://docs.ros.org/en/jazzy/How-To-Guides/Overriding-QoS-Policies-For-Recording-And-Playback.html}
+\item[S8: ROS Jazzy Ubuntu installation]
+\url{https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html}
+\end{description}
+\end{document}
+
