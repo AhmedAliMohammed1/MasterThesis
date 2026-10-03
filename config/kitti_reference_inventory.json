@@ -1,0 +1,398 @@
+{
+  "schema_version": 1,
+  "recorded_local_date": "2026-10-03",
+  "status": "compatibility comparison measured; shared capacity/repeatability unresolved; no accuracy or exact-training parity acceptance",
+  "baseline_inventory": "config/kitti_accuracy_inventory.json",
+  "dataset_manifest_sha256": "3a28d21a1ca5ff754f99d612aae9d886b2a4ccfdcb13d34476a1920ad051083a",
+  "model_sha256": "2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1",
+  "gpu": "GPU-4219859e-3a54-d063-1435-a290cd5d28f3, NVIDIA GeForce RTX 4060 Laptop GPU, 595.71.05",
+  "images": {
+    "pp-infer:reference-trt861": {
+      "id": "sha256:cbbdbea1574eefe9d929017854c5cb52350037be1e7e39ab61af48079708abd1",
+      "size_bytes": 2155108588,
+      "os": "linux",
+      "architecture": "amd64"
+    },
+    "pp-infer:reference-trt10": {
+      "id": "sha256:1171d26ec8f79c8176450008b745412d9e04632f948c1a5f597358b9886c2b5c",
+      "size_bytes": 4965281744,
+      "os": "linux",
+      "architecture": "amd64"
+    },
+    "pp-infer:reference-memcheck": {
+      "id": "sha256:6926b64a245550ce1fa15ab8b7de6367e7aeb2e0b28ff857ab5106206b85f1b3",
+      "size_bytes": 4981058104,
+      "os": "linux",
+      "architecture": "amd64"
+    }
+  },
+  "raw_inferences": 192,
+  "capacity_control_inferences": 12,
+  "test_moderate_first_observation": {
+    "trt10": {
+      "Car": {
+        "3d": {
+          "tp": 0,
+          "fp": 148,
+          "fn": 54,
+          "ap_r40": 0
+        },
+        "bev": {
+          "tp": 11,
+          "fp": 131,
+          "fn": 43,
+          "ap_r40": 0.0553487460815
+        }
+      },
+      "Cyclist": {
+        "3d": {
+          "tp": 0,
+          "fp": 209,
+          "fn": 19,
+          "ap_r40": 0
+        },
+        "bev": {
+          "tp": 2,
+          "fp": 206,
+          "fn": 17,
+          "ap_r40": 0.00025641025641
+        }
+      },
+      "Pedestrian": {
+        "3d": {
+          "tp": 0,
+          "fp": 51,
+          "fn": 31,
+          "ap_r40": 0
+        },
+        "bev": {
+          "tp": 0,
+          "fp": 51,
+          "fn": 31,
+          "ap_r40": 0
+        }
+      }
+    },
+    "trt8": {
+      "Car": {
+        "3d": {
+          "tp": 0,
+          "fp": 149,
+          "fn": 54,
+          "ap_r40": 0
+        },
+        "bev": {
+          "tp": 12,
+          "fp": 131,
+          "fn": 42,
+          "ap_r40": 0.0583493438081
+        }
+      },
+      "Cyclist": {
+        "3d": {
+          "tp": 0,
+          "fp": 206,
+          "fn": 19,
+          "ap_r40": 0
+        },
+        "bev": {
+          "tp": 2,
+          "fp": 203,
+          "fn": 17,
+          "ap_r40": 0.000252525252525
+        }
+      },
+      "Pedestrian": {
+        "3d": {
+          "tp": 0,
+          "fp": 53,
+          "fn": 31,
+          "ap_r40": 0
+        },
+        "bev": {
+          "tp": 0,
+          "fp": 53,
+          "fn": 31,
+          "ap_r40": 0
+        }
+      }
+    }
+  },
+  "first_pass_vertical_errors": {
+    "trt10": {
+      "Car": {
+        "median_3d_iou": 0.0465596709909,
+        "median_abs_camera_center_y_error_m": 1.519528247,
+        "median_camera_center_y_error_m": -1.519528247,
+        "pairs": 11
+      },
+      "Cyclist": {
+        "median_3d_iou": 0.049085894817049995,
+        "median_abs_camera_center_y_error_m": 1.457114791,
+        "median_camera_center_y_error_m": -1.457114791,
+        "pairs": 2
+      },
+      "Pedestrian": {
+        "median_3d_iou": null,
+        "median_abs_camera_center_y_error_m": null,
+        "median_camera_center_y_error_m": null,
+        "pairs": 0
+      }
+    },
+    "trt8": {
+      "Car": {
+        "median_3d_iou": 0.0432089464054,
+        "median_abs_camera_center_y_error_m": 1.5287871284999999,
+        "median_camera_center_y_error_m": -1.5287871284999999,
+        "pairs": 12
+      },
+      "Cyclist": {
+        "median_3d_iou": 0.050180962869499995,
+        "median_abs_camera_center_y_error_m": 1.457055574,
+        "median_camera_center_y_error_m": -1.457055574,
+        "pairs": 2
+      },
+      "Pedestrian": {
+        "median_3d_iou": null,
+        "median_abs_camera_center_y_error_m": null,
+        "median_camera_center_y_error_m": null,
+        "pairs": 0
+      }
+    }
+  },
+  "numeric": {
+    "cross_version_current-nms": {
+      "left": 2878,
+      "matched": 2185,
+      "median_frame_match_fraction": 0.756951871657754,
+      "right": 2877
+    },
+    "cross_version_nvidia-nms": {
+      "left": 2878,
+      "matched": 2185,
+      "median_frame_match_fraction": 0.756951871657754,
+      "right": 2877
+    },
+    "cross_version_raw": {
+      "left": 25868,
+      "matched": 19606,
+      "median_frame_match_fraction": 0.7800400319724381,
+      "right": 25878
+    },
+    "trt10": {
+      "nvidia-nms_repeat_count_varied_frames": 27,
+      "nvidia-nms_repeat_max_count_span": 3,
+      "raw_repeat_count_varied_frames": 32,
+      "raw_repeat_max_count_span": 28,
+      "repeat_final_median_match_fraction": 0.7510330578512396,
+      "repeat_raw_median_match_fraction": 0.7830185631837367,
+      "same_raw_nms_different_frames": 0
+    },
+    "trt10_current_vs_frozen_ros": {
+      "left": 2877,
+      "matched": 2204,
+      "median_frame_match_fraction": 0.7708264462809917,
+      "right": 2876
+    },
+    "trt8": {
+      "nvidia-nms_repeat_count_varied_frames": 28,
+      "nvidia-nms_repeat_max_count_span": 5,
+      "raw_repeat_count_varied_frames": 32,
+      "raw_repeat_max_count_span": 27,
+      "repeat_final_median_match_fraction": 0.759353471118177,
+      "repeat_raw_median_match_fraction": 0.7940893053491379,
+      "same_raw_nms_different_frames": 0
+    }
+  },
+  "same_raw_nms_control": {
+    "observations": 192,
+    "different_selected_box_sets": 0,
+    "component_tolerance": 1e-06
+  },
+  "capacity_controls": {
+    "conclusion_limit": "Two altered tuning clouds only. Improvement in repeatability does not establish accuracy, training compatibility or eliminate other sources of nondeterminism.",
+    "control_recipe_sha256": "cd8915831dac2bde0cc001e75a4c674d90e364cd4a78121ba1b1196e4f57c6f2",
+    "repeat_comparisons": {
+      "trt10": [
+        {
+          "frame_id": "004804",
+          "raw_count": 1513,
+          "repeats": [
+            {
+              "left": 1513,
+              "match_fraction_of_larger": 0.9980171844018506,
+              "matched": 1510,
+              "max_matched_component_error": 4.0531158447265625e-05,
+              "right": 1513,
+              "tolerance": 0.001,
+              "unmatched_left": 3,
+              "unmatched_right": 3
+            },
+            {
+              "left": 1513,
+              "match_fraction_of_larger": 0.9973579920739762,
+              "matched": 1510,
+              "max_matched_component_error": 6.955862045288086e-05,
+              "right": 1514,
+              "tolerance": 0.001,
+              "unmatched_left": 3,
+              "unmatched_right": 4
+            }
+          ]
+        },
+        {
+          "frame_id": "007075",
+          "raw_count": 849,
+          "repeats": [
+            {
+              "left": 849,
+              "match_fraction_of_larger": 1.0,
+              "matched": 849,
+              "max_matched_component_error": 0.0003972053527832031,
+              "right": 849,
+              "tolerance": 0.001,
+              "unmatched_left": 0,
+              "unmatched_right": 0
+            },
+            {
+              "left": 849,
+              "match_fraction_of_larger": 1.0,
+              "matched": 849,
+              "max_matched_component_error": 0.0003561973571777344,
+              "right": 849,
+              "tolerance": 0.001,
+              "unmatched_left": 0,
+              "unmatched_right": 0
+            }
+          ]
+        }
+      ],
+      "trt8": [
+        {
+          "frame_id": "004804",
+          "raw_count": 1517,
+          "repeats": [
+            {
+              "left": 1517,
+              "match_fraction_of_larger": 0.996044825313118,
+              "matched": 1511,
+              "max_matched_component_error": 3.814697265625e-06,
+              "right": 1514,
+              "tolerance": 0.001,
+              "unmatched_left": 6,
+              "unmatched_right": 3
+            },
+            {
+              "left": 1517,
+              "match_fraction_of_larger": 0.996044825313118,
+              "matched": 1511,
+              "max_matched_component_error": 3.814697265625e-06,
+              "right": 1514,
+              "tolerance": 0.001,
+              "unmatched_left": 6,
+              "unmatched_right": 3
+            }
+          ]
+        },
+        {
+          "frame_id": "007075",
+          "raw_count": 849,
+          "repeats": [
+            {
+              "left": 849,
+              "match_fraction_of_larger": 1.0,
+              "matched": 849,
+              "max_matched_component_error": 1.9073486328125e-06,
+              "right": 849,
+              "tolerance": 0.001,
+              "unmatched_left": 0,
+              "unmatched_right": 0
+            },
+            {
+              "left": 849,
+              "match_fraction_of_larger": 1.0,
+              "matched": 849,
+              "max_matched_component_error": 3.814697265625e-06,
+              "right": 849,
+              "tolerance": 0.001,
+              "unmatched_left": 0,
+              "unmatched_right": 0
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "memory_probe_scope": "Two tuning inputs, one execution each, CUDA allocation memcheck only. Does not establish internal tensor bounds, race freedom, full GPU memory safety or accuracy.",
+  "acceptance": {
+    "accuracy": false,
+    "exact_training_reference_parity": false,
+    "numeric_parity": false,
+    "complete_gpu_memory_validation": false
+  },
+  "source_files_sha256": {
+    "tools/kitti_reference.py": "aa32b71fe9ddd0b6fa43a9247c607f31993050ca9d698a0dd0593b6e9aa4a35a",
+    "tools/kitti_reference_repeat.py": "e3224685e79907484fd02d358ce7124dc13f485e082df6539a7b85d68c6b4618",
+    "tools/kitti_reference_view.py": "cf3f2a6326341269e76ebf0a215937a11fc989ac79e2f35c8c855ff1c1f594d0",
+    "tools/kitti_reference_memcheck.py": "d31e2db10948c0c567d6d53668d18357927ca285286658dc3840c50a02203552",
+    "tools/kitti_voxel_control.py": "cf908923d43b706c294c5e7dbffc34b475d75a30ebb9e96b8be66fbf0d1e295b",
+    "tests/test_kitti_reference.py": "9bafa80bc13b15eab34a697bcf135240d0ed12453f7da7ab019ea3801d7c72b9",
+    "docker/REFERENCE_MEMCHECK.Dockerfile": "2f0908f1b28b0dcf8ce55cd1577f4c00c274bcdba78430eb8ee7ab2f93e353f0",
+    "docker/reference/Dockerfile": "4d9d2bf42bea7c547a064c88a3d766e4b7618fbf980b0c2216f29aa4f9c42b14",
+    "docker/reference/Dockerfile.trt10": "6708034583f905f3038f98b3298581e1e703d3467210cbdc7dbb47a5491b8936",
+    "docker/reference/nms_driver.cpp": "dcbd8bbf95bf1e1d819ec4bf8bf89f4cb5468412d29b568a01d04a1f2ff37983",
+    "docker/reference/runner.cpp": "f8e8e40ac712b4ef17e446613215605d54efa0c373d4918367f214bf7306bcac"
+  },
+  "ignored_artifact_sha256": {
+    ".recovery/accuracy/kitti-reference-v1/recipe.json": "83231b8815c5529dd3db81a94ac7a6fe1e6c319fdee75cbf2804094a30dd6c27",
+    ".recovery/accuracy/kitti-reference-v1/raw-index.json": "6038d82268b0fe63d2192631279420fdfbcd7d22da39815f9f46a4e9b3697863",
+    ".recovery/accuracy/kitti-reference-v1/collection.json": "f3bf828ca561ceccd69468e9dcb5d4916673f2b284eed4a75961b13ab3db998c",
+    ".recovery/accuracy/kitti-reference-v1/comparison.json": "711aeb37fbb5ef1afdaab59161f03fb8fcecdb9b1890822d730cc86ad4453bb2",
+    ".recovery/accuracy/kitti-reference-v1/summary.json": "cae2d55a1695be44f4923f8a02c76cbae28462aaa6f03e8160008139e7f6bcbc",
+    ".recovery/accuracy/kitti-reference-v1/all-repeat-nms-comparison.json": "9065d54a2b628aef85eb27ac9f9f2003b50a49f58a16b633e2c2f2c15384653c",
+    ".recovery/accuracy/kitti-reference-v1/voxel-capacity-audit.json": "f889c0995e9533416fcc4ea33740386d1123747210cdba112f95441e85a85172",
+    ".recovery/accuracy/kitti-reference-v1/voxel-controls/recipe.json": "cd8915831dac2bde0cc001e75a4c674d90e364cd4a78121ba1b1196e4f57c6f2",
+    ".recovery/accuracy/kitti-reference-v1/voxel-controls/report.json": "25e74788a3bb03093313ce09f0784708a1824d8b55aea2385c2ef1ba2141374c",
+    ".recovery/accuracy/kitti-reference-v1/memcheck-results.json": "7480af6f7b76e8d601e1d9a93ba96dde76f4d668d57ee5a7674664c04bcb4fde",
+    ".recovery/accuracy/kitti-reference-v1/assets/trt8-engine.json": "62ca0f22fe9dde92e0cdb9dd10f548772986194751a39663c7c7c90805787103",
+    ".recovery/accuracy/kitti-reference-v1/assets/model.onnx": "2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1",
+    ".recovery/accuracy/kitti-reference-v1/assets/trt8.engine": "fc9b20f42b3cbd001097bdb4d5eaa87ebb0c63ce26b89fb191cef4928a62af94",
+    ".recovery/accuracy/kitti-reference-v1/assets/trt10.engine": "3b29e09c8513be64ed36a9ccaa0a4b27e08008177bf55ee780d6c5e9daa67703",
+    ".recovery/accuracy/kitti-reference-v1/memcheck-original.log": "080ef50b76f49ec62c6feaceaced379e0f31ccd66c4222a06db279f1ba6d7161",
+    ".recovery/accuracy/kitti-reference-v1/memcheck-capped.log": "ae9ad10757ef8550548dca25e267a80f1dc5da0fefd5b01ca38146fd73b7056d"
+  },
+  "ignored_evidence_sha256": {
+    ".recovery/verification/reference-image-build-final.txt": "6bbbcd16f832c82c86446d1523408a3b06f807753d5b6a644f92ffe48f641279",
+    ".recovery/verification/reference-trt10-image-build-repaired.txt": "88be9fb5a13e5f4047e49eb9b3aa93201387fc49e9cbf15a243412370cf01c6d",
+    ".recovery/verification/reference-trt8-first-collection.txt": "b26b29cecea48eb7083f579df0203f3032e296a89115e35b28ba7fc8a4d9d1be",
+    ".recovery/verification/reference-trt10-first-collection.txt": "1292d01469df96703596b2488837a0a0e7ba895a43479bcc92468f9e3a484018",
+    ".recovery/verification/reference-cache-reuse.txt": "9ee7a2b9b930136a9c64b61b326034515638b9733b40379ef9cec86a92a1c872",
+    ".recovery/verification/reference-report.txt": "2cd5af7c04c57124fa38d45df769011274c3c8cdcd982b741ef496d48998795d",
+    ".recovery/verification/reference-repeat-report-final.txt": "63d83b4fd55abacfa1623651d98d4ed3bc42861481cfea31d2cee57e80cb7c7a",
+    ".recovery/verification/reference-voxel-controls.txt": "a1cf49f29946ccb94348435c401fcb88cb9597ed3c9278d08dda45b499a3872c",
+    ".recovery/verification/reference-memcheck-final.txt": "1b5bb8edbdfa47927e53de3459c5f3afafc0dd90f2229044fac00ee74570506e",
+    ".recovery/verification/reference-controls-final.txt": "6ec059fe0e75f5c58a88d5f6e987c549d033681087250bf94a771d74f73dac1d",
+    ".recovery/verification/reference-all-python-tests-final.txt": "2017cb853788fcd2f521af36467c9a3afdbe0fc60ed05efabd7ec4e3436892d6",
+    ".recovery/verification/reference-rviz-live.png": "06333629c188a2d3a38559b24075f1c8445a04d3cc66d564916075c3ae8481ce",
+    ".recovery/verification/reference-overlay-live-snapshot.txt": "0a8e0ff91a357c42fd2dee85e43a9e97dd4b91f61f0f1fc89f8eb4e42f914fe1",
+    ".recovery/verification/reference-rviz-live-snapshot.txt": "eee54016d11796ce3a6945f3def69ca027b9ad59ad9b5053e16469609b3b53b3",
+    ".recovery/verification/reference-final-audit.txt": "0d309e1d604bacf858d7904d223b1f224951d1c35f8fe13eee7c3df8df9649ff"
+  },
+  "upstream_trt8_sources": [
+    {
+      "path": "plugin/common/kernels/decodeBbox3DKernels.cu",
+      "revision": "a0215c1a16c6413c7ac566a498871a4fa36f6f62",
+      "url": "https://raw.githubusercontent.com/NVIDIA/TensorRT/a0215c1a16c6413c7ac566a498871a4fa36f6f62/plugin/common/kernels/decodeBbox3DKernels.cu",
+      "sha256": "b3e3ff2f21ad87e7ffb24c2e5e811682f6a6c824ba31fd283a44ea282e46236e"
+    },
+    {
+      "path": "plugin/common/kernels/voxelGeneratorKernels.cu",
+      "revision": "a0215c1a16c6413c7ac566a498871a4fa36f6f62",
+      "url": "https://raw.githubusercontent.com/NVIDIA/TensorRT/a0215c1a16c6413c7ac566a498871a4fa36f6f62/plugin/common/kernels/voxelGeneratorKernels.cu",
+      "sha256": "7b85dc25dbff854c3d7515e8a95f26490d90819e57701d373f3fd6c7ab1e0c4d"
+    }
+  ],
+  "upstream_recipe_revision": "a540badc47812a17a94e924b537d49ad3969b5a8",
+  "resource_state": "Validation detector/live player, reference overlay and actual RViz left running; unrelated YOLO container preserved.",
+  "next": "Verify bounded voxelization/internal tensor bounds, original input/training contract and decoder parity; then untouched accuracy evaluation."
+}

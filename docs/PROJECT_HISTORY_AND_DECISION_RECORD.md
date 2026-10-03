@@ -873,3 +873,15 @@ The hashes below identify important observed inputs/results. They are not instru
 Image tags such as pp-infer:jazzy-trt10 can point to a different image after a rebuild. The source-revision file and immutable image ID are more useful provenance. Older JSON inventories describe their earlier images and paths; they were not replaced with the later identity without a new corresponding test run.
 
 Use the inventories for structured details, PROGRESS.md for the dated implementation record, tasks.json for acceptance and next actions, and the chat record for the exact visible discussion. The source links above identify every changed file in the published implementation range. This combination preserves both the reasoning behind the project and the evidence for its present stage.
+
+
+## Current-status addendum: labeled KITTI measurement on 3 October 2026
+
+After the user requested accuracy measurement and live RViz during implementation, the 32 fixed labeled KITTI frames were passed through the existing published node. The 16-frame test split had zero moderate 3D matches; moderate BEV AP_R40 was 5.75% Car, 0% Pedestrian and0.0258% Cyclist. Vehicle-to-Car compatibility mapping, visibility filtering, official devkit routines and sparse-sample limits are explicit. Known metric controls passed and 41 Python tests passed. Calibrated green ground truth, points and predictions were rendered in RViz on isolated domain 42. Median vertical error for 12 BEV-matched test cars was about 1.53m upward. A separate trtexec probe also emitted elevated centers, but full independent inference parity and numerical repeatability remain unfinished. No guessed coordinate shift or accuracy pass was applied.
+
+Read [the current results and commands](KITTI_ACCURACY_RESULTS.md) and [accuracy inventory](../config/kitti_accuracy_inventory.json). This dated addendum updates status without rewriting historical conversation, legacy commands or earlier observations.
+
+
+## Independent reference update: 3 October 2026
+
+A separate TensorRT8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately1.53m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and12 frames exceed the export's10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly99.6–100%; no production adaptation was installed. Two actual CUDA12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.

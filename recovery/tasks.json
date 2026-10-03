@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_local_date": "2026-10-02",
+  "updated_local_date": "2026-10-03",
   "timezone": "Europe/Berlin",
   "baseline_commit": "2301135",
   "target": {
@@ -14,7 +14,11 @@
     "Substeps may use IDs such as W02.1 in checkpoints; one behavior/check per patch.",
     "Implementation authorized; W02 and local W03 verified. TensorRT 10.16.1 SDK/plugin/engine and Docker synthetic checks passed; reference semantics, memory/failure checks, W06/W07, benchmarks and CI remain.",
     "2026-10-02: real-bag message integration and live RViz rendering verified. W07 viewer substep is independent of the pending W06 worker; full W07 acceptance remains incomplete.",
-    "2026-10-02: user published RViz and bag/video work at dd687da7f42b4dc8fb53370be4a7c26635bc6e95. Complete project/chat history added; historical inventory publication states are retained as dated evidence."
+    "2026-10-02: user published RViz and bag/video work at dd687da7f42b4dc8fb53370be4a7c26635bc6e95. Complete project/chat history added; historical inventory publication states are retained as dated evidence.",
+    "2026-10-02: user chose labeled KITTI scenarios first, later own LiDAR records. W01 partial contract added; exact label order resolved, numerical fixture and accuracy acceptance still pending.",
+    "2026-10-03: W01.2 data/calibration substep verified; W01 in progress because prediction/reference/evaluator/accuracy acceptance remain. Dataset/evidence outside Git need independent backups.",
+    "2026-10-03: W01.3 measurement delivered, poor baseline and repeatability/vertical errors recorded; no accuracy acceptance. Validation detector/player/RViz left running on isolated domain42. LaTeX source updated but PDF compile unavailable before parsing.",
+    "2026-10-03: W01.4 TRT8 compatibility comparison measured poor, same-raw NMS agrees in192 observations; capacity controls improve repeatability. Accuracy, numerical/training parity and full memory acceptance remain unmet."
   ],
   "state_values": [
     "pending",
@@ -34,8 +38,8 @@
     "maximum_drop_fraction": null,
     "host_memory_budget_bytes": null,
     "gpu_memory_budget_bytes": null,
-    "accuracy_metric": null,
-    "accuracy_dataset": null,
+    "accuracy_metric": "Diagnostic KITTI-compatible per-class 3D/BEV AP_R40 and counts; minimum acceptance targets pending",
+    "accuracy_dataset": "KITTI object training, fixed drive-disjoint 32-frame diagnostic set; larger untouched acceptance set pending",
     "maximum_accuracy_regression": null,
     "known_fixture_tolerance": null,
     "benchmark_duration_minutes": 30
@@ -80,7 +84,7 @@
     {
       "id": "W01",
       "title": "Pin platform and model contract",
-      "state": "blocked",
+      "state": "in-progress",
       "depends_on": [],
       "file_scope": [
         "config/environment.lock.json",
@@ -88,14 +92,30 @@
         "evidence of engine/plugin smoke test",
         "config/model_inventory.json",
         "config/environment_inventory.json",
-        "tools/inspect_onnx_metadata.py"
+        "tools/inspect_onnx_metadata.py",
+        "docs/MODEL_VALIDATION_PLAN.md",
+        "config/kitti_sources.json",
+        "config/kitti_validation_inventory.json",
+        "tools/kitti_geometry.py",
+        "tools/prepare_kitti_validation.py",
+        "tests/test_kitti_validation.py",
+        "docs/KITTI_VALIDATION_DATA.md",
+        "config/kitti_accuracy_inventory.json",
+        "tools/kitti_accuracy.sh",
+        "tools/kitti_inference.py",
+        "tools/kitti_evaluation.py",
+        "tools/kitti_diagnose.py",
+        "tools/kitti_reference_probe.py",
+        "tests/test_kitti_evaluation.py",
+        "rviz/kitti_validation.rviz",
+        "docs/KITTI_ACCURACY_RESULTS.md"
       ],
       "acceptance": [
         "Working target GPU and pinned runtime/plugin stack",
         "Known fixture matches reference",
         "Hardware/model requirements recorded"
       ],
-      "next_action": "SDK/plugin/engine synthetic smoke passed using project-local extraction; resolve training class order, intensity normalization and coordinate semantics, then validate a known accuracy fixture. System apt installation was not performed.",
+      "next_action": "Verify bounded voxelization/internal tensor bounds and original model input/training/decoder contract before blaming weights or installing a coordinate correction; larger untouched acceptance split and targets remain.",
       "evidence": [
         {
           "command": "nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader (outside sandbox)",
@@ -110,6 +130,59 @@
         },
         {
           "result": "Actual TensorRT 10.16.1.11 loaded on GPU; three required plugin creators version 1 present. ONNX parsed and batch-one FP32/noTF32 engine built successfully. Package/engine hashes and paths in config/runtime_inventory.json. Not reference accuracy evidence."
+        },
+        {
+          "result": "Official deployable_v1.1 ONNX/label digests match local artifacts; IDs 0 Vehicle, 1 Pedestrian, 2 Cyclist verified. Pinned decoder source supports center-based output; first three bag clouds have reflectance 0..0.99. No reference-parity or accuracy pass.",
+          "inventory": "config/model_contract.json",
+          "log": ".recovery/verification/w01-contract-investigation.txt",
+          "exit_code": 0
+        },
+        {
+          "command": "python3 -m unittest discover -s tests -p test_*.py -v",
+          "exit_code": 0,
+          "result": "35 tests passed: 15 labeled preparation/calibration, eight existing HTTP/range recovery, 12 recovery helper",
+          "log": ".recovery/verification/w01-all-python-tests-20261003.txt",
+          "log_sha256": "0999818c6b5411957464daecb7ecc692cdec1f7fbc3dec774952478991bfd7b2",
+          "inventory": "config/kitti_validation_inventory.json"
+        },
+        {
+          "command": "python3 tools/prepare_kitti_validation.py --output ../datasets/kitti_object_diagnostic_v1",
+          "exit_code": 0,
+          "result": "32 real clouds/labels/calibrations/images passed; all 13 buckets in both splits, zero raw recording drive overlap; no inference",
+          "log": ".recovery/verification/w01-kitti-preparation-reviewed-20261003.txt",
+          "log_sha256": "29ad5c81b869d6df1bb619c8b1524c7da9802cdd1907514baaafd726290573fa",
+          "inventory": "config/kitti_validation_inventory.json"
+        },
+        {
+          "command": "python3 tools/prepare_kitti_validation.py --output ../datasets/kitti_object_diagnostic_v1",
+          "exit_code": 0,
+          "result": "Identical frozen manifest reused after size/CRC/hash audits; large ZIP metadata 5305228 bytes, no selected cloud/image redownload",
+          "log": ".recovery/verification/w01-kitti-preparation-reuse-20261003.txt",
+          "log_sha256": "29ad5c81b869d6df1bb619c8b1524c7da9802cdd1907514baaafd726290573fa",
+          "inventory": "config/kitti_validation_inventory.json"
+        },
+        {
+          "command": "bash tools/kitti_accuracy.sh report",
+          "exit_code": 0,
+          "result": "Pinned official KITTI metrics on 32 frozen ROS outputs; 16 test/16 tuning; final dimension-integrity hardening preserved all scores/counts/visibility; repeat reproduced",
+          "inventory": "config/kitti_accuracy_inventory.json",
+          "report_sha256": "e90a3f692d55ef3371ba98f40595dd7a723f05554a9df96265a0c2704a9ccc55"
+        },
+        {
+          "command": "python3 -m unittest discover -s tests -p 'test_*.py' -v",
+          "exit_code": 0,
+          "result": "41 tests passed, including six known evaluator controls; perfect boxes score1.0, misses/duplicates counted",
+          "log": ".recovery/verification/kitti-accuracy-all-python-tests-final.txt",
+          "log_sha256": "18e40c37c712223f30e848f6a669b7afbdaed1b72a1de375c4a732e7dc243ef3"
+        },
+        {
+          "result": "BEV-matched test car median vertical error1.529m upward; independent trtexec candidate consistency probe supports elevated raw centers but does not meet full reference parity. Live repeated counts vary. No accuracy acceptance."
+        },
+        {
+          "command": "python3 tools/kitti_reference.py collect/report; python3 tools/kitti_reference_repeat.py; python3 tools/kitti_voxel_control.py; python3 tools/kitti_reference_memcheck.py",
+          "exit_code": 0,
+          "result": "192 raw observations plus12 tuning controls; both runtimes poor, NMS selection agrees. Limited allocation probes pass; no full parity/accuracy acceptance. 50 Python tests passed.",
+          "inventory": "config/kitti_reference_inventory.json"
         }
       ]
     },
@@ -264,6 +337,10 @@
           "log": ".recovery/verification/node-ros-smoke.txt",
           "log_sha256": "4315fdcbeeccc4a538923c57df66cefae09b7b374333818592afbaab11c560b3",
           "limitations": "Synthetic live ROS round trip only; unverified model labels and normalization. Node running PID7485 at startup."
+        },
+        {
+          "result": "CUDA12.9 allocation memcheck ran on original and capped tuning004804 with TRT10, zero errors. Limited scope does not clear source-level internal tensor-bounds concern or complete memory/failure validation.",
+          "inventory": "config/kitti_reference_inventory.json"
         }
       ]
     },
@@ -294,6 +371,10 @@
           "result": "Installed sanitizer failed before first instrumented API call; not a pass or evidence of runtime memory correctness. Initial attempts failed injection-library lookup.",
           "log": ".recovery/verification/w05-gpu-memcheck.txt",
           "log_sha256": "051dc54fcf27a827c5beccf3c05c21b8c76a626bb49fcb37c1c9e1e6c7fb93e6"
+        },
+        {
+          "result": "CUDA12.9 allocation memcheck ran on original and capped tuning004804 with TRT10, zero errors. Limited scope does not clear source-level internal tensor-bounds concern or complete memory/failure validation.",
+          "inventory": "config/kitti_reference_inventory.json"
         }
       ]
     },
@@ -378,6 +459,10 @@
           "result": "8 HTTP-range, resumable-download, corrupt-asset and timestamp tests passed.",
           "log": ".recovery/verification/demo-recovery-tests-final.txt",
           "log_sha256": "3d996a314f9ecfb81991a8ab952e2c0a2964fc7321cbc0e763109ddf71ebd458"
+        },
+        {
+          "result": "Domain42 labeled KITTI player+green calibrated GT markers+Detection3DArray RViz config implemented; actual desktop rendered and left running. Helper duplicate-player and unrelated-container stop protection passed. Worker/QoS/metrics acceptance remains pending.",
+          "inventory": "config/kitti_accuracy_inventory.json"
         }
       ]
     },

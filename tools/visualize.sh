@@ -62,5 +62,6 @@ fi
 export FASTDDS_BUILTIN_TRANSPORTS=${FASTDDS_BUILTIN_TRANSPORTS:-UDPv4}
 export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
 cd "$project_dir"
-printf 'RViz: /point_cloud + /bbox, domain %s, fixed frame velodyne.\n' "$ROS_DOMAIN_ID"
-exec rviz2 -d "$project_dir/rviz/pointpillars.rviz" "$@"
+rviz_config=${RVIZ_CONFIG:-"$project_dir/rviz/pointpillars.rviz"}
+printf 'RViz: domain %s, fixed frame velodyne; configuration %s.\n' "$ROS_DOMAIN_ID" "$rviz_config"
+exec rviz2 -d "$rviz_config" "$@"

@@ -1,0 +1,32 @@
+# Diagnostic V3 adapter; same deployment engine/plugins, independent of ROS.
+ARG DEPLOYMENT_IMAGE=pp-infer:jazzy-trt10
+FROM ${DEPLOYMENT_IMAGE}
+USER root
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN apt-get update && apt-get install -y --no-install-recommends curl g++ && \
+    curl -fL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb -o /tmp/keyring.deb && \
+    dpkg -i /tmp/keyring.deb && rm /tmp/keyring.deb && apt-get update && \
+    apt-get install -y --no-install-recommends \
+      libnvinfer-headers-dev=10.16.1.11-1+cuda12.9 libnvinfer-headers-plugin-dev=10.16.1.11-1+cuda12.9 \
+      cuda-cudart-dev-12-9=12.9.79-1 && rm -rf /var/lib/apt/lists/* && \
+    ln -sf /opt/tensorrt/lib/libnvinfer.so.10 /opt/tensorrt/lib/libnvinfer.so && \
+    ln -sf /opt/tensorrt/lib/libnvinfer_plugin.so.10 /opt/tensorrt/lib/libnvinfer_plugin.so
+WORKDIR /reference
+# Compile upstream NMS unchanged; source revision and file hashes are fixed.
+RUN mkdir upstream && \
+    curl -fL https://raw.githubusercontent.com/NVIDIA-TAO/tao_toolkit_recipes/a540badc47812a17a94e924b537d49ad3969b5a8/tao_pointpillars/tensorrt_sample/src/postprocess.cpp -o upstream/postprocess.cpp && \
+    curl -fL https://raw.githubusercontent.com/NVIDIA-TAO/tao_toolkit_recipes/a540badc47812a17a94e924b537d49ad3969b5a8/tao_pointpillars/tensorrt_sample/include/postprocess.h -o upstream/postprocess.h && \
+    curl -fL https://raw.githubusercontent.com/NVIDIA-TAO/tao_toolkit_recipes/a540badc47812a17a94e924b537d49ad3969b5a8/tao_pointpillars/tensorrt_sample/LICENSE -o upstream/LICENSE && \
+    printf '%s\n' \
+      '7b67603d679510bcc02fd8fc63f84292dde5edb3017cdfd53625cd83c093d066  upstream/postprocess.cpp' \
+      'd9e80c9e9aedc2d1e9d7f1818e5c137232980f3443329dfac5b08decc8f60481  upstream/postprocess.h' \
+      'cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30  upstream/LICENSE' | sha256sum --check
+RUN apt-get update && apt-get install -y --no-install-recommends cuda-nvcc-12-9=12.9.86-1 && rm -rf /var/lib/apt/lists/*
+COPY runner.cpp nms_driver.cpp ./
+RUN g++ -std=c++17 -O2 -I/usr/include/x86_64-linux-gnu -I/usr/local/cuda-12.9/include \
+      runner.cpp -L/usr/local/cuda-12.9/lib64 -L/opt/tensorrt/lib -lnvinfer -lnvinfer_plugin -lcudart -o /usr/local/bin/pp-reference && \
+    g++ -std=c++17 -O2 -Iupstream -I/usr/local/cuda-12.9/include \
+      nms_driver.cpp upstream/postprocess.cpp -o /usr/local/bin/pp-reference-nms && \
+    dpkg-query -W > /reference/packages.txt
+ENTRYPOINT []
+CMD ["pp-reference", "--info"]

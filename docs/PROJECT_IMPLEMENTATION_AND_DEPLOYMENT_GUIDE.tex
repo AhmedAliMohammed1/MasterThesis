@@ -18,7 +18,7 @@
 \title{PointPillars: From a Fresh Computer to a Running ROS Node\\
 \large Implementation record, deployment commands, and recovery guide}
 \author{MasterThesis project: \code{pp_infer}}
-\date{2 October 2026}
+\date{3 October 2026}
 \begin{document}
 \maketitle
 This guide records the completed work and explains how another person can reproduce it. You do not need to understand C++ to follow the Docker deployment. Read each step, run its commands, and check the expected result before moving on.
@@ -300,7 +300,7 @@ sudo docker run --rm --network host --ipc host \
   --qos-profile-overrides-path /qos.yaml \
   --remap /recorded/points:=/point_cloud
 \end{lstlisting}
-These examples assume one Linux host. Verify layout and model settings before judging detections. No real-data accuracy fixture was supplied.
+These examples assume one Linux host. Verify layout and model settings before judging detections. The earlier bag has no object annotations. Labeled KITTI object frames and a diagnostic accuracy baseline are now available in the section on KITTI measurement.
 
 \subsection{Download and initialize the tested bag and camera clip}
 With Docker working and the inference image already built, run this from another terminal while inference continues:
@@ -337,7 +337,7 @@ bash tools/visualize.sh
 \end{lstlisting}
 Run the viewer as your normal desktop user, without sudo. On the tested computer, RViz was already installed. The missing official vision display plugin was downloaded through the configured ROS apt index and extracted locally under ignored \path{.recovery/rviz}; no system package installation was performed. The launcher reuses a system plugin when available, or prepares this local plugin when RViz and its dependencies already exist. Missing dependencies need the apt installation above.
 
-The saved \path{rviz/pointpillars.rviz} view displays \code{/point_cloud} and \code{/bbox}, with reliable QoS and fixed frame \code{velodyne}. That frame matches the tested KITTI bag. Mouse-wheel scrolling zooms; dragging rotates. Expand Detections to inspect status or enable Show Score. Box colors mean numeric model IDs: orange 0, blue 1, yellow 2. Semantic class names remain unresolved. Point colors represent intensity. All published boxes are displayed; no extra confidence filter is applied.
+The saved \path{rviz/pointpillars.rviz} view displays \code{/point_cloud} and \code{/bbox}, with reliable QoS and fixed frame \code{velodyne}. That frame matches the tested KITTI bag. Mouse-wheel scrolling zooms; dragging rotates. Expand Detections to inspect status or enable Show Score. Box colors mean numeric model IDs: orange 0, blue 1, yellow 2. The exact export label file now verifies IDs 0 Vehicle, 1 Pedestrian and 2 Cyclist; the viewer colors still identify numeric IDs. Point colors represent intensity. All published boxes are displayed; no extra confidence filter is applied.
 
 For a different sensor frame and ROS domain, match the source:
 \begin{lstlisting}
@@ -345,7 +345,7 @@ ROS_DOMAIN_ID=7 bash tools/visualize.sh -f your_lidar_frame
 \end{lstlisting}
 The launcher defaults Fast DDS to UDPv4. In the tested host/container setup, default shared-memory transport prevented delivery to the desktop viewer; UDP restored it. An explicit \code{FASTDDS_BUILTIN_TRANSPORTS} setting overrides this default. Network and firewall restrictions can still prevent discovery on other computers. A bag containing only the sensor frame may produce a global TF warning because there is no transform tree; points and boxes can still render in their shared sensor frame. A different fixed frame requires a valid transform.
 
-Verification matched 25 input/output frames inside Docker and another 25 through the host transport, checking headers, input capacity/layout, finite positive-size boxes, normalized quaternions, and class/score ranges. The live RViz window rendered both points and boxes. This confirms integration and display support, not real-data detection accuracy. Training semantics and a labeled reference remain necessary before claiming accuracy. See \path{config/visualization_inventory.json} and the recovery record for exact evidence.
+Verification matched 25 input/output frames inside Docker and another 25 through the host transport, checking headers, input capacity/layout, finite positive-size boxes, normalized quaternions, and class/score ranges. The live RViz window rendered both points and boxes. This confirms integration and display support, not real-data detection accuracy. A later labeled KITTI baseline is recorded below; independent inference parity and accuracy acceptance remain unfinished. See \path{config/visualization_inventory.json} and the recovery record for exact evidence.
 
 \section{Step 10: check the full path without a sensor}
 Use default topics with no other sensor/bag publishing. Wait for engine/node startup. In a second terminal:
@@ -455,7 +455,7 @@ For direct \code{docker run}, add options before the image name:
 \end{longtable}
 Invalid GPU selection fails before startup. Supported GPUs can still lack memory.
 
-The YAML uses \code{class_0}, \code{class_1}, \code{class_2}, and intensity scale 1.0. These are provisional: training class order, normalization, and box coordinates remain unresolved. Obtain export/training specifications and a known reference first. The scale divides input intensity; do not assume 255 is correct because old instructions used it.
+The YAML uses \code{class_0}, \code{class_1}, \code{class_2}, and intensity scale 1.0. The label artifact verifies Vehicle/Pedestrian/Cyclist order and source supports center-based boxes. The YAML names remain generic; training/input conventions and independent numerical acceptance remain unresolved. Obtain export/training specifications and a known reference first. The scale divides input intensity; do not assume 255 is correct because old instructions used it.
 
 Edit a copy, then mount it:
 \begin{lstlisting}
@@ -777,11 +777,105 @@ Native package missing & Source ROS/overlay, SDK helper, and needed CUDA librari
 \bottomrule
 \end{longtable}
 
+\section{Labeled KITTI accuracy and live ground truth: 3 October 2026}
+The current published node was measured on 32 frozen labeled KITTI frames, with 16 tuning and 16 test frames from different original recording drives. Original XYZI values, scale 1.0, FP32, NMS 0.01 and top-N 4096 were retained. The first detections were saved and hashed. This is a deliberately varied diagnostic sample, not a population score or public KITTI leaderboard result.
+
+The 16-frame test split at moderate difficulty produced the following results. Model Vehicle is explicitly evaluated as KITTI Car compatibility; other original vehicle annotations are not merged into Car. KITTI's pinned development-kit overlap, difficulty and matching routines are used, with a local file/JSON adapter and declared camera-visibility filtering.
+\begin{longtable}{p{0.20\textwidth}p{0.17\textwidth}p{0.16\textwidth}p{0.20\textwidth}p{0.16\textwidth}}
+\toprule Class & Valid GT & 3D matches & BEV matches & BEV AP R40 \\ \midrule
+Car & 54 & 0 & 12 & 5.75\% \\
+Pedestrian & 31 & 0 & 0 & 0\% \\
+Cyclist & 19 & 0 & 2 & 0.0258\% \\
+\bottomrule
+\end{longtable}
+All three moderate 3D AP values are zero. Moderate BEV precision/recall are 8.57\%/22.22\% for Car, zero for Pedestrian and 0.98\%/10.53\% for Cyclist. Small class populations make AP discretization sparse. This is a poor baseline; accuracy acceptance has not been achieved.
+
+For 12 BEV-matched test cars, the median predicted center is about 1.53 m above the annotation. A separate one-frame NVIDIA trtexec execution also emitted elevated centers. That is a limited candidate-consistency probe, not full independent inference parity: it shares the engine/plugins and does not verify complete pre/post-NMS behavior. Repeated live counts varied for 31 of 32 observed frames, by up to seven boxes. The measured first pass remains frozen. No guessed coordinate shift or score tuning was applied.
+
+Six evaluator controls passed, including exact boxes scoring 100\%, all missing boxes counting as misses and duplicate boxes counting as false positives. All 41 Python tests passed. The frozen report reproduced. Read \path{docs/KITTI_ACCURACY_RESULTS.md} and \path{config/kitti_accuracy_inventory.json} for full per-class/difficulty/scenario counts, exact policy, source/runtime identities, hashes and limits.
+
+\subsection{Prepare, collect and report}
+The host player needs Jazzy Python/messages; the evaluator needs g++ and Boost headers. These dependencies already existed on the tested computer. On another configured ROS host:
+\begin{lstlisting}
+sudo apt install build-essential libboost-dev ros-jazzy-vision-msgs \
+  ros-jazzy-visualization-msgs
+cd "$PROJECT_DIR"
+bash tools/kitti_accuracy.sh prepare
+bash tools/kitti_accuracy.sh collect
+bash tools/kitti_accuracy.sh report
+\end{lstlisting}
+The wrapper uses the existing inference image. It starts an isolated validation container on domain 42 and checks its identity/model/settings. Data defaults to \path{../datasets/kitti_object_diagnostic_v1}; outputs go under ignored \path{.recovery/accuracy/kitti-baseline-v1}. Use \code{PP_KITTI_DATASET} and \code{PP_KITTI_OUTPUT} for other locations. Changed runtime/exporter/policy identities require a new result folder. Stop another validation player before collecting; completed frame observations are preserved after interruption.
+
+Across 32 frames, 2876 final predictions were exported: 862 intersected the labeled camera view and 2014 were excluded from camera-labeled evaluation. RViz continues to show all predictions. Camera projection uses full calibrated corners with near-plane clipping. The KITTI output format fits a camera-upright yaw representation, which approximates small calibration tilt; ground-truth corner reports retain full orientation. No extra model-range filter discards annotations.
+
+\subsection{Watch ground truth and predictions together}
+In one terminal:
+\begin{lstlisting}
+bash tools/kitti_accuracy.sh live
+\end{lstlisting}
+In another:
+\begin{lstlisting}
+bash tools/kitti_accuracy.sh view
+\end{lstlisting}
+Green edges are calibrated ground truth. Orange, blue and yellow identify model Vehicle, Pedestrian and Cyclist predictions. Point colors show intensity. White text names the current frame and split. Playback loops at three seconds per frame; its repeated outputs do not overwrite the first scored observations. The shared frame is velodyne. A global TF warning can remain without a world transform.
+
+The actual RViz window rendered points, predictions and green boxes during implementation and was left running. Stop the owned validation detector/player/viewer with:
+\begin{lstlisting}
+bash tools/kitti_accuracy.sh stop
+\end{lstlisting}
+The helper checks container identity and process start times before stopping its resources. It preserves unrelated containers and applications. The ordinary bag/video viewer is a separate workflow. Dataset/results/screenshots/logs are outside Git and source checkpoints; keep independent backups. Original-model parity, repeatability, training/input-domain investigation, a larger untouched evaluation split and agreed accuracy targets remain.
+
+\section{Independent reference and capacity investigation: 3 October 2026}
+The exact ONNX was run in separate TensorRT 8.6.1.6 and 10.16.1.11 environments on the same GPU, using identical original input bytes and three repeats per frame. That produced 192 raw observations. The older environment builds its own FP32/no-TF32 engine and carries its own CUDA 12.0 and plugin libraries. The production image and frozen baseline were preserved.
+
+The diagnostic adapter calls TensorRT directly, with enqueueV2 for the older runtime and enqueueV3 for the current one. It is independent of ROS inference code. NVIDIA's sample NMS was compiled unchanged at a pinned revision. On all 192 identical-candidate observations, it and our existing CPU NMS selected the same boxes at a 0.000001 component tolerance. This compatibility reference is not an original training-framework fixture; both versions can share plugin behavior.
+
+\begin{longtable}{p{0.42\textwidth}p{0.22\textwidth}p{0.27\textwidth}}
+\toprule Pipeline, first test pass & Car BEV AP R40 & Moderate 3D matches \\ \midrule
+Frozen ROS baseline & 5.7516\% & Zero for all classes \\
+TRT8 with NVIDIA NMS & 5.8349\% & Zero for all classes \\
+TRT10 with NVIDIA NMS & 5.5349\% & Zero for all classes \\
+TRT10 with our NMS & 5.5349\% & Zero for all classes \\
+\bottomrule
+\end{longtable}
+All three repeats have zero moderate 3D matches on tuning and test. The first TRT8 pass's 12 BEV-matched cars have median vertical error 1.5288 m upward. TRT10 matches 11 cars, with median upward error 1.5195 m. The failure therefore exists in the older pipeline too. Do not infer that the pretrained weights alone are faulty or install a global z shift.
+
+Unique same-class matching compares XYZ, dimensions, wrapped yaw and score at 0.001 per component. Cross-version raw matching has median 78.00\%; within-version repeated raw matching is 79.41\% for TRT8 and 78.30\% for TRT10. Numerical parity is not accepted. The similar medians are descriptive, not a statistical equivalence test. TRT8 consistently matches one additional test car in BEV; that difference also needs investigation.
+
+The export permits 10,000 voxels and 32 points per voxel. A descriptive audit found 12 frames above the voxel limit, up to 15,180 occupied voxels; every frame has crowded voxels. Published NVIDIA source uses atomic point/pillar selection and raises an internal coordinate-tensor bounds concern above the pillar limit. Source inspection does not prove the exact packaged instructions. Two tuning-only controls preserve retained XYZI bits while selecting the first 10,000 voxels and first 32 points per voxel. Their repeated raw matching improved to roughly 99.6--100\%. This supports a preprocessing/capacity contribution to variation, not an accuracy improvement or a production fix.
+
+CUDA 12.9 allocation memcheck actually ran on original and capped tuning frame 004804, one execution each, and reported zero errors. Internal TensorRT tensors may share allocations: this does not clear the source-level tensor-bounds concern, establish race freedom, or complete GPU memory validation. The earlier CUDA 12.0 instrumentation failure remains historical.
+
+With a prepared dataset, frozen baseline and running validation detector:
+\begin{lstlisting}
+python3 tools/kitti_reference.py build
+python3 tools/kitti_reference.py collect
+python3 tools/kitti_reference.py report
+python3 tools/kitti_reference_repeat.py
+python3 tools/kitti_voxel_control.py
+python3 tools/kitti_reference_memcheck.py
+\end{lstlisting}
+Host Python 3, Docker/GPU integration and g++ are needed; reference SDKs live inside diagnostic images. Outputs default to ignored \path{.recovery/accuracy/kitti-reference-v1}. Inputs, images, source and engine identities are frozen. Hash-verified completed raw observations are reused; partial unindexed observations are preserved separately. A new identity requires a fresh result directory. The existing deployment continues to build with colcon.
+
+While the labeled player runs on domain 42, open the reference overlay and RViz in separate terminals:
+\begin{lstlisting}
+source /opt/ros/jazzy/setup.bash
+ROS_DOMAIN_ID=42 FASTDDS_BUILTIN_TRANSPORTS=UDPv4 \
+  python3 tools/kitti_reference_view.py
+\end{lstlisting}
+\begin{lstlisting}
+ROS_DOMAIN_ID=42 RVIZ_CONFIG="$PWD/rviz/kitti_reference.rviz" \
+  bash tools/visualize.sh
+\end{lstlisting}
+Cyan means frozen first-pass TRT8 predictions, green means calibrated ground truth, and the original Detections display shows live TRT10 boxes. The overlay selects by exact cloud bytes and copies its current header; it does not overwrite measurements. The actual window rendered successfully and was left running. Stop each terminal with Ctrl+C, or stop the owned overlay with \code{python3 tools/kitti_reference_view.py --stop}; close RViz separately.
+
+Nine focused reference/capacity controls and 50 total Python tests passed. Read \path{docs/MODEL_REFERENCE_COMPARISON.md} and \path{config/kitti_reference_inventory.json} for exact results, hashes, repeat ranges, source evidence, commands and recovery limits. W01 remains in progress. Next verify bounded voxelization, the original input/training contract and decoder behavior, then evaluate a justified correction or suitable model on untouched data with agreed targets.
+
 \section{Evidence and remaining work}
 \begin{longtable}{p{0.13\textwidth}p{0.20\textwidth}p{0.58\textwidth}}
 \toprule Task & State & Meaning \\ \midrule
 W00 & Verified & Architecture and local recovery checked. \\
-W01 & Blocked & Inventory/plugins/engine smoke exist; training semantics/reference sample missing. \\
+W01 & In progress & TRT8 compatibility baseline also poor; capacity, training parity and accuracy acceptance remain. \\
 W02 & Verified & CPU boundary/geometry and focused sanitizer checks passed. \\
 W03 & Verified & Local adapter checks passed; allocator limitation recorded. \\
 W04/W05 & In progress & Runtime/buffers/build/link and synthetic checks passed; reference/memory/failure checks remain. \\
@@ -793,7 +887,7 @@ W09 & In progress & Docker/checks and this guide provided; CI/full operational a
 \end{longtable}
 The automatic Docker build cloned published source, installed pinned SDK packages, verified the downloaded ONNX, and passed four colcon modes. Fresh engine generation and two synthetic GPU/ROS round trips passed on the RTX 4060. One engine was generated across the restart. Invalid GPU selection failed clearly. Inventories/log hashes are in config and recovery records; logs remain under \path{.recovery/verification}.
 
-Next obtain the export/training contract and known labeled fixture. Verify semantics, complete memory/failure checks, implement worker/configuration, and measure latency/rate/drops/memory/accuracy against agreed targets. Repeat relevant checks on each target GPU before calling it validated.
+Next investigate vertical errors and repeatability using the original-model input/reference contract, then evaluate a documented correction or suitable model on a larger untouched split. Complete memory/failure checks, worker/configuration, latency/rate/drops/memory benchmarks, agreed accuracy targets and CI. Repeat relevant checks on each target GPU before calling it validated.
 
 \section{Project records}
 \begin{longtable}{p{0.48\textwidth}p{0.45\textwidth}}

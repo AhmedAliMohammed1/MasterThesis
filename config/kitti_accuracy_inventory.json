@@ -1,0 +1,341 @@
+{
+  "schema_version": 1,
+  "recorded_date": "2026-10-03",
+  "status": "KITTI diagnostic accuracy measured; poor baseline; operational acceptance not achieved",
+  "dataset_inventory": "config/kitti_validation_inventory.json",
+  "dataset_manifest_sha256": "3a28d21a1ca5ff754f99d612aae9d886b2a4ccfdcb13d34476a1920ad051083a",
+  "model_sha256": "2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1",
+  "engine_sha256": "3b29e09c8513be64ed36a9ccaa0a4b27e08008177bf55ee780d6c5e9daa67703",
+  "runtime": {
+    "image_id": "sha256:347eca6be6b86fb06d2a538a44d09398f2a0bc6af41f04ddbd8be983ba184a1b",
+    "container": "pointpillars-validation",
+    "domain": 42,
+    "model_sha256": "2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1",
+    "parameters": {
+      "intensity_scale": 1.0,
+      "nms_iou_thresh": 0.01,
+      "pre_nms_top_n": 4096,
+      "data_type": "fp32"
+    },
+    "source_revision": "dd687da7f42b4dc8fb53370be4a7c26635bc6e95",
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU, GPU-4219859e-3a54-d063-1435-a290cd5d28f3, 595.71.05"
+  },
+  "results_directory": "/media/ae/New Volume/MasterThesis/.recovery/accuracy/kitti-baseline-v1",
+  "test_frames": 16,
+  "tuning_frames": 16,
+  "moderate_results": {
+    "test": {
+      "Car": {
+        "3d": {
+          "gt": 54,
+          "tp": 0,
+          "fp": 146,
+          "fn": 54,
+          "precision": 0,
+          "recall": 0,
+          "ap_r40": 0
+        },
+        "bev": {
+          "gt": 54,
+          "tp": 12,
+          "fp": 128,
+          "fn": 42,
+          "precision": 0.0857142857143,
+          "recall": 0.222222222222,
+          "ap_r40": 0.0575160104747
+        }
+      },
+      "Cyclist": {
+        "3d": {
+          "gt": 19,
+          "tp": 0,
+          "fp": 206,
+          "fn": 19,
+          "precision": 0,
+          "recall": 0,
+          "ap_r40": 0
+        },
+        "bev": {
+          "gt": 19,
+          "tp": 2,
+          "fp": 203,
+          "fn": 17,
+          "precision": 0.00975609756098,
+          "recall": 0.105263157895,
+          "ap_r40": 0.000257731958763
+        }
+      },
+      "Pedestrian": {
+        "3d": {
+          "gt": 31,
+          "tp": 0,
+          "fp": 53,
+          "fn": 31,
+          "precision": 0,
+          "recall": 0,
+          "ap_r40": 0
+        },
+        "bev": {
+          "gt": 31,
+          "tp": 0,
+          "fp": 53,
+          "fn": 31,
+          "precision": 0,
+          "recall": 0,
+          "ap_r40": 0
+        }
+      }
+    },
+    "tuning": {
+      "Car": {
+        "3d": {
+          "gt": 19,
+          "tp": 0,
+          "fp": 179,
+          "fn": 19,
+          "precision": 0,
+          "recall": 0,
+          "ap_r40": 0
+        },
+        "bev": {
+          "gt": 19,
+          "tp": 5,
+          "fp": 173,
+          "fn": 14,
+          "precision": 0.0280898876404,
+          "recall": 0.263157894737,
+          "ap_r40": 0.00657923056228
+        }
+      },
+      "Cyclist": {
+        "3d": {
+          "gt": 19,
+          "tp": 0,
+          "fp": 104,
+          "fn": 19,
+          "precision": 0,
+          "recall": 0,
+          "ap_r40": 0
+        },
+        "bev": {
+          "gt": 19,
+          "tp": 1,
+          "fp": 103,
+          "fn": 18,
+          "precision": 0.00961538461538,
+          "recall": 0.0526315789474,
+          "ap_r40": 0
+        }
+      },
+      "Pedestrian": {
+        "3d": {
+          "gt": 49,
+          "tp": 0,
+          "fp": 33,
+          "fn": 49,
+          "precision": 0,
+          "recall": 0,
+          "ap_r40": 0
+        },
+        "bev": {
+          "gt": 49,
+          "tp": 0,
+          "fp": 33,
+          "fn": 49,
+          "precision": 0,
+          "recall": 0,
+          "ap_r40": 0
+        }
+      }
+    }
+  },
+  "camera_visibility": {
+    "raw_predictions": 2876,
+    "camera_visible": 862,
+    "excluded_outside_camera": 2014
+  },
+  "vertical_diagnostics": {
+    "test": {
+      "Car": {
+        "median_3d_iou": 0.0431415755278,
+        "median_abs_camera_center_y_error_m": 1.529027472,
+        "median_camera_center_y_error_m": -1.529027472,
+        "pairs": 12
+      },
+      "Cyclist": {
+        "median_3d_iou": 0.0492261962899,
+        "median_abs_camera_center_y_error_m": 1.4600732335000002,
+        "median_camera_center_y_error_m": -1.4600732335000002,
+        "pairs": 2
+      },
+      "Pedestrian": {
+        "median_3d_iou": null,
+        "median_abs_camera_center_y_error_m": null,
+        "median_camera_center_y_error_m": null,
+        "pairs": 0
+      }
+    },
+    "tuning": {
+      "Car": {
+        "median_3d_iou": 0.00340702593331,
+        "median_abs_camera_center_y_error_m": 1.497826039,
+        "median_camera_center_y_error_m": -1.497826039,
+        "pairs": 5
+      },
+      "Cyclist": {
+        "median_3d_iou": 0.230497119463,
+        "median_abs_camera_center_y_error_m": 0.7268680908,
+        "median_camera_center_y_error_m": -0.7268680908,
+        "pairs": 1
+      },
+      "Pedestrian": {
+        "median_3d_iou": null,
+        "median_abs_camera_center_y_error_m": null,
+        "median_camera_center_y_error_m": null,
+        "pairs": 0
+      }
+    }
+  },
+  "reference_probe": {
+    "frame_id": "005876",
+    "raw_count": 528,
+    "ros_final_count": 68,
+    "raw_z_median": 0.7141125,
+    "ros_z_median": 0.706046998500824,
+    "within_1e_minus_3": 46,
+    "limit": "one-frame candidate consistency only; independent full pre/post-NMS parity pending. trtexec floats rounded and repeated model execution varies; no unique-row matching enforced."
+  },
+  "repeat_counts": {
+    "frames_observed": 32,
+    "frames_with_varying_counts": 31,
+    "max_count_span": 7,
+    "first_observation_preserved": true
+  },
+  "checks": {
+    "evaluator_controls": 6,
+    "perfect_prediction_control_ap": 1.0,
+    "missing_and_duplicate_controls_passed": true,
+    "accuracy_acceptance": false,
+    "full_independent_inference_parity": false,
+    "all_python_tests": 41,
+    "final_evaluator_reproduced": true,
+    "duplicate_player_protection": true,
+    "unrelated_container_stop_protection": true
+  },
+  "rviz": {
+    "domain": 42,
+    "configuration": "rviz/kitti_validation.rviz",
+    "cloud_topic": "/kitti/point_cloud",
+    "prediction_topic": "/kitti/predictions",
+    "ground_truth_topic": "/kitti/ground_truth",
+    "fixed_frame": "velodyne",
+    "ground_truth_color": "green",
+    "actual_desktop_render_verified": true,
+    "display_left_running": true
+  },
+  "artifacts": [
+    {
+      "path": ".recovery/accuracy/kitti-baseline-v1/runtime.json",
+      "sha256": "c642bef10e9840d8dd4282aef7168438f2403dd0ceb97425a2a7831c02205bec"
+    },
+    {
+      "path": ".recovery/accuracy/kitti-baseline-v1/run.json",
+      "sha256": "9ccaebb3f0d63c414ba8617ced30b37e23c1d5a97f101b0c491c618444d839be"
+    },
+    {
+      "path": ".recovery/accuracy/kitti-baseline-v1/prediction_manifest.json",
+      "sha256": "23c31b426c4ebafb88bcf52cda1ccf2298dfeddc0c52549d48bf8644782c1e36"
+    },
+    {
+      "path": ".recovery/accuracy/kitti-baseline-v1/evaluation/policy.json",
+      "sha256": "99e924f405ad5572cb43f5743687b24aad92fadd677b3a78677b915613b2717b"
+    },
+    {
+      "path": ".recovery/accuracy/kitti-baseline-v1/evaluation/report.json",
+      "sha256": "e90a3f692d55ef3371ba98f40595dd7a723f05554a9df96265a0c2704a9ccc55"
+    },
+    {
+      "path": ".recovery/accuracy/kitti-baseline-v1/diagnostics/diagnostic.json",
+      "sha256": "420ed5a0ab52670a41df1338ad74082734e8fcfa2ae1d82a9e1f091f6660220e"
+    },
+    {
+      "path": ".recovery/accuracy/kitti-baseline-v1/reference-reviewed/probe.json",
+      "sha256": "c75a06fcb3a4a56da353fc788c8b372ebab81465a8d76c166ace5a7b765dbd0b"
+    },
+    {
+      "path": ".recovery/accuracy/kitti-baseline-v1/repeat-count-observations.json",
+      "sha256": "23946837b6e61db4e686f9b132afead55e8d7cdf51edc7ade689284adb4cc2bd"
+    },
+    {
+      "path": ".recovery/verification/kitti-first-pass.txt",
+      "sha256": "6051e93c786c55175290e1aa2b33de2cd5f02bb0227dcd55a6fd0b80fbc76722"
+    },
+    {
+      "path": ".recovery/verification/kitti-live-observations-snapshot.txt",
+      "sha256": "e9246c29054a5e99e05abaf68717708d9684125c86385e670cb053e7d3eb1ef2"
+    },
+    {
+      "path": ".recovery/verification/kitti-accuracy-evaluation.txt",
+      "sha256": "736a29cc0f13b71ee7eb85798fec8d50590c6ae1fc898c7e92e681e56657ecdd"
+    },
+    {
+      "path": ".recovery/verification/kitti-evaluator-controls.txt",
+      "sha256": "0663ef209367638a22729b1b4aa55400e21e48b00f1eabe236f204f814736666"
+    },
+    {
+      "path": ".recovery/verification/kitti-report-repeat.txt",
+      "sha256": "736a29cc0f13b71ee7eb85798fec8d50590c6ae1fc898c7e92e681e56657ecdd"
+    },
+    {
+      "path": ".recovery/verification/kitti-reference-reviewed.txt",
+      "sha256": "38763ba487b97b4163ea8edbb995fc1c8be73acec6f0b1e37326b4a73eb33f8c"
+    },
+    {
+      "path": ".recovery/verification/kitti-rviz-live.png",
+      "sha256": "32e1fe9ef18abaf4c2a99caee72c09a8dc4bc702d1221d7f0cca2dab7d5117d1"
+    },
+    {
+      "path": ".recovery/verification/kitti-accuracy-evaluation-final.txt",
+      "sha256": "736a29cc0f13b71ee7eb85798fec8d50590c6ae1fc898c7e92e681e56657ecdd"
+    },
+    {
+      "path": ".recovery/verification/kitti-report-repeat-final.txt",
+      "sha256": "736a29cc0f13b71ee7eb85798fec8d50590c6ae1fc898c7e92e681e56657ecdd"
+    },
+    {
+      "path": ".recovery/verification/kitti-accuracy-all-python-tests-final.txt",
+      "sha256": "18e40c37c712223f30e848f6a669b7afbdaed1b72a1de375c4a732e7dc243ef3"
+    },
+    {
+      "path": ".recovery/verification/kitti-stop-protection.txt",
+      "sha256": "9b9768898f295f4cdbf521bc06926fb10c09060cbd0cc9802887d34228d9ca5e"
+    },
+    {
+      "path": ".recovery/verification/kitti-duplicate-player-protection.txt",
+      "sha256": "8a6399f92f44713aad553cd9731ccad538d1c3c2a7ef7c732081fdec77b6e210"
+    }
+  ],
+  "limits": [
+    "Small annotation-selected diagnostic set; not unbiased population accuracy or official leaderboard submission.",
+    "Vehicle mapped explicitly to Car compatibility; original Van and other labels not merged.",
+    "Official KITTI camera-upright yaw representation approximates calibration tilt for predictions.",
+    "No confidence/NMS tuning or input-coordinate shift; first captured detections frozen.",
+    "Sparse AP_R40 bins require caution; zero 3D matches are also supported by direct TP/FP/FN counts.",
+    "Separate trtexec candidate probe only; both paths share the same TRT engine/plugins; complete original-model reference parity remains unresolved.",
+    "Repeating live inference changes some final counts; first pass kept, numerical repeatability needs further investigation.",
+    "Initial measured evaluator report kept as evaluation.pre-review; final image-dimension hardening reproduced every score/count/visibility decision unchanged."
+  ],
+  "documentation": {
+    "latex_source_updated": true,
+    "latex_compilation": "unverified; built-in compiler cannot download uncached TeX bundle, failure before source parsing"
+  },
+  "implementation_files": {
+    "tools/kitti_accuracy.sh": "987abf7ee88fcba96f3e852d5dfff2ad73ec40c461a2f399a02054ef347d3608",
+    "tools/kitti_inference.py": "9427dc0da703b5da65126be404f9aa63b34f6505dd548ecbb083e1c447f399b9",
+    "tools/kitti_evaluation.py": "e752bf6d61b2918ea9186e1c88a383562dbb93cd53633348d3e0cd92a6a66d80",
+    "tools/kitti_diagnose.py": "a9c9181c67739322d05bb66498c30a254fe0dc85545a6d497a9d979b957de255",
+    "tools/kitti_reference_probe.py": "47335e0a2c5df4920a4feab50233afb35245eb56af57c482b795fc84a6726ddd",
+    "rviz/kitti_validation.rviz": "e24f37209c6b05670a967524c5678c79c0ebcc1810ededc98fa532d0faa15e62",
+    "tools/visualize.sh": "190b63788efcd059a0b5711b6f55144b0b6bd484d90185e0069ba46cef993dfc"
+  }
+}

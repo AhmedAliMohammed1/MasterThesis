@@ -35,3 +35,13 @@ ros2 run pp_infer pp_infer --ros-args --params-file .recovery/run/node.yaml
 ```
 
 After moving this checkout, regenerate the native parameter file using the guide's Native engine and configuration procedure: an existing engine_path can still point to the old Desktop directory. Stop any existing instance before launching another on the same topics. The startup YAML uses provisional class labels and intensity scaling; replace them with validated model settings for real data. `colcon test --packages-select pp_infer` and `colcon test-result --verbose` passed four tests. Source ROS, the SDK environment and the workspace overlay in each new terminal.
+
+
+## Measurement update: 3 October 2026
+
+The first labeled 32-frame diagnostic baseline is now measured. The 16-frame test split has zero moderate 3D matches; moderate BEV AP_R40 is Car 5.75%, Pedestrian 0%, Cyclist 0.0258%. Vehicle is explicitly mapped to Car compatibility. The evaluator's exact/missing/duplicate controls passed, and 41 total Python tests passed. Green calibrated ground truth and live predictions render together in RViz on domain 42. First-pass detections are frozen; repeated counts vary and full independent original-model parity remains pending. Read [accuracy results and commands](KITTI_ACCURACY_RESULTS.md) and [inventory](../config/kitti_accuracy_inventory.json). Earlier “not measured” statements describe preparation or the initial investigation, not this new baseline. Accuracy acceptance remains unmet.
+
+
+## Independent reference update: 3 October 2026
+
+A separate TensorRT8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately1.53m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and12 frames exceed the export's10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly99.6–100%; no production adaptation was installed. Two actual CUDA12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.

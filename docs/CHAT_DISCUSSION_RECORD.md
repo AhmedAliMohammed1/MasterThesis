@@ -1772,3 +1772,17 @@ The history is now saved with the full discussion timeline and a purpose-and-loc
 ### Continuation result
 
 The project volume was unmounted. It was reconnected using the normal disk service. The saved discussion record was found, and the narrative draft was recovered from this thread's local session record and saved to disk. The documentation was completed with a 51-file change map, chronology, purposes, reasons, commands, evidence and remaining work. README and recovery links were updated. This is a continuation summary; the turn's final reply is not yet part of the historical export.
+
+
+## Current-status addendum: labeled KITTI measurement on 3 October 2026
+
+After the user requested accuracy measurement and live RViz during implementation, the 32 fixed labeled KITTI frames were passed through the existing published node. The 16-frame test split had zero moderate 3D matches; moderate BEV AP_R40 was 5.75% Car, 0% Pedestrian and0.0258% Cyclist. Vehicle-to-Car compatibility mapping, visibility filtering, official devkit routines and sparse-sample limits are explicit. Known metric controls passed and 41 Python tests passed. Calibrated green ground truth, points and predictions were rendered in RViz on isolated domain 42. Median vertical error for 12 BEV-matched test cars was about 1.53m upward. A separate trtexec probe also emitted elevated centers, but full independent inference parity and numerical repeatability remain unfinished. No guessed coordinate shift or accuracy pass was applied.
+
+Read [the current results and commands](KITTI_ACCURACY_RESULTS.md) and [accuracy inventory](../config/kitti_accuracy_inventory.json). This dated addendum updates status without rewriting historical conversation, legacy commands or earlier observations.
+
+
+## Independent reference update: 3 October 2026
+
+A separate TensorRT8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately1.53m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and12 frames exceed the export's10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly99.6–100%; no production adaptation was installed. Two actual CUDA12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.
+
+The user next asked whether the pretrained model was the main cause, how to distinguish that from migration errors, and then authorized the proposed comparison with “Let's do it.” The response explained freezing the model/inputs, constructing an independent reference, comparing raw/filter/ROS stages, repeated execution, vertical conventions and shared scoring. Implementation delivered separate TRT8/TRT10 adapters, unchanged-sample NMS, all-repeat scoring, exact-cloud RViz overlays, tuning-only capacity controls and limited allocation instrumentation. Current findings narrow the cause to problems shared by both pipelines without declaring the weights or migration exonerated.

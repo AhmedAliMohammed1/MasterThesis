@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "recorded_date": "2026-10-03",
+  "status": "data-and-calibration-prepared; reference-parity-and-accuracy-pending",
+  "source_head": "715dbed829a99c3003ed076bd8f978621caff0e7",
+  "source_worktree": "uncommitted implementation; not in published Docker image",
+  "dataset_directory": "/media/ae/New Volume/datasets/kitti_object_diagnostic_v1",
+  "manifest_sha256": "3a28d21a1ca5ff754f99d612aae9d886b2a4ccfdcb13d34476a1920ad051083a",
+  "selection_sha256": "4215cbdcf3cca3ad64bd4538847cdcff165c53efc512ad672f2ff5d58119b39d",
+  "recipe": {
+    "accuracy_evaluator": "not implemented; no official or custom AP claimed",
+    "algorithm": "drive-disjoint-annotation-coverage-v1",
+    "class_mapping_to_model": "pending; original KITTI types retained",
+    "frames_per_split": 16,
+    "geometry_sha256": "603a233e2bee6f15099293cc6b66c264529ddc5d35e72ca4c245555305737907",
+    "http_helper_sha256": "3608e7b50f388d1452a4f87d44cbcaefc2b42a26cff40ce44b1176d45db30638",
+    "model_sha256": "2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1",
+    "model_spatial_range": [
+      -51.20000076293945,
+      -51.20000076293945,
+      -1.399999976158142,
+      51.20000076293945,
+      51.20000076293945,
+      4.400000095367432
+    ],
+    "point_capacity": 204800,
+    "pretrained_training_overlap": "unknown",
+    "seed": "pp-kitti-diagnostic-v1",
+    "selection_inputs": "annotations only; raw-drive-disjoint partitions",
+    "source_config_sha256": "44307756f135fa9f3734be532f31649958514978e4275902b05edfb144a80aad",
+    "tool_sha256": "d96a26848ce6c3d73b705bbb50333fd4345e9e814aff0ae5ecc9a69b64b94513"
+  },
+  "sources": {
+    "calib": {
+      "bytes": 26854811,
+      "etag": "\"381220ea3e2ed12165b28daffa183524-4\"",
+      "file": "data_object_calib.zip",
+      "member_directory_sha256": "b2553e90302c4421bcb918a4af856d2803ec335471985e393aaab4c582ce2e18",
+      "mode": "pinned-public-byte-ranges",
+      "url": "https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_calib.zip"
+    },
+    "devkit": {
+      "archive_sha256": "ce0b76b69c0c5f89690a0d65b7302bbbdb962a0c7e8aba6efc7050d1b04b4cf1",
+      "bytes": 63794,
+      "etag": "\"819e23bbf0f917a77e6d4a2c1f25adff\"",
+      "file": "devkit_object.zip",
+      "member_directory_sha256": "24ae186e9d360e185a5ab5847837c798c21f259f6c85fc400c24789cf18813d2",
+      "mode": "pinned-public-small-archive",
+      "url": "https://s3.eu-central-1.amazonaws.com/avg-kitti/devkit_object.zip"
+    },
+    "image_2": {
+      "bytes": 12569945557,
+      "etag": "\"be09c488198aa792a69ccac2c82f7152-1499\"",
+      "file": "data_object_image_2.zip",
+      "member_directory_sha256": "dbace0b4861cc52b34dbbf0c115ad093c006bb2d7408ebec7f970b6bfea32ea7",
+      "mode": "pinned-public-byte-ranges",
+      "url": "https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_image_2.zip"
+    },
+    "label_2": {
+      "archive_sha256": "4efc76220d867e1c31bb980bbf8cbc02599f02a9cb4350effa98dbb04aaed880",
+      "bytes": 5601213,
+      "etag": "\"c846a1608cbba1e555ac56280ebca4a1\"",
+      "file": "data_object_label_2.zip",
+      "member_directory_sha256": "b214a47652f95205688328e5acfa75a7dcbeef842e481861ab2611772f3144d7",
+      "mode": "pinned-public-small-archive",
+      "url": "https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_label_2.zip"
+    },
+    "velodyne": {
+      "bytes": 28750710812,
+      "etag": "\"792097aacc2052bb0344ab15617818f0-3428\"",
+      "file": "data_object_velodyne.zip",
+      "member_directory_sha256": "f8b9b01094577cdb913c7912ed27c6acee1e3fbfeb4f4fd83f802871d4b6af9e",
+      "mode": "pinned-public-byte-ranges",
+      "url": "https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_velodyne.zip"
+    }
+  },
+  "summary": {
+    "frames": 32,
+    "object_coverage": {
+      "Car": {
+        "all_corners_in_model_range": 35,
+        "centers_in_model_range": 126,
+        "objects": 137
+      },
+      "Cyclist": {
+        "all_corners_in_model_range": 17,
+        "centers_in_model_range": 48,
+        "objects": 48
+      },
+      "Pedestrian": {
+        "all_corners_in_model_range": 28,
+        "centers_in_model_range": 104,
+        "objects": 108
+      }
+    },
+    "objects_by_original_class": {
+      "Car": 137,
+      "Cyclist": 48,
+      "DontCare": 47,
+      "Pedestrian": 108,
+      "Person_sitting": 4,
+      "Van": 10
+    },
+    "point_clouds": {
+      "intensity_outside_0_1": 0,
+      "max_points": 124047,
+      "min_points": 108943
+    }
+  },
+  "scenario_coverage": {
+    "test": {
+      "frames_per_bucket": {
+        "class:Car": 13,
+        "class:Cyclist": 13,
+        "class:Pedestrian": 16,
+        "crowded": 13,
+        "easy": 13,
+        "far": 13,
+        "hard": 13,
+        "isolated": 3,
+        "moderate": 16,
+        "near": 16,
+        "occluded": 16,
+        "outside_difficulty": 13,
+        "truncated": 13
+      },
+      "missing_buckets": []
+    },
+    "tuning": {
+      "frames_per_bucket": {
+        "class:Car": 14,
+        "class:Cyclist": 14,
+        "class:Pedestrian": 16,
+        "crowded": 14,
+        "easy": 14,
+        "far": 14,
+        "hard": 14,
+        "isolated": 2,
+        "moderate": 16,
+        "near": 16,
+        "occluded": 16,
+        "outside_difficulty": 14,
+        "truncated": 14
+      },
+      "missing_buckets": []
+    }
+  },
+  "split_frames": {
+    "tuning": [
+      "004720",
+      "000368",
+      "004804",
+      "005391",
+      "002565",
+      "006761",
+      "004139",
+      "005571",
+      "004850",
+      "007016",
+      "006496",
+      "003668",
+      "002626",
+      "007075",
+      "005133",
+      "000632"
+    ],
+    "test": [
+      "005876",
+      "004844",
+      "005866",
+      "002362",
+      "003982",
+      "002822",
+      "000910",
+      "001782",
+      "006431",
+      "007301",
+      "005436",
+      "006859",
+      "003193",
+      "000780",
+      "003753",
+      "001592"
+    ]
+  },
+  "checks": {
+    "preparation_fixture_tests": 15,
+    "existing_range_recovery_tests": 8,
+    "recovery_helper_tests": 12,
+    "all_python_tests": 35,
+    "real_asset_hashes_verified": 128,
+    "drive_overlap": 0,
+    "inference_performed": false,
+    "accuracy_measured": false
+  },
+  "network_bytes": {
+    "initial": 187131003,
+    "reviewed_reuse_large_zip_metadata": 5305228,
+    "repeat_large_zip_metadata": 5305228
+  },
+  "evidence": [
+    {
+      "path": ".recovery/verification/w01-kitti-preparation-real-20261003.txt",
+      "sha256": "5dad10f219acf5ad26b18f729d77c67a08c1ec6da312344009cb99fd52ba860c",
+      "exit_code": 0
+    },
+    {
+      "path": ".recovery/verification/w01-kitti-preparation-reviewed-20261003.txt",
+      "sha256": "29ad5c81b869d6df1bb619c8b1524c7da9802cdd1907514baaafd726290573fa",
+      "exit_code": 0
+    },
+    {
+      "path": ".recovery/verification/w01-kitti-preparation-reuse-20261003.txt",
+      "sha256": "29ad5c81b869d6df1bb619c8b1524c7da9802cdd1907514baaafd726290573fa",
+      "exit_code": 0
+    },
+    {
+      "path": ".recovery/verification/w01-kitti-preparation-tests-final-20261003.txt",
+      "sha256": "e2b4785dc081d3ff49b3151147169b2283d54a7b202102bc993900037be3b6bf",
+      "exit_code": 0
+    },
+    {
+      "path": ".recovery/verification/w01-kitti-range-regression-20261003.txt",
+      "sha256": "f590753b59b8beaa87668fec876b8c57c33ae907c2ed22e2707dff1760e9335a",
+      "exit_code": 0
+    },
+    {
+      "path": ".recovery/verification/w01-all-python-tests-20261003.txt",
+      "sha256": "0999818c6b5411957464daecb7ecc692cdec1f7fbc3dec774952478991bfd7b2",
+      "exit_code": 0
+    }
+  ],
+  "notes": [
+    "Initial manifests retained as .initial-pre-review; final source pin/cache hardening revalidated unchanged selected assets and frame membership.",
+    "Original KITTI classes/ignore regions retained; evaluator mapping and visibility policy pending.",
+    "Full calibrated ground-truth orientation retained; diagnostic yaw is not a full box reconstruction.",
+    "Dataset and evidence are outside Git/source checkpoints; back them up independently.",
+    "Small varied dataset diagnoses errors; it does not establish unbiased accuracy or pretrained no-overlap.",
+    "3 October 2026: diagnostic inference/accuracy was subsequently measured; this inventory remains the preparation record, and its no-inference checks describe that earlier substep."
+  ],
+  "subsequent_accuracy_inventory": "config/kitti_accuracy_inventory.json"
+}

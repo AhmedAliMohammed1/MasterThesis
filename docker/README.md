@@ -53,7 +53,7 @@ sudo env POINT_CLOUD_TOPIC=/lidar/points ROS_DOMAIN_ID=7 \
 
 GPU indexes refer to the visible CUDA set. Workspace limits do not cap total GPU memory. The image is Linux amd64 and follows [TensorRT 10.x hardware support](https://docs.nvidia.com/deeplearning/tensorrt/10.x.x/getting-started/support-matrix.html), with capability 7.5 as a floor. ARM/Jetson requires a separate image. Only the available RTX 4060 has been physically tested.
 
-Class order, intensity scaling and coordinate semantics still need reference validation. Defaults remain generic labels and scale 1.0. Synthetic tests do not establish real-data accuracy. Bounded-worker integration, configurable QoS, CUDA memory instrumentation and operational acceptance remain unfinished.
+Exact model class order is verified; numerical input/output reference parity and accuracy acceptance remain unfinished. Defaults remain generic labels and scale 1.0. Synthetic tests do not establish real-data accuracy. Bounded-worker integration, configurable QoS, CUDA memory instrumentation and operational acceptance remain unfinished.
 
 See the [A-to-Z LaTeX guide](../docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex), [README](../README.md) and [progress record](../recovery/PROGRESS.md) for setup, verification and limits.
 
@@ -64,3 +64,13 @@ The inference image stays headless. Keep the node and a LiDAR/bag publisher runn
 ## Sample bag and camera clip helper
 
 After building the inference image, `bash tools/rosbag_demo.sh` downloads/verifies the tested KITTI bag, prepares a camera reference MP4 from its original drive and loops reliable LiDAR playback. `prepare` downloads assets only; `stop` stops only helper-owned playback. A separate `pp-infer:demo-tools` image supplies Python/FFmpeg without host installation. Matching active playback is reused; different existing containers are preserved. See the [sample instructions](../README.md#download-and-play-the-sample-bag-with-matching-camera-video) for storage, recovery, settings and the independent video's timing/accuracy limits.
+
+
+## Labeled accuracy status (3 October 2026)
+
+The published runtime image was exercised on 32 matched KITTI diagnostic frames. The 16-frame test split produced no moderate 3D matches; moderate BEV AP_R40 was 5.75% Car, 0% Pedestrian and0.0258% Cyclist, with Vehicle explicitly evaluated as Car compatibility. This is a poor diagnostic baseline, not accuracy acceptance. Green ground truth can now be compared with predictions through the host player/viewer on isolated domain 42. See [results and reproduction](../docs/KITTI_ACCURACY_RESULTS.md) and [accuracy inventory](../config/kitti_accuracy_inventory.json). These host validation tools do not replace the image's normal startup, and local edits require publication before a Git-source Docker build includes them.
+
+
+## Independent reference update: 3 October 2026
+
+A separate TensorRT8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately1.53m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and12 frames exceed the export's10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly99.6–100%; no production adaptation was installed. Two actual CUDA12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](../docs/MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.

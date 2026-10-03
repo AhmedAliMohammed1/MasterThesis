@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "checked_date": "2026-10-03",
+  "dataset": "KITTI object detection training data",
+  "official_page": "https://www.cvlibs.net/datasets/kitti/eval_object.php?obj_benchmark=3d",
+  "training_frames": 7481,
+  "archives": {
+    "label_2": {
+      "file": "data_object_label_2.zip",
+      "url": "https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_label_2.zip",
+      "etag": "\"c846a1608cbba1e555ac56280ebca4a1\"",
+      "bytes": 5601213,
+      "sha256": "4efc76220d867e1c31bb980bbf8cbc02599f02a9cb4350effa98dbb04aaed880"
+    },
+    "calib": {
+      "file": "data_object_calib.zip",
+      "url": "https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_calib.zip",
+      "etag": "\"381220ea3e2ed12165b28daffa183524-4\"",
+      "bytes": 26854811
+    },
+    "velodyne": {
+      "file": "data_object_velodyne.zip",
+      "url": "https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_velodyne.zip",
+      "etag": "\"792097aacc2052bb0344ab15617818f0-3428\"",
+      "bytes": 28750710812
+    },
+    "image_2": {
+      "file": "data_object_image_2.zip",
+      "url": "https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_image_2.zip",
+      "etag": "\"be09c488198aa792a69ccac2c82f7152-1499\"",
+      "bytes": 12569945557
+    },
+    "devkit": {
+      "file": "devkit_object.zip",
+      "url": "https://s3.eu-central-1.amazonaws.com/avg-kitti/devkit_object.zip",
+      "etag": "\"819e23bbf0f917a77e6d4a2c1f25adff\"",
+      "bytes": 63794,
+      "sha256": "ce0b76b69c0c5f89690a0d65b7302bbbdb962a0c7e8aba6efc7050d1b04b4cf1"
+    }
+  }
+}

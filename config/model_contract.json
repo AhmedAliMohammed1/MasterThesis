@@ -1,0 +1,245 @@
+{
+  "schema_version": 1,
+  "recorded_local_date": "2026-10-03",
+  "status": "diagnostic-accuracy-poor; independent-TRT8-compatibility-measured; shared-voxel-capacity-and-training-parity-unresolved",
+  "runtime_enforcement": false,
+  "accuracy_validated": false,
+  "model": {
+    "ngc": "nvidia/tao/pointpillarnet",
+    "version": "deployable_v1.1",
+    "file": "pointpillars_deployable.onnx",
+    "sha256": "2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1",
+    "bytes": 5572374,
+    "manifest_url": "https://api.ngc.nvidia.com/v2/models/nvidia/tao/pointpillarnet/versions/deployable_v1.1/files",
+    "ngc_digest_verified": true
+  },
+  "classes": {
+    "status": "verified-against-exact-version-label-artifact",
+    "mapping": [
+      {
+        "id": 0,
+        "name": "Vehicle"
+      },
+      {
+        "id": 1,
+        "name": "Pedestrian"
+      },
+      {
+        "id": 2,
+        "name": "Cyclist"
+      }
+    ],
+    "label_sha256": "0adaeb5a374421b61bf83b8fa4522e11abd68461f239a4c72cf5627de913b3da",
+    "label_url": "https://api.ngc.nvidia.com/v2/models/nvidia/tao/pointpillarnet/versions/deployable_v1.1/files/label.txt",
+    "repository_label_matches": true,
+    "current_runtime_config": "generic smoke labels remain; integration pending"
+  },
+  "input": {
+    "features": [
+      "x",
+      "y",
+      "z",
+      "intensity"
+    ],
+    "tensors": [
+      {
+        "name": "points",
+        "dtype_id": 1,
+        "dtype": "FLOAT32",
+        "shape": [
+          "batch",
+          204800,
+          4
+        ]
+      },
+      {
+        "name": "num_points",
+        "dtype_id": 6,
+        "dtype": "INT32",
+        "shape": [
+          "batch"
+        ]
+      }
+    ],
+    "reflectance": {
+      "documented_range": [
+        0,
+        1
+      ],
+      "documentation_url": "https://docs.nvidia.com/tao/tao-toolkit/6.26.03/text/cv_finetuning/pytorch/point_cloud/pointpillars.html",
+      "status": "documentation-supported; first-three-KITTI-bag-clouds-compatible; future-sensors-unverified",
+      "current_bag_intensity_scale": 1.0
+    },
+    "axes": {
+      "origin": "LiDAR center",
+      "x": "forward",
+      "y": "left",
+      "z": "up",
+      "status": "TAO-documented; independently constructed KITTI calibration fixtures passed; future sensor verification pending"
+    },
+    "voxel_plugin_attributes": {
+      "max_voxels": 10000,
+      "max_num_points_per_voxel": 32,
+      "voxel_feature_num": 10,
+      "point_cloud_range": [
+        -51.20000076293945,
+        -51.20000076293945,
+        -1.399999976158142,
+        51.20000076293945,
+        51.20000076293945,
+        4.400000095367432
+      ],
+      "voxel_size": [
+        0.20000000298023224,
+        0.20000000298023224,
+        5.800000190734863
+      ]
+    }
+  },
+  "output": {
+    "tensors": [
+      {
+        "name": "output_boxes",
+        "dtype_id": 1,
+        "dtype": "FLOAT32",
+        "shape": [
+          "batch",
+          393216,
+          9
+        ]
+      },
+      {
+        "name": "num_boxes",
+        "dtype_id": 6,
+        "dtype": "INT32",
+        "shape": [
+          "batch"
+        ]
+      }
+    ],
+    "columns": [
+      "x",
+      "y",
+      "z",
+      "dx",
+      "dy",
+      "dz",
+      "yaw",
+      "class_id",
+      "score"
+    ],
+    "position": "box center, including z",
+    "dimensions": "local box x/y/z extents",
+    "yaw_unit": "radians",
+    "class_index_base": 0,
+    "status": "derived from pinned NVIDIA decoder source; numerical fixture parity pending",
+    "decoder_attributes": {
+      "point_cloud_range": [
+        -51.20000076293945,
+        -51.20000076293945,
+        -1.399999976158142,
+        51.20000076293945,
+        51.20000076293945,
+        4.400000095367432
+      ],
+      "num_dir_bins": 2,
+      "dir_offset": 0.7853900194168091,
+      "dir_limit_offset": 0.0,
+      "score_thresh": 0.10000000149011612,
+      "anchor_bottom_height": [
+        -1.7799999713897705,
+        -0.6000000238418579,
+        -0.6000000238418579
+      ],
+      "anchors": [
+        3.9000000953674316,
+        1.600000023841858,
+        1.559999942779541,
+        0.0,
+        3.9000000953674316,
+        1.600000023841858,
+        1.559999942779541,
+        1.5700000524520874,
+        0.800000011920929,
+        0.6000000238418579,
+        1.7300000190734863,
+        0.0,
+        0.800000011920929,
+        0.6000000238418579,
+        1.7300000190734863,
+        1.5700000524520874,
+        1.7599999904632568,
+        0.6000000238418579,
+        1.7300000190734863,
+        0.0,
+        1.7599999904632568,
+        0.6000000238418579,
+        1.7300000190734863,
+        1.5700000524520874
+      ]
+    }
+  },
+  "sources": [
+    {
+      "repository": "NVIDIA/TensorRT",
+      "revision": "d0faf303ba766f20cd9fd8c413a112fc2e5a397b",
+      "path": "plugin/common/kernels/decodeBbox3DKernels.cu",
+      "url": "https://raw.githubusercontent.com/NVIDIA/TensorRT/d0faf303ba766f20cd9fd8c413a112fc2e5a397b/plugin/common/kernels/decodeBbox3DKernels.cu",
+      "sha256": "1d967923a293d3091ad24aaee545f31f65cf0989916ebebdadf86cab701ca8e0"
+    },
+    {
+      "repository": "NVIDIA/TensorRT",
+      "revision": "d0faf303ba766f20cd9fd8c413a112fc2e5a397b",
+      "path": "plugin/common/kernels/voxelGeneratorKernels.cu",
+      "url": "https://raw.githubusercontent.com/NVIDIA/TensorRT/d0faf303ba766f20cd9fd8c413a112fc2e5a397b/plugin/common/kernels/voxelGeneratorKernels.cu",
+      "sha256": "815afdee2ece5c1b078877d60dfd0418b39741f207b12e068fab09abe06fdea3"
+    },
+    {
+      "repository": "NVIDIA/TensorRT",
+      "revision": "d0faf303ba766f20cd9fd8c413a112fc2e5a397b",
+      "path": "plugin/decodeBbox3DPlugin/README.md",
+      "url": "https://raw.githubusercontent.com/NVIDIA/TensorRT/d0faf303ba766f20cd9fd8c413a112fc2e5a397b/plugin/decodeBbox3DPlugin/README.md",
+      "sha256": "a9de6e43321e85d33bc7c3a42a879bf6514b89124f59b0ac577309a767876d95"
+    }
+  ],
+  "validation_data": {
+    "user_choice": "labeled KITTI scenarios first; own LiDAR recordings later",
+    "existing_bag_has_object_annotations": false,
+    "labeled_detection_data_prepared": true,
+    "dataset_split_fixed": true,
+    "class_mapping_to_KITTI_fixed": true,
+    "reference_parity_validated": false,
+    "accuracy_targets_agreed": false,
+    "plan": "docs/MODEL_VALIDATION_PLAN.md",
+    "dataset_split_scope": "32-frame diagnostic subset, raw-recording-drive-disjoint; larger acceptance split pending",
+    "dataset_inventory": "config/kitti_validation_inventory.json",
+    "calibration_fixtures_verified": true,
+    "class_mapping_scope": "Diagnostic Car compatibility only: Vehicle->Car, Pedestrian->Pedestrian, Cyclist->Cyclist; original GT classes retained",
+    "accuracy_baseline_inventory": "config/kitti_accuracy_inventory.json"
+  },
+  "input_audit": {
+    "log": ".recovery/verification/w01-kitti-input-probe.json",
+    "sha256": "1557b855cb89d11054f5f7f38134a2b9719d695181a6ea2ae1ab72c717c48734",
+    "frames": 3,
+    "inference_performed": false,
+    "result": "Reflectance 0 to 0.99. About 29.6-29.8k of about 124k points per frame within indicative encoded spatial range; inspect labeled-object coverage, do not infer an automatic coordinate correction."
+  },
+  "remaining": [
+    "Verified training/input coordinate contract and untouched reference fixture",
+    "Bounded voxelization and internal tensor-bounds investigation",
+    "Repeatability and decoder/feature parity",
+    "Runtime contract and verified labels integration",
+    "Larger untouched evaluation with agreed targets",
+    "Own-sensor validation when recordings exist"
+  ],
+  "accuracy_measured": true,
+  "compatibility_reference": {
+    "measured": true,
+    "inventory": "config/kitti_reference_inventory.json",
+    "original_training_parity_validated": false,
+    "same_raw_nms_selected_boxes_agree": true,
+    "numeric_parity_accepted": false,
+    "accuracy_accepted": false,
+    "finding": "TRT8 also reproduces poor baseline and elevated centers; capacity-controlled tuning inputs improve repeatability. Do not blame weights alone."
+  }
+}

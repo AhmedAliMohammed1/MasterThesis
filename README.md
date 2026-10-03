@@ -128,15 +128,44 @@ sudo apt install ros-jazzy-rviz2 ros-jazzy-vision-msgs-rviz-plugins
 
 If RViz is already installed but its vision display plugin is missing, the launcher downloads the official package from the host's configured ROS apt index and extracts it under ignored `.recovery/rviz`; it does not register a system package. Missing dependencies require the apt installation above. The launcher defaults Fast DDS to UDPv4 to avoid shared-memory ownership conflicts between root containers and desktop users; an explicit `FASTDDS_BUILTIN_TRANSPORTS` setting overrides this. Network/firewall/domain restrictions can still affect discovery.
 
-Use the mouse wheel to zoom and drag to rotate. Expand **Detections** to check its status or enable **Show Score**. Box colors identify numeric model IDs: orange `0`, blue `1`, yellow `2`; their semantic class names remain unverified. Intensity colors apply to points. All published boxes remain visible; this viewer adds no confidence filter. A sensor-frame-only bag can show a global TF warning because it supplies no transform tree. With both displays receiving data in the same `velodyne` frame, points and boxes can still render; do not substitute a different fixed frame without a valid transform.
+Use the mouse wheel to zoom and drag to rotate. Expand **Detections** to check its status or enable **Show Score**. Box colors identify numeric model IDs: orange `0`, blue `1`, yellow `2`; their exact export labels are verified as Vehicle, Pedestrian and Cyclist, respectively. Intensity colors apply to points. All published boxes remain visible; this viewer adds no confidence filter. A sensor-frame-only bag can show a global TF warning because it supplies no transform tree. With both displays receiving data in the same `velodyne` frame, points and boxes can still render; do not substitute a different fixed frame without a valid transform.
 
-Real-bag integration passed 25 matched frames inside Docker and another 25 through the host viewer transport. The live RViz window rendered points and boxes. These checks establish message compatibility and visualization, **not detection accuracy**; labels, intensity normalization and box-coordinate conventions still need a known reference. The inference container remains headless and publishes `Detection3DArray` directly; no marker conversion is needed.
+Real-bag integration passed 25 matched frames inside Docker and another 25 through the host viewer transport. The live RViz window rendered points and boxes. These checks establish message compatibility and visualization, **not detection accuracy**; independent numerical reference parity and accuracy acceptance remain unfinished; the labeled diagnostic baseline is documented below. The inference container remains headless and publishes `Detection3DArray` directly; no marker conversion is needed.
+
+## Labeled KITTI validation data
+
+Prepare a fixed diagnostic set with matching clouds, object labels, calibration and camera images:
+
+```bash
+python3 tools/prepare_kitti_validation.py \
+  --output ../datasets/kitti_object_diagnostic_v1
+```
+
+Python 3 is sufficient; ROS/GPU installation is unnecessary for preparation. The tool selects 16 tuning and 16 test frames from annotations, separates original recording drives, and fetches selected members through pinned byte ranges. The initial 32-frame preparation passed with all configured scenario buckets covered in both splits. Assets remain outside Git; interrupted runs reuse verified files. This prepares ground truth and audits input/model-range compatibility; it does not run inference or establish accuracy. See the [preparation guide](docs/KITTI_VALIDATION_DATA.md) for offline downloads, selection rules, calibration, evidence and recovery.
+
+## Measured KITTI accuracy and live ground truth
+
+```bash
+bash tools/kitti_accuracy.sh live
+# In another terminal:
+bash tools/kitti_accuracy.sh view
+# Recompute the frozen baseline report:
+bash tools/kitti_accuracy.sh report
+```
+
+The 16-frame diagnostic test split had **zero moderate 3D matches** at KITTI overlap thresholds. Moderate BEV AP_R40 was Car 5.75%, Pedestrian 0%, Cyclist 0.0258%. Model Vehicle is explicitly mapped to KITTI Car compatibility; this small sample is not a leaderboard or population score. BEV-matched car centers were about 1.53 m above ground truth at the median. Live counts also varied between repeats; first-pass detections are frozen. Accuracy acceptance and full independent inference parity remain unfinished.
+
+RViz now compares predictions with green calibrated ground-truth edges on isolated ROS domain 42. See [measurement results, findings and commands](docs/KITTI_ACCURACY_RESULTS.md) and the [accuracy inventory](config/kitti_accuracy_inventory.json). Stop these owned validation resources with `bash tools/kitti_accuracy.sh stop`. Host ROS is needed for the player; the metric adapter additionally needs g++ and Boost headers. Ordinary deployment and bag playback remain separate.
+
+## Independent reference investigation
+
+A separate TensorRT8.6 engine reproduced the poor KITTI results and elevated boxes. Our NMS matched NVIDIA's unchanged NMS on all192 identical-candidate observations. Shared repeatability and voxel-capacity problems remain, so the pretrained weights alone are not established as the cause. Read the [reference results and commands](docs/MODEL_REFERENCE_COMPARISON.md); they include all-repeat accuracy, tuning-only controls, limited memory checks and a cyan reference overlay in RViz. Accuracy and exact numerical parity remain unaccepted.
 
 ## Current implementation and limits
 
 The CPU geometry core and local ROS adapters are verified. Runtime migration uses TensorRT named tensors, validated input/output contracts, owned CUDA resources, and reusable buffers. Docker build, engine creation, synthetic ROS/GPU message flow, restart cache reuse, and invalid GPU selection checks passed on the available GPU. Real KITTI bag message checks and live RViz rendering also passed.
 
-Training class order, intensity normalization, and coordinate semantics are unresolved. Defaults in `docker/node.yaml` are provisional `class_0`/`class_1`/`class_2` and intensity scale 1.0. Synthetic checks do not establish real-data accuracy. CUDA memory instrumentation was inconclusive; further runtime failure checks, the bounded worker, configurable sensor QoS, timing metrics, benchmark targets, and CI/operational acceptance remain unfinished.
+The exact export class order is now verified as Vehicle, Pedestrian and Cyclist in the [partial model contract](config/model_contract.json). Input and box conventions have documentation/source support, but full independent inference parity and accuracy acceptance remain unfinished; the first labeled KITTI baseline has now been measured and is poor. The [KITTI validation plan](docs/MODEL_VALIDATION_PLAN.md) explains the next steps. Defaults in `docker/node.yaml` are provisional `class_0`/`class_1`/`class_2` and intensity scale 1.0. Synthetic checks do not establish real-data accuracy. CUDA memory instrumentation was inconclusive; further runtime failure checks, the bounded worker, configurable sensor QoS, timing metrics, benchmark targets, and CI/operational acceptance remain unfinished.
 
 See [architecture](IMPLEMENTATION_ARCHITECTURE.md), [progress](recovery/PROGRESS.md), [task ledger](recovery/tasks.json), and [native SDK/build record](docs/local_runtime.md). The [old Foxy/TensorRT 8 README](docs/LEGACY_FOXY_README.md) is historical and is not the current installation procedure.
 
@@ -168,3 +197,8 @@ colcon test-result --test-result-base .recovery/colcon-doc/core/build --verbose
 ```
 
 All current build instructions use colcon. The CPU-only configuration has no install target, so its skipped-install warning is expected. The guide also includes ROS adapter and sanitizer configurations in separate directories, native runtime commands, and the GPU smoke check. CMake remains a build dependency behind colcon; `--cmake-args` passes package configuration options.
+
+
+## Independent reference update: 3 October 2026
+
+A separate TensorRT8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately1.53m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and12 frames exceed the export's10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly99.6–100%; no production adaptation was installed. Two actual CUDA12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](docs/MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.
