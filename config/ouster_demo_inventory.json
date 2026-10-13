@@ -1,0 +1,288 @@
+{
+  "source": "https://zenodo.org/records/7780490",
+  "download": "https://zenodo.org/records/7780490/files/ouster.tar.gz",
+  "archive_bytes": 1521635387,
+  "archive_md5": "a0a56bbb93433f729a9e924744ad6b0c",
+  "author": "Kenji Koide (AIST)",
+  "license": "CC-BY-4.0",
+  "sensor": "Ouster OS1-32",
+  "bags": [
+    {
+      "bag": "rosbag2_2023_03_28-16_25_54",
+      "cloud_topic": "/points",
+      "clouds": 291,
+      "frames": [
+        "laser_data_frame"
+      ],
+      "point_count_min": 32768,
+      "point_count_max": 32768,
+      "oversized_clouds": 0,
+      "intensity_min": 0.0,
+      "intensity_max": 9059.0,
+      "nonfinite_xyzi_points": 0,
+      "first_stamp_ns": 1679988354559472320,
+      "last_stamp_ns": 1679988383573685882,
+      "topics": [
+        {
+          "name": "/points",
+          "type": "sensor_msgs/msg/PointCloud2"
+        },
+        {
+          "name": "/image",
+          "type": "sensor_msgs/msg/Image"
+        },
+        {
+          "name": "/camera_info",
+          "type": "sensor_msgs/msg/CameraInfo"
+        }
+      ],
+      "fields": [
+        {
+          "name": "x",
+          "offset": 0,
+          "datatype": 7,
+          "count": 1
+        },
+        {
+          "name": "y",
+          "offset": 4,
+          "datatype": 7,
+          "count": 1
+        },
+        {
+          "name": "z",
+          "offset": 8,
+          "datatype": 7,
+          "count": 1
+        },
+        {
+          "name": "intensity",
+          "offset": 16,
+          "datatype": 7,
+          "count": 1
+        },
+        {
+          "name": "t",
+          "offset": 20,
+          "datatype": 6,
+          "count": 1
+        },
+        {
+          "name": "reflectivity",
+          "offset": 24,
+          "datatype": 4,
+          "count": 1
+        },
+        {
+          "name": "ring",
+          "offset": 26,
+          "datatype": 2,
+          "count": 1
+        },
+        {
+          "name": "ambient",
+          "offset": 28,
+          "datatype": 4,
+          "count": 1
+        },
+        {
+          "name": "range",
+          "offset": 32,
+          "datatype": 6,
+          "count": 1
+        }
+      ],
+      "duration_seconds": 29.014213562,
+      "input_point_capacity": 204800,
+      "pillar_capacity_enforced": false,
+      "intensity_rescaled": false,
+      "accuracy_validated": false
+    },
+    {
+      "bag": "rosbag2_2023_03_28-16_26_51",
+      "cloud_topic": "/points",
+      "clouds": 265,
+      "frames": [
+        "laser_data_frame"
+      ],
+      "point_count_min": 32768,
+      "point_count_max": 32768,
+      "oversized_clouds": 0,
+      "intensity_min": 0.0,
+      "intensity_max": 6910.0,
+      "nonfinite_xyzi_points": 0,
+      "first_stamp_ns": 1679988411943603450,
+      "last_stamp_ns": 1679988438378797382,
+      "topics": [
+        {
+          "name": "/points",
+          "type": "sensor_msgs/msg/PointCloud2"
+        },
+        {
+          "name": "/image",
+          "type": "sensor_msgs/msg/Image"
+        },
+        {
+          "name": "/camera_info",
+          "type": "sensor_msgs/msg/CameraInfo"
+        }
+      ],
+      "fields": [
+        {
+          "name": "x",
+          "offset": 0,
+          "datatype": 7,
+          "count": 1
+        },
+        {
+          "name": "y",
+          "offset": 4,
+          "datatype": 7,
+          "count": 1
+        },
+        {
+          "name": "z",
+          "offset": 8,
+          "datatype": 7,
+          "count": 1
+        },
+        {
+          "name": "intensity",
+          "offset": 16,
+          "datatype": 7,
+          "count": 1
+        },
+        {
+          "name": "t",
+          "offset": 20,
+          "datatype": 6,
+          "count": 1
+        },
+        {
+          "name": "reflectivity",
+          "offset": 24,
+          "datatype": 4,
+          "count": 1
+        },
+        {
+          "name": "ring",
+          "offset": 26,
+          "datatype": 2,
+          "count": 1
+        },
+        {
+          "name": "ambient",
+          "offset": 28,
+          "datatype": 4,
+          "count": 1
+        },
+        {
+          "name": "range",
+          "offset": 32,
+          "datatype": 6,
+          "count": 1
+        }
+      ],
+      "duration_seconds": 26.435193932,
+      "input_point_capacity": 204800,
+      "pillar_capacity_enforced": false,
+      "intensity_rescaled": false,
+      "accuracy_validated": false
+    }
+  ],
+  "local_assets": "/media/ae/New Volume/MasterThesis/.recovery/rosbags/ouster_calibration_v3",
+  "extracted_files": [
+    {
+      "path": "ouster/rosbag2_2023_03_28-16_25_54/rosbag2_2023_03_28-16_25_54_0.db3",
+      "bytes": 1331752960,
+      "sha256": "efd1cab7da28aae1ca0a44a1c02fc5be274150ce453631c53a9e78298356baae"
+    },
+    {
+      "path": "ouster/rosbag2_2023_03_28-16_25_54/metadata.yaml",
+      "bytes": 1971,
+      "sha256": "0dd8557e0fdc6a3d13ef2b565ed39dc2d5fd6d99b1735e54607d349ca1d4f865"
+    },
+    {
+      "path": "ouster/rosbag2_2023_03_28-16_26_51/metadata.yaml",
+      "bytes": 1971,
+      "sha256": "cdfed60a56113fceb48655cbf10a076c57b63a4b059e583f60e99347715ec8a1"
+    },
+    {
+      "path": "ouster/rosbag2_2023_03_28-16_26_51/rosbag2_2023_03_28-16_26_51_0.db3",
+      "bytes": 1215512576,
+      "sha256": "480ff115da15d00447d3c41e5d761b6071178802c9c549fbc5cbb46ef4a1981c"
+    }
+  ],
+  "verification": {
+    "date": "2026-10-13",
+    "domain": 99,
+    "playback_rate": 0.5,
+    "recorded_seconds_per_sequence": 10,
+    "first_sequence": {
+      "matched_frames": 25,
+      "observed_clouds": 55,
+      "observed_outputs": 25,
+      "frame_ids": [
+        "laser_data_frame"
+      ],
+      "point_counts": {
+        "min": 32768,
+        "max": 32768
+      },
+      "boxes_per_frame": {
+        "min": 431,
+        "max": 819,
+        "median": 650
+      },
+      "scores": {
+        "min": 0.10002072155475616,
+        "max": 1.0,
+        "median": 1.0
+      },
+      "elapsed_seconds": 19.91,
+      "invalid": [],
+      "accuracy_validated": false
+    },
+    "second_sequence": {
+      "matched_frames": 25,
+      "observed_clouds": 25,
+      "observed_outputs": 25,
+      "frame_ids": [
+        "laser_data_frame"
+      ],
+      "point_counts": {
+        "min": 32768,
+        "max": 32768
+      },
+      "boxes_per_frame": {
+        "min": 672,
+        "max": 755,
+        "median": 724
+      },
+      "scores": {
+        "min": 0.10008005797863007,
+        "max": 1.0,
+        "median": 0.9999996423721313
+      },
+      "elapsed_seconds": 13.11,
+      "invalid": [],
+      "accuracy_validated": false
+    },
+    "detector_log_invalid_output_frame_drops": 51,
+    "detector_log_path": ".recovery/verification/ouster-detector-log.txt",
+    "clean_all_frame_inference_pass": false,
+    "accuracy_validated": false,
+    "intensity_scale": 1.0,
+    "nms_iou_threshold": 0.01,
+    "image_id": "sha256:7dbc70b9405875697e4775156116ad33dfc76cd4e1e264913303c717697c20e1",
+    "engine_sha256": "605cd84571cd3fafa0a015e7d5003434d8267e950163d068ef241f604ba94885",
+    "focused_tests_passed": 5,
+    "temporary_detector_and_player_stopped": true
+  },
+  "helper_sha256": {
+    "tools/prepare_ouster_demo.py": "319be2393ca2888d3fd45a60e7f5b7025ff99ed459b420b5510548d830bf6022",
+    "tools/rosbag_ouster.sh": "26213f5da3be70383e5c9fa52963c6733b97b95b7041c302008b23195be401dc",
+    "rviz/ouster.rviz": "597b69d06bb78c614f963cf7feffaea21dc85a8d50ad6c08725fe478efdebd63",
+    "tests/test_ouster_demo.py": "9d3913c013e9ca3f9e0f419cd156a54eae45d9fa374e81c3a847e010184f27a3"
+  }
+}

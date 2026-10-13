@@ -1,0 +1,77 @@
+{
+  "recorded_local_date": "2026-10-14",
+  "bag": "/media/ae/New Volume/MasterThesis/.recovery/rosbags/ouster_calibration_v3/raw_view/reflectivity_div255/rosbag2_2023_03_28-16_25_54",
+  "manifest": {
+    "recipe": {
+      "visual_manifest_sha256": "bd8edb1d3556d70a187bba1fbc4770694f1e6cae8c6243af1863dfdfe69cbc14",
+      "raw_source_sha256": {
+        "rosbag2_2023_03_28-16_25_54_0.db3": "efd1cab7da28aae1ca0a44a1c02fc5be274150ce453631c53a9e78298356baae"
+      },
+      "tool_sha256": "e712c10f800374395737dc62b078f227f0c0cc24a7fc4045bf0c299d700ab01f",
+      "raw_topic": "/ouster/raw_points",
+      "inference_topic": "/points",
+      "inference_input_change": false,
+      "raw_payload_change": false,
+      "timestamps_changed": false,
+      "field_of_view_crop": false,
+      "point_sampling": false
+    },
+    "counts": {
+      "/points": 291,
+      "/ouster/raw_points": 291,
+      "/image": 58,
+      "/camera_info": 58
+    },
+    "files": {
+      "metadata.yaml": "136ac4d9c70588ca7ba4c719b11ba3d611efc7a3f4d9d5062104b7fcd1881b80",
+      "rosbag2_2023_03_28-16_25_54.pending_0.db3": "8770bebcd050f31bdd6579673381393cedf067e98bce14f6daf1e9dbe5014142"
+    }
+  },
+  "verification": {
+    "matched_clouds": 5,
+    "invalid": [],
+    "samples": [
+      {
+        "points": 32768,
+        "raw_signal_max": 6702.0,
+        "normalized_feature_max": 1.0
+      },
+      {
+        "points": 32768,
+        "raw_signal_max": 6574.0,
+        "normalized_feature_max": 1.0
+      },
+      {
+        "points": 32768,
+        "raw_signal_max": 6481.0,
+        "normalized_feature_max": 1.0
+      },
+      {
+        "points": 32768,
+        "raw_signal_max": 5736.0,
+        "normalized_feature_max": 1.0
+      },
+      {
+        "points": 32768,
+        "raw_signal_max": 6620.0,
+        "normalized_feature_max": 1.0
+      }
+    ],
+    "elapsed_seconds": 19.545599152999785
+  },
+  "point_selection_changed": false,
+  "inference_feature_changed": false,
+  "view_changes": {
+    "topic": "/ouster/raw_points",
+    "pixels": 3,
+    "orbit_distance": 28,
+    "flat_color_default": true,
+    "original_signal_colors_available": true
+  },
+  "helper_sha256": {
+    "tools/prepare_ouster_raw_view.py": "e712c10f800374395737dc62b078f227f0c0cc24a7fc4045bf0c299d700ab01f",
+    "tools/rosbag_ouster_detail.sh": "b89f1bdd0c9de2f38bb83f4befc4521134670cd9fbb9c180553722146a367473",
+    "tools/rosbag_ouster.sh": "c2efc3566a73cfe4b4943ee341c8fed842ccfbc435953003f9a96346c719e3f1",
+    "rviz/ouster_detail.rviz": "d776420a171139cf30cac3886e7e4232a910fe02ea92f30da1abecbd5b61df59"
+  }
+}

@@ -40,7 +40,23 @@ sudo env PP_GIT_REF='YOUR_FULL_COMMIT_SHA' bash tools/deploy.sh
 
 For another repository, set `PP_GIT_REPO` in the wrapper or `GIT_REPO` as a build argument. A private repository needs BuildKit Git authentication secrets; do not embed access tokens in URLs, Dockerfile arguments or source. Network access is required for a fresh build. CUDA/SDK versions are pinned; Ubuntu tags and ROS apt versions can still change. Pin the Git commit and retain the built image for repeatable deployments.
 
-At startup, the selected CUDA GPU is checked and an FP32 batch-one engine is generated. Engines are cached in `pp-engines`, keyed by model hash, GPU UUID/capability, driver, CUDA APIs and build recipe. Builds for the same key are serialized; temporary files are promoted only after successful engine generation. Transfer the image to another supported computer and let it generate its own engine.
+## Model and engine lifecycle
+
+Documentation updated on **5 October 2026** to include the latest ONNX/engine explanation. The GPU and accuracy evidence below still refers to the earlier recorded tests.
+
+| Phase | What happens | File location inside the container |
+| --- | --- | --- |
+| Image build | Download and checksum-verify the pretrained ONNX; install TensorRT/CUDA packages and the ROS application. Docker may reuse cached layers. | ONNX: `/opt/models/pointpillars.onnx`; TensorRT libraries: `/opt/tensorrt/lib/`; CUDA libraries: `/opt/cuda/lib/`. |
+| Container startup | Check the GPU, hash ONNX and reuse a matching nonempty engine or generate one with `trtexec`. | `/var/lib/pp_infer/<cache-key>.engine`, normally in persistent volume `pp-engines`. |
+| ROS startup and inference | Pass `engine_path` to `ros2 run`, load the engine once and reuse its execution context and GPU buffers for incoming clouds. | The ROS node reads the `.engine` file, not ONNX. |
+
+At startup, engines are keyed by model hash, GPU model/UUID/capability, driver, CUDA APIs and build recipe. The current recipe builds FP32, batch one, with TF32 disabled. Builds for the same key are serialized; temporary files are promoted only after successful generation. The engine is created locally from the trained network, without retraining. ONNX is model data, not an installer or archive; the engine is a serialized execution plan, not a downloaded model.
+
+The entrypoint prepares the engine **before** executing `ros2 run pp_infer pp_infer --ros-args --params-file /opt/pp_infer/node.yaml -p engine_path:=<saved-engine-path>`, with the node-name and topic remappings. The node initializes plugins, reads the engine bytes, calls `deserializeCudaEngine`, checks its tensor interface and creates the execution context and reusable buffers. It runs the network on the GPU; CPU code handles ROS, input preparation, output checks and NMS.
+
+Normal container startup still needs ONNX for its checksum when reusing a cached engine. Direct `ros2 run` needs an already prepared engine, required libraries and parameters; it does not download ONNX or build an engine. The node's legacy `model_path` is stored but does not load ONNX, and `data_type` does not change the loaded engine's precision. Transfer the image to another supported computer and let startup prepare its matching engine. A nonempty but corrupted cache file is not automatically rebuilt.
+
+For the complete explanation and both diagrams, see the [explanation README](../README_PROJECT_EXPLANATIONS.md#7-downloads-and-engine-generation-in-docker-today). The [latest discussion continuation](../docs/CHAT_DISCUSSION_RECORD.md#explanation-and-presentation-continuation-saved-5-october-2026) records the questions and presentation changes; the [three-page presentation](../output/pdf/PROJECT_MIGRATION_PRESENTATION.pdf) gives the short version.
 
 Node `/pointpillars` receives `/point_cloud` (`sensor_msgs/msg/PointCloud2`) and publishes `/bbox` (`vision_msgs/msg/Detection3DArray`). Start a sensor or bag publisher separately; the container does not generate real data. Input needs little-endian scalar FLOAT32 XYZI and a compatible reliable publisher.
 

@@ -1,10 +1,12 @@
 # How this PointPillars project reached its current stage
 
-**Project history, decisions, changes and evidence — 1–2 October 2026**
+**Project history, decisions, changes and evidence — initial record 1–2 October 2026; addenda 3 and 5 October 2026**
 
 This document explains what we discussed, what changed, why each change was needed, where it lives, and what was actually checked. It follows the project from the first architecture request to Docker deployment, real-bag testing, RViz and the camera reference video.
 
 It belongs beside the [A-to-Z deployment guide](PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex). That guide tells someone how to install and run the project. This history explains how we got there. The [chat discussion record](CHAT_DISCUSSION_RECORD.md) preserves the visible requests, progress updates and final replies from the original 35 available turns and the subsequent continuation, including the platform and artifact-location answers.
+
+For the latest plain-language answers about the migration, CPU/GPU communication, NMS, ONNX and engine loading, read the [explanation README](../README_PROJECT_EXPLANATIONS.md). The [latest discussion continuation](CHAT_DISCUSSION_RECORD.md#explanation-and-presentation-continuation-saved-5-october-2026) summarizes the subsequent questions and presentation edits. The initial narrative below is historical; the dated addenda record later evidence and clarifications.
 
 The record is based on the conversation, the current source, Git history, inventories and recovery evidence. It does not invent missing implementation work. Early plans and early replies describe earlier stages; the later source and dated results decide the current status. The supplied [project review](../PROJECT_REVIEW_AND_UPDATE_PLAN.md) was a starting reference, not another user instruction to carry out every proposal without checking it.
 
@@ -32,8 +34,11 @@ The record is based on the conversation, the current source, Git history, invent
 - [19. The current operation, with each part's role](#19-the-current-operation-with-each-parts-role)
 - [20. What still needs to happen](#20-what-still-needs-to-happen)
 - [21. Artifact identity and how to follow the evidence](#21-artifact-identity-and-how-to-follow-the-evidence)
+- [Explanation and presentation update: 5 October 2026](#explanation-and-presentation-update-5-october-2026)
 
 ## Where the project stands now
+
+This section preserves the initial 1–2 October snapshot, including the Linux paths and source/image identities then observed. The 3 October addenda update accuracy/reference findings; the 5 October addendum records the later explanations and documents. The documentation checkout inspected on 5 October is `E:\MasterThesis`, at committed HEAD `29ef404`; this is not a new Windows runtime validation.
 
 The project can build a Docker image from published Git source, automatically obtain the selected model and TensorRT libraries, create an engine for the selected GPU, and run a ROS 2 inference node. A KITTI bag has passed through that node. RViz has displayed its point cloud and detection boxes. A helper now prepares the bag and a camera MP4 from the matching original drive.
 
@@ -885,3 +890,17 @@ Read [the current results and commands](KITTI_ACCURACY_RESULTS.md) and [accuracy
 ## Independent reference update: 3 October 2026
 
 A separate TensorRT8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately1.53m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and12 frames exceed the export's10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly99.6–100%; no production adaptation was installed. Two actual CUDA12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.
+
+## Explanation and presentation update: 5 October 2026
+
+The later discussion asked for a natural-language account of the migration, CPU/GPU roles, downloads and extraction, sensor QoS, NMS thresholds, accuracy uncertainty and root-cause investigation. These answers are saved in [README_PROJECT_EXPLANATIONS.md](../README_PROJECT_EXPLANATIONS.md), with a [discussion continuation](CHAT_DISCUSSION_RECORD.md#explanation-and-presentation-continuation-saved-5-october-2026). The save date does not assign otherwise unavailable timestamps to individual messages.
+
+The latest engine explanation clarifies three separate phases: Docker builds the software image and downloads/checksum-verifies ONNX; container startup uses `trtexec` on the chosen GPU to build or reuse a matching engine; the ROS node loads that engine once and reuses it for clouds. ONNX is stored at `/opt/models/pointpillars.onnx`. The engine is generated locally at `/var/lib/pp_infer/<cache-key>.engine`, normally persisted through `pp-engines`; it is not downloaded or extracted from an archive. Conversion preserves the pretrained network rather than retraining it.
+
+The entrypoint supplies `engine_path` to `ros2 run`. The runtime initializes plugins, reads/deserializes the engine, validates its tensor interface and creates persistent execution resources. CPU code manages ROS, packing, validation and NMS; GPU code executes PointPillars. The node's legacy `model_path` does not load ONNX and `data_type` does not alter a loaded engine's precision. Standard startup still needs ONNX to calculate the cache key, even when it reuses an engine. Direct `ros2 run` requires a prepared engine and runtime libraries. These are explanations of the existing source, not new runtime edits.
+
+The user also requested a compact presentation with figures, fixes to supplied LaTeX, a first-page purpose description and the engine explanation with a graph. [PROJECT_MIGRATION_PRESENTATION.tex](PROJECT_MIGRATION_PRESENTATION.tex) now has three active pages: purpose/migration/file edits, the detailed seven-stage CPU/GPU/ROS flow and recorded checks, then ONNX/engine creation/cache/loading. The direct point-cloud connection to the consumer is included. The supplied optional accuracy slide remains commented out.
+
+The [three-page PDF rendition](../output/pdf/PROJECT_MIGRATION_PRESENTATION.pdf) was separately rendered from the saved source content and figure labels and visually inspected. Native LaTeX compilation is unverified because the built-in compiler failed before parsing with `Unable to find standard directories for platform`. The source remains in the same editor for future native compilation.
+
+The [main README](../README.md#onnx-engine-creation-and-ros-loading) and [Docker README](../docker/README.md#model-and-engine-lifecycle) now include the latest file roles and startup/loading sequence. This documentation work performs no engine rebuild, new GPU execution or accuracy acceptance; the dated evidence above remains the basis for those findings.

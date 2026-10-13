@@ -1,0 +1,192 @@
+{
+  "date": "2026-10-13",
+  "source": "https://zenodo.org/records/7780490",
+  "doi": "10.5281/zenodo.7780490",
+  "author": "Kenji Koide, AIST",
+  "license": "CC-BY-4.0",
+  "video_timing": "Original bag record timeline, source approximately 2 Hz; frames held at 30 fps output",
+  "sensor_header_clock_alignment_validated": false,
+  "detection_overlay": false,
+  "source_payload_verification": {
+    "image_messages": 111,
+    "camera_info_messages": 111,
+    "cloud_messages": 556,
+    "camera_serialized_payloads_and_record_timestamps_preserved": true,
+    "cloud_payloads_match_previously_verified_normalized_bags": true
+  },
+  "video_decoded_frames_visually_inspected": true,
+  "tests_passed": 12,
+  "recordings": [
+    {
+      "bag": "rosbag2_2023_03_28-16_25_54",
+      "camera_directory": "/media/ae/New Volume/MasterThesis/.recovery/rosbags/ouster_calibration_v3/camera/rosbag2_2023_03_28-16_25_54",
+      "video": "/media/ae/New Volume/MasterThesis/.recovery/rosbags/ouster_calibration_v3/camera/rosbag2_2023_03_28-16_25_54/camera.mp4",
+      "video_metadata": {
+        "video_sha256": "75c8bfafa65a46e1b0935f91754c92e28cac120e6ec9db339e1be716de067747",
+        "frames_manifest_sha256": "cdfb974adb712237c3328b0d0118e46b4baec11c0a2ca81d928e41ec69f8e305",
+        "probe": {
+          "programs": [],
+          "streams": [
+            {
+              "codec_name": "h264",
+              "width": 1280,
+              "height": 1070,
+              "nb_frames": "870"
+            }
+          ],
+          "format": {
+            "duration": "29.000000"
+          }
+        },
+        "duration_error_seconds": -0.014213561999998348,
+        "source_frames": 58
+      },
+      "frames_manifest_sha256": "cdfb974adb712237c3328b0d0118e46b4baec11c0a2ca81d928e41ec69f8e305",
+      "visual_directory": "/media/ae/New Volume/MasterThesis/.recovery/rosbags/ouster_calibration_v3/visual/reflectivity_div255/rosbag2_2023_03_28-16_25_54",
+      "visual_manifest": {
+        "recipe": {
+          "source_bag": "rosbag2_2023_03_28-16_25_54",
+          "feature": "reflectivity_div255",
+          "source_sha256": {
+            "rosbag2_2023_03_28-16_25_54_0.db3": "efd1cab7da28aae1ca0a44a1c02fc5be274150ce453631c53a9e78298356baae"
+          },
+          "cloud_manifest_sha256": "5b5f9809f1a51e4f792f2055ea07af075d740a3384b236640b22e996e15c1628",
+          "tool_sha256": "088b50f511b0526037f263e6647b403099bfd5402302f284e52264e81a77b38e",
+          "topics": [
+            "/points",
+            "/image",
+            "/camera_info"
+          ],
+          "camera_payload_change": false,
+          "cloud_payload_change_from_derived": false,
+          "header_change": false,
+          "record_timestamp_change": false,
+          "timing": "Original bag record times; camera and LiDAR header clocks are not aligned here",
+          "detection_overlay": false
+        },
+        "counts": {
+          "/points": 291,
+          "/image": 58,
+          "/camera_info": 58
+        },
+        "files": {
+          "metadata.yaml": "51cf1a9f1c393368fd508a4d1de7ef3c4be44df3f07ca9be624a281e848c8cb8",
+          "rosbag2_2023_03_28-16_25_54.pending_0.db3": "488bce9654186e40c11c85ef6765eacfc0305f781b39a864c783f19d20eb5d7f"
+        }
+      }
+    },
+    {
+      "bag": "rosbag2_2023_03_28-16_26_51",
+      "camera_directory": "/media/ae/New Volume/MasterThesis/.recovery/rosbags/ouster_calibration_v3/camera/rosbag2_2023_03_28-16_26_51",
+      "video": "/media/ae/New Volume/MasterThesis/.recovery/rosbags/ouster_calibration_v3/camera/rosbag2_2023_03_28-16_26_51/camera.mp4",
+      "video_metadata": {
+        "video_sha256": "a5da155e1c467ac6c923208f089c421e11f8b7853c8ceccec00d22e75e0e5d2a",
+        "frames_manifest_sha256": "3ec057c4c9a5ea2a160c4c940065db510fce362b6356986758d6b8c34bd4a797",
+        "probe": {
+          "programs": [],
+          "streams": [
+            {
+              "codec_name": "h264",
+              "width": 1280,
+              "height": 1070,
+              "nb_frames": "793"
+            }
+          ],
+          "format": {
+            "duration": "26.433333"
+          }
+        },
+        "duration_error_seconds": -0.0018609319999995932,
+        "source_frames": 53
+      },
+      "frames_manifest_sha256": "3ec057c4c9a5ea2a160c4c940065db510fce362b6356986758d6b8c34bd4a797",
+      "visual_directory": "/media/ae/New Volume/MasterThesis/.recovery/rosbags/ouster_calibration_v3/visual/reflectivity_div255/rosbag2_2023_03_28-16_26_51",
+      "visual_manifest": {
+        "recipe": {
+          "source_bag": "rosbag2_2023_03_28-16_26_51",
+          "feature": "reflectivity_div255",
+          "source_sha256": {
+            "rosbag2_2023_03_28-16_26_51_0.db3": "480ff115da15d00447d3c41e5d761b6071178802c9c549fbc5cbb46ef4a1981c"
+          },
+          "cloud_manifest_sha256": "4b132a7485e4aaa324a437d4df15636ded46f06ab5c83e77f9dafe71be50d263",
+          "tool_sha256": "088b50f511b0526037f263e6647b403099bfd5402302f284e52264e81a77b38e",
+          "topics": [
+            "/points",
+            "/image",
+            "/camera_info"
+          ],
+          "camera_payload_change": false,
+          "cloud_payload_change_from_derived": false,
+          "header_change": false,
+          "record_timestamp_change": false,
+          "timing": "Original bag record times; camera and LiDAR header clocks are not aligned here",
+          "detection_overlay": false
+        },
+        "counts": {
+          "/points": 265,
+          "/image": 53,
+          "/camera_info": 53
+        },
+        "files": {
+          "metadata.yaml": "bd27d3ba7a4ed88d21c40236b6e93c05c885cfa8c5537a2d0c933075934ed275",
+          "rosbag2_2023_03_28-16_26_51.pending_0.db3": "ff96fe682402058f87c5f8dc47d42ba9e252a9666e292464c8164390517b18b6"
+        }
+      }
+    }
+  ],
+  "test_players_exited": true,
+  "main_domain_player_changed": false,
+  "rviz_configuration": "rviz/ouster_camera.rviz",
+  "actual_new_desktop_rviz_rendering_verified": false,
+  "host_reception": {
+    "first": {
+      "counts": {
+        "clouds": 20,
+        "images": 4,
+        "camera_info": 4
+      },
+      "sample": {
+        "cloud_frame": "laser_data_frame",
+        "cloud_stamp": 1745.75443414,
+        "image_frame": "camera",
+        "image_stamp": 757.663439896,
+        "image_dimensions": [
+          2448,
+          2048
+        ]
+      },
+      "invalid": [],
+      "elapsed_seconds": 16.85690611100017,
+      "timing": "Same player uses record times; different sensor header clocks preserved",
+      "detection_overlay": false
+    },
+    "second": {
+      "counts": {
+        "clouds": 20,
+        "images": 4,
+        "camera_info": 4
+      },
+      "sample": {
+        "cloud_frame": "laser_data_frame",
+        "cloud_stamp": 1803.14660417,
+        "image_frame": "camera",
+        "image_stamp": 815.168444448,
+        "image_dimensions": [
+          2448,
+          2048
+        ]
+      },
+      "invalid": [],
+      "elapsed_seconds": 17.43139625599997,
+      "timing": "Same player uses record times; different sensor header clocks preserved",
+      "detection_overlay": false
+    }
+  },
+  "helper_sha256": {
+    "tools/export_ouster_camera.py": "2fe898080953c442e71cb24d75ede95afa50dc3885cfd949c53bf491f696c701",
+    "tools/prepare_ouster_visual.py": "088b50f511b0526037f263e6647b403099bfd5402302f284e52264e81a77b38e",
+    "tools/rosbag_ouster.sh": "6f2a549de8c50019e63cf9202a9989cb6fed2883a1ce2375dfd969dcdcbabf11",
+    "rviz/ouster_camera.rviz": "5e6e676a00df1865dc23afc817527a25bfd4055048a13197f52cc9cb8a3d2134",
+    "tests/test_ouster_camera.py": "9bd67b51712df75f61e5175dbe17b89bad00ddc933385d55c89d0cf46c4882cf"
+  }
+}

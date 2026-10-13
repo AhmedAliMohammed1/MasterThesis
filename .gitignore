@@ -7,7 +7,7 @@ tests/__pycache__/
 /install/
 /log/
 
-# Local pretrained model copied for Docker image construction.
+# Optional native/offline pretrained model assets. Docker fetches its own model.
 /docker/assets/
 
 # Downloaded SDK installers and repositories (keep independent backups).
@@ -45,3 +45,11 @@ __pycache__/
 /docs/*.toc
 /docs/*.synctex.gz
 /docs/*.pdf
+
+# Local demo assets and generated camera videos (editable helpers remain tracked).
+/data/
+*.mp4
+*.mkv
+*.avi
+*.part
+*.pending.mp4

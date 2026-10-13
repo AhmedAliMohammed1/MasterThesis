@@ -2,9 +2,11 @@
 
 This project receives LiDAR point clouds and publishes 3D detection messages using a pretrained PointPillars ONNX model and TensorRT 10.16.1.11. The current deployment uses Ubuntu 24.04 and Docker; the image builds the ROS package with colcon.
 
+For a plain-language reference to the migration, CPU/GPU roles, model downloads, NMS, tests and accuracy investigation, read [the explanation README](README_PROJECT_EXPLANATIONS.md). A compact [three-slide LaTeX presentation](docs/PROJECT_MIGRATION_PRESENTATION.tex) and [PDF rendition](output/pdf/PROJECT_MIGRATION_PRESENTATION.pdf) explain the main edits and current support, with diagrams of the migration, detailed CPU/GPU/ROS flow and ONNX-to-engine startup. The PDF separately renders the source content and vector figures because the built-in compiler could not initialize; native LaTeX compilation remains unverified.
+
 The [A-to-Z LaTeX guide](docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex) explains the completed changes and gives plain-language steps and commands for driver installation, Docker/NVIDIA Container Toolkit setup, automatic Git/model/SDK downloads, build/run, inspection, bag playback, synthetic verification, transfer to another computer, native colcon development, troubleshooting, and interrupted-work recovery. Open the `.tex` file in the Codex editor for its PDF preview when the compiler is available. PDF compilation is unverified: the built-in compiler could not initialize; its latest attempt could not download the uncached TeX bundle; earlier attempts after the folder move reported a closed sandbox connection. The source and command checks are saved.
 
-For the full account of how the project reached this stage, read the [project history and decision record](docs/PROJECT_HISTORY_AND_DECISION_RECORD.md). It covers every discussion topic, the purpose and location of all 51 changed implementation files, decisions, corrections, test evidence and remaining work. The [chronological chat record](docs/CHAT_DISCUSSION_RECORD.md) preserves the original requests and recorded replies, with earlier commands and status clearly marked as historical.
+For the full account of how the project reached this stage, read the [project history and decision record](docs/PROJECT_HISTORY_AND_DECISION_RECORD.md). It covers the purpose and location of all 51 changed implementation files, decisions, corrections, test evidence and remaining work. The [chronological chat record](docs/CHAT_DISCUSSION_RECORD.md) preserves the original requests and recorded replies, with earlier commands and status clearly marked as historical. Its [latest explanation and presentation continuation](docs/CHAT_DISCUSSION_RECORD.md#explanation-and-presentation-continuation-saved-5-october-2026) summarizes the subsequent questions and document edits, saved on 5 October 2026.
 
 ## Build and run with one command
 
@@ -35,6 +37,27 @@ Then launch with the direct `docker run` command in [Docker details](docker/READ
 
 The native command is `ros2 run pp_infer pp_infer` with an engine and parameter file; there is no `ros2 node run` command. Without a name override, native startup retains `/minimal_publisher`. Use the explicit startup procedure in the guide; the historical launch file has old absolute paths and unverified model settings.
 
+## ONNX, engine creation and ROS loading
+
+ONNX contains the pretrained network and its weights. TensorRT turns it into an engine optimized for the selected GPU. This conversion does not train the model again.
+
+| File | When it is prepared | Location inside the container | Who reads it |
+| --- | --- | --- | --- |
+| `pointpillars.onnx` | Downloaded from NVIDIA NGC and checksum-verified during image build; cached build layers can reuse it. | `/opt/models/pointpillars.onnx` | TensorRT's `trtexec` builder. The startup script also hashes it to identify the cache entry. |
+| `<cache-key>.engine` | Generated at container startup if the matching cache entry is missing or empty. | `/var/lib/pp_infer/`, normally backed by persistent Docker volume `pp-engines`. | The C++ ROS node through TensorRT's runtime. |
+
+Normal startup follows these steps:
+
+1. Check the selected GPU and calculate a cache key from the ONNX checksum, GPU identity, driver/CUDA information and build settings.
+2. Reuse a matching nonempty engine, or run `trtexec` to parse ONNX and build one on that GPU. The current recipe is FP32, batch one, with TF32 disabled.
+3. Save a successfully built engine in the persistent volume. The engine is generated locally; it is not downloaded or extracted from ONNX as an archive.
+4. Start `ros2 run pp_infer pp_infer`, passing the configuration file and the generated path through `engine_path`.
+5. Load the engine once, create the execution context and GPU buffers, then reuse them for incoming point clouds. The CPU prepares points, checks results, runs NMS and publishes ROS messages; the GPU executes the PointPillars network.
+
+The current ROS node does not open ONNX. Its legacy `model_path` parameter is stored but unused for loading; `data_type` does not change the precision of an existing engine. Calling `ros2 run` directly does not download a model or build an engine: prepare the engine and required libraries first. Normal container startup still needs the ONNX file even when an engine is cached, because the script calculates its checksum.
+
+See the [step-by-step explanation and engine diagram](README_PROJECT_EXPLANATIONS.md#how-the-engine-is-created-step-by-step) and the [CPU/GPU/ROS diagram](README_PROJECT_EXPLANATIONS.md#5-cpu-and-gpu-responsibilities-and-who-talks-to-whom). These documentation updates introduce no new GPU test results or accuracy acceptance.
+
 ## Prepare another computer
 
 Use Ubuntu 24.04 on Linux x86-64 with a supported NVIDIA GPU, enough GPU memory, a compatible driver, Docker, and NVIDIA Container Toolkit configured for Docker. The guide starts from installing the driver and provides each command. Host ROS, TensorRT, and CUDA development packages are unnecessary when using the image.
@@ -49,7 +72,7 @@ cd "$HOME/pointpillars"
 sudo bash tools/deploy.sh
 ```
 
-The build fetches its own source and dependencies. Plan for roughly 40 GB free for a fresh build, an allowance rather than a measured minimum. Docker images/cache occupy Docker's storage filesystem even if the project is on another drive. The original checkout is now `/media/ae/New Volume/MasterThesis`; quote paths containing spaces. Large models, SDKs, engines and archives remain excluded by `.gitignore`. No registry image has been published.
+The build fetches its own source and dependencies. Plan for roughly 40 GB free for a fresh build, an allowance rather than a measured minimum. Docker images/cache occupy Docker's storage filesystem even if the project is on another drive. The recorded Linux checkout moved to `/media/ae/New Volume/MasterThesis`; quote paths containing spaces. The documentation checkout inspected on 5 October 2026 is `E:\MasterThesis`; this does not establish Windows runtime support. Large models, SDKs, engines and archives remain excluded by `.gitignore`. No registry image has been published.
 
 Alternatively, transfer the built image with `docker save` and `docker load`, then run it on the receiving computer. The guide gives both commands. The image contains the model and libraries and builds its own target engine; do not assume engines transfer between different GPUs. Keep SDK/model licensing terms with redistributed artifacts.
 
@@ -131,6 +154,25 @@ If RViz is already installed but its vision display plugin is missing, the launc
 Use the mouse wheel to zoom and drag to rotate. Expand **Detections** to check its status or enable **Show Score**. Box colors identify numeric model IDs: orange `0`, blue `1`, yellow `2`; their exact export labels are verified as Vehicle, Pedestrian and Cyclist, respectively. Intensity colors apply to points. All published boxes remain visible; this viewer adds no confidence filter. A sensor-frame-only bag can show a global TF warning because it supplies no transform tree. With both displays receiving data in the same `velodyne` frame, points and boxes can still render; do not substitute a different fixed frame without a valid transform.
 
 Real-bag integration passed 25 matched frames inside Docker and another 25 through the host viewer transport. The live RViz window rendered points and boxes. These checks establish message compatibility and visualization, **not detection accuracy**; independent numerical reference parity and accuracy acceptance remain unfinished; the labeled diagnostic baseline is documented below. The inference container remains headless and publishes `Detection3DArray` directly; no marker conversion is needed.
+
+## Try a different LiDAR bag (non-KITTI)
+
+The separate [Ouster demo](docs/OUSTER_ROSBAG_DEMO.md) downloads and verifies two native ROS 2 recordings from an Ouster OS1-32 (about 1.52 GB compressed), audits the cloud fields and capacities, and remaps `/points` to `/point_cloud` for the existing detector. These calibration recordings have camera images but no object-detection ground truth.
+
+```bash
+bash tools/rosbag_ouster.sh prepare
+# Keep inference running; stop the KITTI player before switching:
+bash tools/rosbag_demo.sh stop
+bash tools/rosbag_ouster.sh
+```
+
+Open the separate view with `RVIZ_CONFIG="$PWD/rviz/ouster.rviz" bash tools/visualize.sh`; it uses the verified `laser_data_frame` and shows scores. See the guide for sequence selection, isolated domains, intensity/input limitations and stopping the new player. The default helper preserves original XYZI values and timestamps; it does not tune or rebuild inference. Both bags produced matched detection messages in testing, but the unchanged model also dropped invalid-output frames and produced excessive near-1.0 scores; these recordings do not establish accuracy.
+
+The subsequent [controlled Ouster feature comparison](docs/OUSTER_FEATURE_COMPARISON.md) found that changing only the fourth feature removed nonfinite lengths in all 144 normalized raw observations. An opt-in replay uses `PP_OUSTER_FEATURE=reflectivity_div255 bash tools/rosbag_ouster.sh`. Original source bags are preserved; this bounded encoding is a diagnostic candidate, not validated detection accuracy or training calibration.
+
+Camera reference is now available as [two extracted videos and combined ROS playback](docs/OUSTER_CAMERA_VISUALS.md). Use `bash tools/rosbag_ouster.sh videos` for MP4 export; enable `PP_OUSTER_CAMERA=1` and load `rviz/ouster_camera.rviz` to display camera images alongside the points and detections. Camera and LiDAR sensor clocks differ, so playback uses bag-record timing; no calibrated detection overlay is claimed.
+
+For more visible scene detail, use the [original Ouster view and new frontal KITTI comparison](docs/FRONTAL_COMPARISON_AND_RVIZ_DETAIL.md). `tools/rosbag_ouster_detail.sh` keeps original signal/geometry available separately from normalized inference. `tools/rosbag_kitti_front.sh` plays a different official city recording with 154 dense full scans and forward-facing images; its saved view is `rviz/kitti_front.rviz`. No point sampling or front-only crop is installed.
 
 ## Labeled KITTI validation data
 
