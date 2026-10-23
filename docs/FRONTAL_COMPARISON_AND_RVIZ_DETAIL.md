@@ -1,5 +1,7 @@
 # Original LiDAR detail and a forward-camera KITTI comparison
 
+> **Status reviewed 23 October 2026.** The saved frontal KITTI check matched all 154 clouds/detections/images/CameraInfo messages, preserving original XYZI and camera pixels. Five Ouster raw/normalized cloud pairs passed non-intensity byte checks. The supplied later screencasts add visual examples, without establishing which bag/engine/feature variant they used. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
+
 This update addresses the sparse RViz scene and adds a different road recording. It does not change model weights, confidence thresholds, NMS or existing source recordings.
 
 ## Why the Ouster scene can look sparse

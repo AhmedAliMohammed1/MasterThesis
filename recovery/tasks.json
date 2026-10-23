@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_local_date": "2026-10-03",
+  "updated_local_date": "2026-10-23",
   "timezone": "Europe/Berlin",
   "baseline_commit": "2301135",
   "target": {
@@ -18,7 +18,9 @@
     "2026-10-02: user chose labeled KITTI scenarios first, later own LiDAR records. W01 partial contract added; exact label order resolved, numerical fixture and accuracy acceptance still pending.",
     "2026-10-03: W01.2 data/calibration substep verified; W01 in progress because prediction/reference/evaluator/accuracy acceptance remain. Dataset/evidence outside Git need independent backups.",
     "2026-10-03: W01.3 measurement delivered, poor baseline and repeatability/vertical errors recorded; no accuracy acceptance. Validation detector/player/RViz left running on isolated domain42. LaTeX source updated but PDF compile unavailable before parsing.",
-    "2026-10-03: W01.4 TRT8 compatibility comparison measured poor, same-raw NMS agrees in192 observations; capacity controls improve repeatability. Accuracy, numerical/training parity and full memory acceptance remain unmet."
+    "2026-10-03: W01.4 TRT8 compatibility comparison measured poor, same-raw NMS agrees in192 observations; capacity controls improve repeatability. Accuracy, numerical/training parity and full memory acceptance remain unmet.",
+    "2026-10-23: publication confidence gate (default 0.5, live configurable), derived statistics/count topics and RViz count displays implemented. Five native C++/ROS tests and 67 Python tests passed; TensorRT-enabled package builds. No new GPU replay or desktop rendering: NVIDIA driver inaccessible in this session. Frozen baseline collection explicitly disables and verifies the new gate.",
+    "2026-10-23: Added read-only tools/monitor_detections.sh (watch/once/threshold/rviz), with host/Docker routing and bounded snapshot/parameter waits. Expanded RViz marker with cumulative published/filtered totals and frame-drop counts. Six helper tests, actual controlled ROS reads and all five C++/ROS tests passed. No existing deployment replaced or actual GPU/desktop rendering claimed."
   ],
   "state_values": [
     "pending",
@@ -419,14 +421,20 @@
         "tools/prepare_kitti_demo.py",
         "docker/demo-tools.Dockerfile",
         "tests/test_kitti_demo.py",
-        "config/demo_inventory.json"
+        "config/demo_inventory.json",
+        "include/pp_infer/detection_output.hpp",
+        "src/detection_output.cpp",
+        "src/pointcloud_adapter.cpp",
+        "docs/CONFIDENCE_FILTER_AND_MONITORING.md",
+        "tools/monitor_detections.sh",
+        "tests/test_monitor_helper.py"
       ],
       "acceptance": [
         "Installed launch arguments/YAML actually work",
         "QoS and clock compatibility checked",
         "Stage times, drop reasons and header preservation validated"
       ],
-      "next_action": "RViz and reproducible sample bag/camera helper delivered and published at dd687da. Resolve training semantics against a labeled reference and continue W06 plus full launch/QoS/metrics acceptance.",
+      "next_action": "Confidence publication gate, per-frame/cumulative statistics and RViz count configuration delivered locally. Validate on target GPU/desktop after rebuilding the selected source. Continue W06 and installed launch/QoS/stage-timing/operational acceptance; W07 remains in progress.",
       "evidence": [
         {
           "command": "docker exec -i pointpillars /entrypoint.sh python3 - < .recovery/verification/inspect-live-bag.py",
@@ -463,6 +471,45 @@
         {
           "result": "Domain42 labeled KITTI player+green calibrated GT markers+Detection3DArray RViz config implemented; actual desktop rendered and left running. Helper duplicate-player and unrelated-container stop protection passed. Worker/QoS/metrics acceptance remains pending.",
           "inventory": "config/kitti_accuracy_inventory.json"
+        },
+        {
+          "command": "colcon build --packages-select pp_infer --build-base .recovery/confidence-filter-runtime/build --install-base .recovery/confidence-filter-runtime/install --cmake-args -DPP_BUILD_RUNTIME=ON -DPP_BUILD_ROS_ADAPTER=ON -DCMAKE_BUILD_TYPE=Debug -DPython3_EXECUTABLE=/usr/bin/python3",
+          "exit_code": 0,
+          "result": "Full TensorRT-enabled executable and tests built against existing local SDK; no GPU execution claimed.",
+          "log": ".recovery/verification/confidence-filter/runtime-build.log",
+          "log_sha256": "77e6ce2d2f90516d492bfd9774af51f287463d0cee9e49615c2f4b23bc0327e3"
+        },
+        {
+          "command": "colcon test --packages-select pp_infer --build-base .recovery/confidence-filter-runtime/build --install-base .recovery/confidence-filter-runtime/install --ctest-args --output-on-failure",
+          "exit_code": 0,
+          "result": "5 tests passed; actual filtered ROS detection/statistics/marker publication on isolated local domain 113, dynamic/atomic rejection, empty/error/totals/late subscriber controls.",
+          "log": ".recovery/verification/confidence-filter/runtime-tests.log",
+          "log_sha256": "0b53e2d58936702e53a3648e45194472d7324eed5e0e034100bc92c82a631563"
+        },
+        {
+          "command": "python3 -m unittest discover -s tests -p 'test_*.py' -v",
+          "exit_code": 0,
+          "result": "67 tests passed. Latest stricter baseline zero-removal check also passed the focused 3-test rerun in monitor-tests.log.",
+          "log": ".recovery/verification/confidence-filter/python-tests.log",
+          "log_sha256": "aec5a9b58ddfaf1f68e36a462d3eda4382a2088cc2cfd6901b1530768dc2f542"
+        },
+        {
+          "exit_code": 0,
+          "result": "6 helper tests passed: read-only routing, remapped topic/domain/container, parameter get, stopped-container refusal, bounded timeout and invalid settings.",
+          "log": ".recovery/verification/monitor-helper/helper-tests.log",
+          "log_sha256": "bfc421649dbeafa391577cf3a9cf70fc97e0aac68f4cbb8147252a6ff83759c2"
+        },
+        {
+          "exit_code": 0,
+          "result": "5 C++/ROS tests passed after expanding the marker with cumulative totals and dropped-frame counters.",
+          "log": ".recovery/verification/monitor-helper/ros-tests.log",
+          "log_sha256": "fb2cdb347ced6e2c4c027cf1bfc7813f873bd1252d711e499c2203facee61148"
+        },
+        {
+          "exit_code": 0,
+          "result": "Actual host helper once/threshold reads passed against an isolated controlled ROS fixture, not GPU inference; temporary publisher stopped.",
+          "log": ".recovery/verification/monitor-helper/live-checks.json",
+          "log_sha256": "1295d926adc82ca508efca75e6466f5f6455b256963578fb806cf3fee8649073"
         }
       ]
     },

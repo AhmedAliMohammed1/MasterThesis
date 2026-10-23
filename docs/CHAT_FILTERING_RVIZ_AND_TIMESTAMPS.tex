@@ -1,5 +1,6 @@
 \documentclass[11pt,a4paper]{article}
 \usepackage[T1]{fontenc}
+\usepackage{graphicx}
 \usepackage[utf8]{inputenc}
 \usepackage[margin=23mm]{geometry}
 \usepackage{parskip}
@@ -14,9 +15,22 @@
 \tikzset{box/.style={draw,rounded corners,align=center,text width=65mm,minimum height=9mm,font=\small},arr/.style={-{Stealth},thick}}
 \title{PointPillars Project: Filtering, Deployment, RViz and LiDAR Timestamps\\Complete Discussion Record}
 \author{MasterThesis project}
-\date{13 October 2026}
+\date{23 October 2026}
+
+% Locate illustration assets from docs/ or the repository root. The built-in
+% standalone compiler may not receive other project files; warn visibly then.
+\newcommand{\projectshot}[2]{%
+  \IfFileExists{figures/#1}{\includegraphics[width=#2]{figures/#1}}{%
+    \IfFileExists{docs/figures/#1}{\includegraphics[width=#2]{docs/figures/#1}}{%
+      \PackageWarningNoLine{project}{Screenshot #1 unavailable; illustrated output incomplete}%
+      \fbox{\parbox{.85\linewidth}{\centering\small Screenshot asset unavailable.\par
+      Keep \texttt{\detokenize{#1}} in the project's figures folder.\par
+      See docs/figures/README.md for the original image and provenance.}}}}}
+
 \begin{document}
 \maketitle
+The original discussion was recorded on 13 October 2026. A dated results continuation was added on 23 October; it is a documentation summary, not a verbatim extension of the transcript. The original record follows.
+
 This standalone document records every substantive question, explanation, command, code excerpt, qualification and figure in the current chat up to the request to create this document. Chat interface metadata and raw tool output are not part of the discussion transcript. Diagrams originally written as Mermaid or text are reproduced below as editable TikZ figures or verbatim diagrams. The explanations describe the repository state inspected during the chat; they do not claim new runtime tests.
 \tableofcontents
 \newpage
@@ -302,4 +316,99 @@ All repository file references in the discussion are relative to:
 \item \texttt{rviz/pointpillars.rviz}: saved point-cloud and detection display configuration.
 \item \texttt{docs/MODEL\_REFERENCE\_COMPARISON.md}: independent comparison evidence and limitations.
 \end{itemize}
+
+\clearpage
+\section{Results continuation: reviewed 23 October 2026}
+The current local source baseline is \texttt{ee6b36c}. Numerical results retain
+their original 3--14 October dates; the supplied screencast filenames are dated
+20 October. This continuation updates project status without changing the
+original questions and answers above.
+\begin{longtable}{p{.29\linewidth}p{.62\linewidth}}
+\hline Evidence & Result and interpretation \\ \hline
+Labeled KITTI, 16 test frames, moderate &
+Zero 3D matches for Car, Pedestrian and Cyclist. BEV AP R40 is
+5.7516\%, 0\% and 0.02577\%. Vehicle is mapped to Car compatibility.
+The 12 BEV-matched cars have median upward center error 1.529 m. \\
+Independent reference &
+TRT8 also reproduces poor accuracy/elevated centers. NVIDIA and project NMS
+select identical boxes on 192/192 identical-candidate observations;
+exact inference/training parity is still unaccepted. \\
+Voxel-capacity controls &
+12/32 original clouds exceed 10,000 pillars. Two tuning-only capped-input
+controls improve repeat matching to about 99.6--100\%, without an accuracy
+claim or installed production change. \\
+Ouster feature experiment &
+Raw signal rejects 15/48 observations with 33 nonfinite-length rows.
+The three normalized encodings reject 0/144 observations. Only the fourth
+feature changes. Accuracy/training calibration are not established. \\
+Complete normalized Ouster replay &
+Reflectivity/255 matches all 291+265 input/output occurrences without recorded
+detector errors. Source duplicate headers are counted as occurrences. \\
+Ouster camera and original-data view &
+111 images, 111 CameraInfo messages and 556 normalized clouds are preserved.
+Five raw/normalized cloud pairs pass non-intensity byte comparisons.
+Camera/LiDAR header clocks remain different; no calibrated image overlay. \\
+Frontal KITTI raw drive 0005 &
+154 matched clouds/detections/images/CameraInfo messages; original XYZI and camera
+pixels preserved. Full scans contain 98,532--124,122 points; no front-only crop.
+This is an integration clip, not the labeled accuracy set. \\
+\hline
+\end{longtable}
+
+\subsection{What the later sensor results change}
+Unscaled Ouster signal is now a demonstrated contributor to numerical failures
+on those recordings. Normalized features reduce excessive saturated predictions,
+but do not resolve KITTI's vertical error or certify object correctness.
+The ordinary Ouster helper still defaults to raw signal; select the diagnostic
+encoding explicitly. Keep detector intensity scale 1.0 for already converted inputs.
+\begin{lstlisting}
+PP_OUSTER_FEATURE=reflectivity_div255 bash tools/rosbag_ouster.sh
+# Separate viewer terminal:
+RVIZ_CONFIG="$PWD/rviz/ouster.rviz" bash tools/visualize.sh
+# Alternative player for original geometry plus normalized input and camera:
+bash tools/rosbag_ouster_detail.sh
+# Alternative frontal KITTI player:
+bash tools/rosbag_kitti_front.sh
+\end{lstlisting}
+Select one player at a time, after stopping conflicting playback, and use the
+corresponding saved RViz profile and matching domain. These alternatives do not
+start inference. Camera playback coordinates bag-record arrival times; retaining
+headers does not prove sensor-clock synchronization. The detector still has no
+hardware scan-start control, configurable sensor QoS or bounded worker.
+
+\subsection{Figures extracted from the user's videos}
+The local sources are the two WebM files in
+\path{/media/ae/New Volume/datasets/vedios}, with filenames
+\texttt{Screencast from 2026-10-20 14-09-09.webm} and
+\texttt{Screencast from 2026-10-20 14-13-14.webm}.
+\begin{figure}[htbp]
+\centering\projectshot{rviz-screencast-1.png}{.93\linewidth}
+\caption{First recording, 32.035 s. RViz displays points, candidate boxes and
+scores. No reviewed ground truth is shown.}
+\end{figure}
+\begin{figure}[htbp]
+\centering\projectshot{rviz-screencast-2.png}{.93\linewidth}
+\caption{Second recording, 16.023 s. Wider scene detail. Bag, engine and feature
+identity cannot be established from the screenshot alone.}
+\end{figure}
+Full frames are retained losslessly without crop, resize or annotation.
+\path{docs/figures/provenance.json} records source/image hashes and timestamps.
+The figures demonstrate visible rendering in the supplied recordings; they do
+not demonstrate detection accuracy, latency or calibrated camera projection.
+
+\subsection{Verification, attribution and next work}
+The documentation review passed 64 existing Python tests and rehashed the selected
+saved result JSON evidence against inventories. No new GPU run, model adaptation,
+threshold tuning or image rebuild was performed. Two earlier allocation memchecks
+reported zero errors but do not complete internal tensor-bounds/race validation.
+The runtime remains synchronous with reliable depth 700; worker/QoS/metrics,
+original-training parity, larger untouched accuracy evaluation and CI remain open.
+
+Ouster source attribution: Kenji Koide, AIST, DOI
+\texttt{10.5281/zenodo.7780490}, CC-BY-4.0. KITTI attribution: Geiger, Lenz,
+Stiller and Urtasun, KIT/TTI-C, CC-BY-NC-SA-3.0. Screenshot experiment identity
+is not independently established. Preserve the relevant source terms with data.
+See \path{docs/CURRENT_STATUS_AND_RESULTS.md} for the consolidated tables and
+\path{recovery/PROGRESS.md} for final link/asset/compiler verification.
+
 \end{document}

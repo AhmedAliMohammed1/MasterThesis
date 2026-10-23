@@ -1,14 +1,15 @@
 # PointPillars: project explanations and migration reference
 
-Saved and updated on **5 October 2026** from this explanation discussion, including the latest ONNX/engine question and presentation edits. The implementation and GPU findings below refer to the recorded checks on **1-3 October 2026**, not to new tests performed while writing this document. Source baseline: `2301135`. The checkout inspected for this discussion has committed HEAD `29ef404`, with separate local deployment/ignore-file and documentation edits.
+> **Status reviewed 23 October 2026.** This explanation now includes the 13–14 October Ouster feature/camera and frontal KITTI results, plus figures extracted from the supplied 20 October screencasts. Earlier dated findings remain historical evidence. [Current results and evidence](docs/CURRENT_STATUS_AND_RESULTS.md).
 
-This reference explains why we updated the original code, how the application works, how we obtain TensorRT and the model, what the tests establish, and how to investigate the poor accuracy. It summarizes the discussion for future use rather than reproducing every chat message.
+Updated **23 October 2026** against local source `ee6b36c`, inventories and saved results. Numerical evidence remains dated to its recorded experiments on 1–14 October. This documentation pass also inspected the supplied screencasts dated 20 October; it did not run new GPU inference.
 
-The [latest discussion continuation](docs/CHAT_DISCUSSION_RECORD.md#explanation-and-presentation-continuation-saved-5-october-2026) records the questions, clarifications and presentation changes. The [engine creation steps](#how-the-engine-is-created-step-by-step) and [ROS loading steps](#how-ros2-run-loads-and-reuses-the-engine) below explain the latest answer in detail.
+This reference explains the migration, CPU/GPU/ROS flow, downloads, checks and poor diagnostic accuracy. See [current results](docs/CURRENT_STATUS_AND_RESULTS.md) for the consolidated tables, limitations and video figures, and the dated [discussion continuation](docs/CHAT_DISCUSSION_RECORD.md) for earlier requests.
 
-The short presentation source is [PROJECT_MIGRATION_PRESENTATION.tex](docs/PROJECT_MIGRATION_PRESENTATION.tex). It contains exactly three active slides, with the project purpose, a migration diagram, the detailed CPU/GPU/ROS flow and an ONNX-to-engine startup diagram. The [three-page PDF](output/pdf/PROJECT_MIGRATION_PRESENTATION.pdf) is a separate rendition of the same source content and figure labels. The optional accuracy slide remains commented out as in the user-supplied source. Native LaTeX compilation is unverified; details are recorded near the end of this README.
-
+The [presentation source](docs/PROJECT_MIGRATION_PRESENTATION.tex) now adds accuracy, Ouster/frontal results and screencast figures to its three original migration/flow/lifecycle slides. The old three-page PDF is a historical rendition, not a current rendering of the expanded source.
 ## 1. The current state
+
+The subsequent [confidence-filter feature](docs/CONFIDENCE_FILTER_AND_MONITORING.md), implemented on 23 October, adds a default 0.5 publication gate, live threshold updates, per-frame/cumulative statistics and an RViz count label. Low-score detections are excluded before ROS publication; kept fields remain unchanged. This does not remove high-confidence false positives or change the earlier frozen accuracy results.
 
 The project contains a working deployment and inference pipeline: receive a LiDAR cloud, run the pretrained model on an NVIDIA GPU, filter candidate boxes, and publish ROS detections. Docker build, engine generation, synthetic GPU/ROS execution, engine-cache reuse, real-bag message flow and RViz rendering passed on the available Ubuntu machine.
 
@@ -265,7 +266,7 @@ Increasing NMS IoU from 0.01 to 0.1 keeps more overlapping boxes. It may retain 
 
 ## 10. How we tested the implementation
 
-These are recorded checks, not a fresh full-suite rerun on this Windows checkout.
+These rows retain their original recorded checks. On 23 October, the current Linux checkout also passed all 64 Python tests; this was not a new GPU/ROS integration run.
 
 | Layer | Recorded verification | What it establishes and its limit |
 | --- | --- | --- |
@@ -334,6 +335,11 @@ The following groups cover the implementation and support files added or edited 
 | `config/environment_inventory.json`, `config/model_inventory.json`, `config/runtime_inventory.json`, `config/model_contract.json` | Observed platform/model/SDK identities and partial semantic contract. |
 | `config/docker_inventory.json`, `config/demo_inventory.json`, `config/visualization_inventory.json` | Deployment/demo/viewer evidence and asset identity records. |
 | `config/kitti_sources.json`, `config/kitti_validation_inventory.json`, `config/kitti_accuracy_inventory.json`, `config/kitti_reference_inventory.json` | Dataset sources, frozen identities, accuracy results and diagnostic evidence. |
+| `tools/prepare_ouster_demo.py`, `tools/ouster_features.py`, `tools/prepare_ouster_variant.py`, `tools/compare_ouster_features.py`, `tools/compare_ouster_repeats.py` | Original Ouster preparation, explicit feature variants and same-scan numerical/repeatability comparison. |
+| `tools/export_ouster_camera.py`, `tools/prepare_ouster_visual.py`, `tools/prepare_ouster_raw_view.py`, `tools/rosbag_ouster.sh`, `tools/rosbag_ouster_detail.sh` | Camera previews, payload-preserving merged playback and original-data visualization alongside normalized inference. |
+| `tools/prepare_kitti_front.py`, `tools/rosbag_kitti_front.sh`, `rviz/kitti_front.rviz` | Full-scan raw KITTI drive 0005 with forward-facing camera and calibrated source projection. |
+| `tests/test_ouster_demo.py`, `tests/test_ouster_features.py`, `tests/test_ouster_camera.py`, `tests/test_kitti_front.py` | Input/feature preservation, timing, calibration and owned-player controls. |
+| `docs/CURRENT_STATUS_AND_RESULTS.md`, `docs/figures/` | Consolidated dated results, screencast PNGs and source/frame provenance. |
 | `tests/test_recovery.py`, `.gitignore`, `.dockerignore` | Recovery checks and exclusion of large/generated artifacts from source and build context. |
 | `label.txt` | Model class-label file, later verified against the exact NGC export. Current YAML label integration is still pending. |
 | `README.md`, `docker/README.md`, `docs/local_runtime.md`, `docs/LEGACY_FOXY_README.md` | Current setup/run instructions plus clearly preserved historical installation procedure. |
@@ -348,14 +354,20 @@ Read this reference for explanation, [README.md](README.md) for operation, [reco
 
 Source checkpoints omit SDKs, engines, models, bags, media and most generated evidence. Keep independent backups. Docker engine caching and source checkpointing solve different problems.
 
-The three-slide LaTeX source is `docs/PROJECT_MIGRATION_PRESENTATION.tex`. It is self-contained and uses Beamer with inline, editable TikZ figures, without external images or project files. The first slide includes the project purpose, migration and file changes. The second shows all seven requested inference stages, the direct point-cloud connection to RViz, CPU/GPU roles and recorded operational checks. The third explains ONNX downloading and checksum verification, GPU-specific FP32 engine creation with `trtexec`, engine-cache reuse, persistent storage, `engine_path` and one-time ROS loading. It also explains that the builder reads ONNX while the ROS node reads the engine, and that the standard entrypoint still needs ONNX for its checksum. The optional accuracy slide remains commented out. The built-in editor remains the default source/preview location. Its compiler failed before parsing on 5 October 2026 with `Unable to find standard directories for platform`, including the retries after these edits. This is an environment initialization failure. The source's native compilation remains unverified.
+The [LaTeX presentation](docs/PROJECT_MIGRATION_PRESENTATION.tex) now has six active slides: the original purpose/migration, CPU/GPU/ROS flow and engine lifecycle, followed by measured KITTI accuracy, later Ouster/frontal results and two screencast figures. Inline TikZ diagrams remain editable; screenshot PNGs live under `docs/figures/`. Keep those assets beside the source for the complete illustrated output. The standalone preview provides a labeled placeholder when project images are unavailable.
 
-To provide a usable presentation now, `output/pdf/PROJECT_MIGRATION_PRESENTATION.pdf` separately renders the paragraphs and table read directly from the three active LaTeX frames, with vector diagrams driven by the source's figure labels. It is not a PDF compiled by LaTeX. Page-count/content checks passed, all three pages with diagrams were rendered and visually inspected, and the explanation README's full file map covers every committed changed path since `2301135`. Markdown links were checked. Private build/layout evidence is under ignored `.recovery/documentation/migration-presentation/` and needs independent backup if required. With a working Beamer/TikZ compiler, the saved `.tex` can produce a native LaTeX PDF in future.
+The built-in compiler was attempted for all three updated LaTeX sources on 23 October. All failed before source parsing because its TeX bundle was not cached and could not be downloaded. Compilation and rendered page layout remain unverified. The source stays in the built-in editor; no terminal TeX installation was added. The old `output/pdf/PROJECT_MIGRATION_PRESENTATION.pdf` is a separate historical three-page rendition, not a compiled or current version of the expanded source. Diagnostics are retained under `.recovery/verification/docs-2026-10-23/latex-compilation.json`.
 
-No application runtime changes, engine rebuilds or fresh GPU tests were performed for this documentation request.
+The [current results](docs/CURRENT_STATUS_AND_RESULTS.md) distinguish numerical experiments, integration checks and visual illustrations. The [history](docs/PROJECT_HISTORY_AND_DECISION_RECORD.md) and [discussion record](docs/CHAT_DISCUSSION_RECORD.md) retain the earlier three-slide requests and compilation attempts as dated history.
 
-## 15. Latest discussion update: 5 October 2026
+## Latest sensor results and visual examples — 23 October 2026
 
-This saved update includes the project-purpose paragraph requested for the first presentation page, the requested seven-stage CPU/GPU/ROS figure, the fixes to the supplied LaTeX source, and the latest explanation of ONNX downloading, engine creation, caching and ROS loading. The presentation still contains three active slides; its engine diagram and simple explanations appear on page 3. The optional accuracy slide remains commented out.
+The [Ouster feature experiment](docs/OUSTER_FEATURE_COMPARISON.md) changed only the fourth feature. Raw signal rejected 15/48 observations; three normalized variants rejected 0/144. Explicit reflectivity/255 replay matched all 556 message occurrences, but there are no object labels and calibration/accuracy remain unvalidated. The ordinary helper still defaults to raw signal; the detail wrapper selects the normalized candidate.
 
-The [discussion continuation](docs/CHAT_DISCUSSION_RECORD.md#explanation-and-presentation-continuation-saved-5-october-2026) summarizes all visible questions in this explanation chat and the resulting document edits. The [main README](README.md#onnx-engine-creation-and-ros-loading) and [Docker README](docker/README.md#model-and-engine-lifecycle) now also carry the current engine/ONNX explanation. Earlier conversation and recorded tests retain their historical dates; this documentation update does not claim a new accuracy result or native LaTeX compilation success.
+Camera export preserves 111 original image and CameraInfo payloads and 556 normalized clouds. Bag-record timing coordinates streams with different header clocks; it does not establish acquisition-time synchronization. The original-data detail topic preserves full source geometry/auxiliary fields alongside normalized inference.
+
+The [frontal KITTI comparison](docs/FRONTAL_COMPARISON_AND_RVIZ_DETAIL.md) received 154 matched clouds/detections and 154 camera/CameraInfo messages. Its full 360-degree scans retain 98,532–124,122 points each. Neither this unlabeled clip nor Ouster replaces the frozen poor KITTI accuracy baseline.
+
+![RViz rendering from the supplied first screencast](docs/figures/rviz-screencast-1.png)
+
+First supplied recording at 32.035 s. Visible points, boxes and scores illustrate rendering; the screenshot alone does not establish object correctness or the experiment identity. [Second example and provenance](docs/CURRENT_STATUS_AND_RESULTS.md#visual-examples-from-the-supplied-screencasts).

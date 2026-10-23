@@ -1,5 +1,7 @@
 # How this PointPillars project reached its current stage
 
+> **Status reviewed 23 October 2026.** This history preserves earlier observations and publication states. The current local baseline is ee6b36c; KITTI evaluation/reference work and later Ouster/camera/frontal demos are committed locally. The latest results and visual examples are consolidated separately. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
+
 **Project history, decisions, changes and evidence — initial record 1–2 October 2026; addenda 3 and 5 October 2026**
 
 This document explains what we discussed, what changed, why each change was needed, where it lives, and what was actually checked. It follows the project from the first architecture request to Docker deployment, real-bag testing, RViz and the camera reference video.
@@ -904,3 +906,13 @@ The user also requested a compact presentation with figures, fixes to supplied L
 The [three-page PDF rendition](../output/pdf/PROJECT_MIGRATION_PRESENTATION.pdf) was separately rendered from the saved source content and figure labels and visually inspected. Native LaTeX compilation is unverified because the built-in compiler failed before parsing with `Unable to find standard directories for platform`. The source remains in the same editor for future native compilation.
 
 The [main README](../README.md#onnx-engine-creation-and-ros-loading) and [Docker README](../docker/README.md#model-and-engine-lifecycle) now include the latest file roles and startup/loading sequence. This documentation work performs no engine rebuild, new GPU execution or accuracy acceptance; the dated evidence above remains the basis for those findings.
+
+## Documentation and results continuation — 23 October 2026
+
+The user requested an update of all Markdown and LaTeX documentation to the latest state, including results, and authorized using images from `/media/ae/New Volume/datasets/vedios`. This is a summary of that request and the resulting documentation work, not a reconstructed verbatim transcript.
+
+Source review started at local commit `ee6b36c` with only untracked `prompt.md`; that user file was preserved. The review traced the ROS callback, XYZI adapter, TensorRT named-tensor runtime, NMS, Docker startup, data preparation, evaluator and later sensor helpers, and compared result inventories with saved evidence. Early planning statements were marked historical, current guides were refreshed, and the three LaTeX sources gained the later Ouster/camera/frontal findings and visual examples.
+
+The results remain: zero moderate KITTI 3D matches on the 16-frame test split; identical selected NMS boxes on 192 same-candidate reference observations; no invalid rows in 144 normalized Ouster observations; 556 matched normalized Ouster replay occurrences; and 154 matched frontal KITTI frames. These have different scopes and do not constitute accuracy acceptance.
+
+Frames from both supplied 20 October screencasts now illustrate RViz rendering with local-source hashes and offsets. The screenshots do not identify the engine/bag/feature recipe or prove accuracy. The fresh 64-test Python suite passed with local socket access. No runtime code, thresholds, datasets, engine, container or publication state was changed. See [current status and results](CURRENT_STATUS_AND_RESULTS.md), [figure provenance](figures/README.md) and the dated recovery progress entry for verification/compilation details.

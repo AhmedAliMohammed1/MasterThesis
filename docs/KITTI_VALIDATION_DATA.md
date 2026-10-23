@@ -1,5 +1,7 @@
 # Preparing labeled KITTI scenarios
 
+> **Status reviewed 23 October 2026.** Preparation is complete for 32 frozen labeled frames. Prediction export, evaluator policy and baseline scoring are also implemented; the 16-frame test set has zero moderate 3D matches. The 154-frame frontal raw-data clip is a separate integration example with no detection ground truth in that workflow. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
+
 This is the first implementation step in the [model validation plan](MODEL_VALIDATION_PLAN.md). It prepares matched point clouds, object annotations, calibration and camera images. It does not run inference or calculate accuracy. The earlier sequence04 bag and camera video remain useful integration examples, but have no object annotations in this project.
 
 From the project folder, run:
@@ -29,7 +31,7 @@ Selection uses annotations before any predictions are examined. The seed is `pp-
 
 The official development kit maps training frame IDs to raw recording date, drive and frame. The tool applies KITTI's one-based permutation, then partitions entire recording drives using a seeded SHA256. A drive cannot occur in both tuning and test. Within each partition, deterministic selection first covers missing scenario buckets, then balances repeated coverage with preference for rarer buckets. Hashes settle ties.
 
-Buckets identify original KITTI Car/Pedestrian/Cyclist labels, camera depth below 20 m or at least 40 m, one relevant labeled object, at least five relevant labeled objects, partial/large occlusion, truncation above 0.15, and difficulty categories. “Isolated” refers to relevant annotations, not a guarantee that the scene contains no other object. Difficulty buckets are preparation metadata; the official evaluation rules must still be implemented separately. A frame can have several buckets, so their counts overlap.
+Buckets identify original KITTI Car/Pedestrian/Cyclist labels, camera depth below 20 m or at least 40 m, one relevant labeled object, at least five relevant labeled objects, partial/large occlusion, truncation above 0.15, and difficulty categories. “Isolated” refers to relevant annotations, not a guarantee that the scene contains no other object. Difficulty buckets are preparation metadata; scoring now uses the separately implemented frozen KITTI evaluator policy. A frame can have several buckets, so their counts overlap.
 
 The manifest reports missing buckets explicitly and requires all three relevant classes in each split. The current 32 frames cover every configured bucket in both splits. KITTI does not provide representative coverage of every weather or lighting condition. This deliberately varied sample is for diagnosing mistakes, not an unbiased estimate of overall accuracy. We also do not have NVIDIA's training frame list, so pretrained-model overlap remains unknown.
 
@@ -64,7 +66,7 @@ KITTI stores dimensions as height, width and length, and location at the bottom 
 
 The resulting local box axes are length, width and upward height. The report retains the full orientation matrix and all eight corners. `yaw_lidar_diagnostic` describes the projected heading only; reconstructing the box from that yaw alone would lose calibration tilt. No yaw-only approximation is used for the saved ground-truth geometry. Projection uses the matching P2 matrix, and corners behind the camera have no image projection.
 
-DontCare stays an image ignore region and has no invented 3D box. Original class names remain unchanged. NVIDIA's Vehicle output is broader than KITTI Car; model-to-KITTI mapping and evaluator ignore/visibility rules remain pending. These reports do not silently merge Van into Car or claim an official score.
+DontCare stays an image ignore region and has no invented 3D box. Original class names remain unchanged. NVIDIA's Vehicle output is broader than KITTI Car; the implemented evaluator explicitly maps Vehicle to Car compatibility, with original KITTI ignore rules and declared camera visibility. These reports do not silently merge Van into Car or claim an official score.
 
 The cloud audit records point count, nonfinite values, intensity bounds, engine-capacity compatibility, and finite points inside the exact export range. Object reports separately record center and all-corner coverage. No point filtering, intensity rescaling, calibration change or z shift is applied to the downloaded clouds.
 
@@ -99,7 +101,7 @@ python3 -m unittest discover -s tests -p 'test_kitti_demo.py' -v
 
 The calibration tests use independently known centers, corners and headings, including a translated mount and nontrivial rectification. Other tests exercise malformed labels/calibration, image header integrity, point layout/range/capacity, interrupted offline preparation, completed pending promotion, preserved corruption, frozen recipes, source hash failures and disjoint drive splits. The existing HTTP fixture checks exact ranges, source pinning and truncated/ignored ranges.
 
-Next export predictions for these frozen frames, establish an independent same-model reference, freeze class/visibility/ignore rules, and evaluate accuracy. No detection score, accuracy pass or runtime change is claimed by dataset preparation.
+Prediction export, frozen class/visibility/ignore policy, baseline scoring and a TensorRT compatibility reference are now delivered. Dataset preparation itself does not run inference. Next resolve input/training parity, capacity/repeatability and larger untouched accuracy acceptance; see the measured results below.
 
 
 ## Measurement update: 3 October 2026
@@ -109,4 +111,4 @@ The first labeled 32-frame diagnostic baseline is now measured. The 16-frame tes
 
 ## Independent reference update: 3 October 2026
 
-A separate TensorRT8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately1.53m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and12 frames exceed the export's10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly99.6–100%; no production adaptation was installed. Two actual CUDA12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.
+A separate TensorRT 8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately 1.53 m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all 192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and 12 frames exceed the export's 10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly 99.6–100%; no production adaptation was installed. Two actual CUDA 12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.

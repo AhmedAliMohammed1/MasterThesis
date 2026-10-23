@@ -36,6 +36,11 @@ if [[ ! -s "$engine" ]]; then
 fi
 flock -u 9
 exec 9>&-
+threshold_args=()
+if [[ -n ${PP_CONFIDENCE_THRESHOLD:-} ]]; then
+  threshold_args=(-p "confidence_threshold:=$PP_CONFIDENCE_THRESHOLD")
+fi
 exec ros2 run pp_infer pp_infer --ros-args --params-file /opt/pp_infer/node.yaml \
   -p "engine_path:=$engine" -r "__node:=pointpillars" \
+  "${threshold_args[@]}" \
   -r "/point_cloud:=${POINT_CLOUD_TOPIC:-/point_cloud}" -r "bbox:=${DETECTIONS_TOPIC:-/bbox}" "$@"

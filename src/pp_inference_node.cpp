@@ -39,6 +39,7 @@
 #include "cuda_runtime.h"
 #include "pp_infer/pointpillar.h"
 #include "pp_infer/ros_adapter.hpp"
+#include "pp_infer/detection_output.hpp"
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
@@ -69,9 +70,8 @@ public:
     intensity_scale = config.intensity_scale;
     max_cloud_bytes = config.maximum_cloud_bytes;
 
+    output = std::make_unique<pp_infer::DetectionOutput>(*this, class_names);
     pointpillar = std::make_unique<PointPillar>(engine_path);
-
-    publisher_ = this->create_publisher<vision_msgs::msg::Detection3DArray>("bbox", 700);
 
     subscription_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
       "/point_cloud", 700, std::bind(&MinimalPublisher::topic_callback, this, _1));
@@ -91,6 +91,7 @@ private:
   pcl::PointCloud<pcl::PointXYZI> cloud_scratch;
   std::vector<float> packed_points;
   std::unique_ptr<PointPillar> pointpillar;
+  std::unique_ptr<pp_infer::DetectionOutput> output;
 
 
   void topic_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg)
@@ -102,23 +103,22 @@ private:
         cloud_scratch, packed_points);
     } catch (const std::exception& error) {
       RCLCPP_WARN(this->get_logger(), "Dropping invalid point cloud: %s", error.what());
-      return;
-    }
-    if (valid_points == 0) {
-      publisher_->publish(pp_infer::make_detections(msg->header, {}, class_names));
+      output->report_failure(msg->header, pp_infer::FrameFailure::invalid_cloud);
       return;
     }
     try {
-      const auto detections = pointpillar->infer(packed_points.data(), valid_points,
-        nms_iou_thresh, pre_nms_top_n, class_names.size(), do_profile);
-      publisher_->publish(pp_infer::make_detections(msg->header, detections, class_names));
+      std::vector<Bndbox> detections;
+      if (valid_points != 0)
+        detections = pointpillar->infer(packed_points.data(), valid_points,
+          nms_iou_thresh, pre_nms_top_n, class_names.size(), do_profile);
+      output->publish(msg->header, detections);
     } catch (const std::exception& error) {
       RCLCPP_ERROR(this->get_logger(), "Inference failed; frame dropped: %s", error.what());
+      output->report_failure(msg->header, pp_infer::FrameFailure::inference_error);
     }
   }
 
   rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::Publisher<vision_msgs::msg::Detection3DArray>::SharedPtr publisher_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;
   size_t count_;
 };

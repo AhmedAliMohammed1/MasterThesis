@@ -16,7 +16,8 @@ RUN test "$(dpkg --print-architecture)" = amd64 && apt-get update && apt-get ins
     apt-get update && apt-get install -y --no-install-recommends \
       cuda-cudart-dev-12-9=12.9.79-1 cuda-nvcc-12-9=12.9.86-1 \
       cuda-nvrtc-12-9=12.9.86-1 libcublas-12-9=12.9.1.4-1 libnvjitlink-12-9=12.9.86-1 \
-      ros-jazzy-ros-base ros-jazzy-vision-msgs ros-jazzy-pcl-conversions libpcl-dev && \
+      ros-jazzy-ros-base ros-jazzy-vision-msgs ros-jazzy-diagnostic-msgs \
+      ros-jazzy-visualization-msgs ros-jazzy-pcl-conversions libpcl-dev && \
     rm -rf /var/lib/apt/lists/*
 
 FROM base AS sdk
@@ -62,7 +63,8 @@ ENV DEBIAN_FRONTEND=noninteractive ROS_DISTRO=jazzy
 COPY --from=base /usr/share/keyrings/ros-archive-keyring.gpg /usr/share/keyrings/ros-archive-keyring.gpg
 COPY --from=base /etc/apt/sources.list.d/ros2.list /etc/apt/sources.list.d/ros2.list
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ca-certificates util-linux ros-jazzy-ros-base ros-jazzy-vision-msgs libpcl-common1.14 && \
+      ca-certificates util-linux ros-jazzy-ros-base ros-jazzy-vision-msgs \
+      ros-jazzy-diagnostic-msgs ros-jazzy-visualization-msgs libpcl-common1.14 && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=sdk /usr/lib/x86_64-linux-gnu/libnvinfer*.so* /opt/tensorrt/lib/
 COPY --from=sdk /usr/lib/x86_64-linux-gnu/libnvonnxparser.so* /opt/tensorrt/lib/

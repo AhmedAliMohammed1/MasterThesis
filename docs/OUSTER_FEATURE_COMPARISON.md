@@ -1,5 +1,7 @@
 # Ouster input-feature comparison
 
+> **Status reviewed 23 October 2026.** The recorded comparison remains 192 observations, including 15/48 raw-signal rejections and 0/144 rejections across normalized variants. Full reflectivity_div255 replay matched 556/556 occurrences. These results demonstrate numerical/message-flow improvement, not calibrated features or detection accuracy. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
+
 Measured on 13 October 2026. **The unscaled Ouster signal is a demonstrated contributor to numerical failures in this model.** Changing only the fourth input feature removed infinite box lengths in all tested normalized observations and sharply reduced the excessive predictions. This establishes a numerical/input improvement on these recordings, not detection accuracy or an accepted sensor calibration.
 
 ## What the sensor fields mean

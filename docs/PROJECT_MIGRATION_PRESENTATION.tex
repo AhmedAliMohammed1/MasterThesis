@@ -1,7 +1,7 @@
-% Three active slides; the optional accuracy slide remains commented out below.
-% Editable vector figures. Findings are recorded tests from
-% 1--3 October 2026; full evidence/file map: README_PROJECT_EXPLANATIONS.md.
-% Self-contained: no external images, data files or project files are required.
+% Six active slides: migration, flow, engine lifecycle, accuracy, sensor results,
+% and screenshots. Reviewed 23 October 2026; experiments recorded 1--14 October.
+% Screenshot assets are under docs/figures; missing assets produce a warning
+% and visible placeholder in standalone compiler environments.
 \documentclass[aspectratio=169,11pt]{beamer}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
@@ -164,7 +164,18 @@
 }
 
 \title{PointPillars project migration}
-\date{5 October 2026}
+\date{23 October 2026}
+
+% Locate illustration assets from docs/ or the repository root. The built-in
+% standalone compiler may not receive other project files; warn visibly then.
+\newcommand{\projectshot}[2]{%
+  \IfFileExists{figures/#1}{\includegraphics[width=#2]{figures/#1}}{%
+    \IfFileExists{docs/figures/#1}{\includegraphics[width=#2]{docs/figures/#1}}{%
+      \PackageWarningNoLine{project}{Screenshot #1 unavailable; illustrated output incomplete}%
+      \fbox{\parbox{.85\linewidth}{\centering\small Screenshot asset unavailable.\par
+      Keep \texttt{\detokenize{#1}} in the project's figures folder.\par
+      See docs/figures/README.md for the original image and provenance.}}}}}
+
 \begin{document}
 
 \begin{frame}[t]{Why we updated the original code}
@@ -284,39 +295,97 @@ Direct \file{ros2 run} requires an already prepared engine.
 \end{columns}
 \end{frame}
 
-% \begin{frame}[t]{How we tested the code and what remains}
-% \begin{columns}[T,onlytextwidth]
-% \begin{column}{0.45\textwidth}
-% \accuracyfigure
-% \end{column}
-% \begin{column}{0.52\textwidth}
-% \footnotesize
-% \begin{tabularx}{\textwidth}{@{}p{0.25\textwidth}X@{}}
-% \toprule
-% \textbf{Test layer} & \textbf{Recorded on 1--3 October 2026} \\
-% \midrule
-% CPU / ROS & 15 geometry cases; 2,000 random checks; 11 clouds; 2 parameter cases. \\
-% GPU / Docker & 10 synthetic frames; plugins, bounds, empty inputs and engine/cache; 4 build tests. \\
-% Real data & 25 bag frames in Docker + 25 through host transport; RViz rendered both. \\
-% Reference & 32 labeled frames; 192 TRT8/TRT10 runs; identical-candidate NMS matched NVIDIA. \\
-% \bottomrule
-% \end{tabularx}
-% \end{column}
-% \end{columns}
 
-% \medskip
-% \small
-% \textbf{The pipeline runs, but accuracy acceptance remains open.} The 16 moderate
-% test frames had zero 3D true positives. Twelve matched test cars had a median
-% upward center error of about 1.53 m.
+\begin{frame}[t]{Measured KITTI accuracy remains poor}
+\begin{columns}[T,onlytextwidth]
+\begin{column}{.47\textwidth}
+\centering\resizebox{.97\linewidth}{!}{\accuracyfigure}
+\medskip
+\small\raggedright
+\textbf{Zero moderate 3D matches for all three classes.}
+Vehicle is evaluated as KITTI Car compatibility. The 16 tuning and 16 test
+frames are split by recording drive; this is a diagnostic sample.
+\end{column}
+\begin{column}{.50\textwidth}
+\small\raggedright
+\textbf{What the reference comparison found}
+\begin{itemize}
+\item TRT8 also reproduced poor accuracy and roughly 1.53 m upward car error.
+\item Our NMS and NVIDIA's unchanged NMS selected identical boxes on
+192/192 identical-candidate observations.
+\item 12/32 clouds exceed 10,000 pillars. Two tuning-only controls improved
+repeat matching to about 99.6--100\%; no production fix was installed.
+\end{itemize}
+\textbf{Acceptance remains open.} Exact numerical/training parity, input
+conventions, bounded voxelization and larger untouched accuracy evaluation
+still need work. Two zero-error allocation probes do not establish memory safety.
+\end{column}
+\end{columns}
+\medskip
+\scriptsize Sources: \file{config/kitti_accuracy_inventory.json},
+\file{config/kitti_reference_inventory.json}. Recorded 3 October 2026.
+\end{frame}
 
-% \medskip
-% Repeated predictions vary; 12 of 32 clouds exceed the 10,000-pillar limit.
-% Two capped-input controls improved repeatability. They did not prove the root cause.
+\begin{frame}[t]{Later sensor experiments: numerical and integration results}
+\small
+\textbf{Ouster: only the fourth feature changed}
+\medskip
+\begin{tabularx}{\linewidth}{@{}Yrrrr@{}}
+\toprule Feature & Rejected & Invalid rows & Median boxes & Score median \\
+\midrule
+Original signal & 15/48 & 33 & 590 & 1.000 \\
+Signal / 65,535 & 0/48 & 0 & 15 & 0.164 \\
+Reflectivity / 255 & 0/48 & 0 & 18.5 & 0.166 \\
+min(reflectivity / 100, 1) & 0/48 & 0 & 26 & 0.173 \\
+\bottomrule
+\end{tabularx}
+\medskip
+\footnotesize
+16 scans $\times$ 4 variants $\times$ 3 repeats = 192 observations.
+All invalid rows had nonfinite length. Count medians use accepted observations;
+score values are medians of per-observation medians. Fewer boxes do not prove accuracy.
+\medskip
+\begin{itemize}
+\item \textbf{Normalized Ouster replay:} 556/556 matched input/output occurrences;
+no recorded detector log errors. Reflectivity/255 remains an opt-in diagnostic
+encoding; the ordinary helper defaults to raw signal.
+\item \textbf{Camera/detail:} 111 images and CameraInfo messages preserved;
+header clocks differ. Original clouds are available on a separate topic.
+\item \textbf{Frontal KITTI:} 154/154 matched clouds and detections, plus 154
+images/CameraInfo; full scans retain 98,532--124,122 points. No ground truth in this clip.
+\end{itemize}
+\scriptsize Recorded 13--14 October. Sources: Ouster feature/camera/detail and
+KITTI front inventories in \file{config/}. Detection accuracy remains unaccepted.
+\end{frame}
 
-% \medskip
-% \textbf{Next:} model/input parity and bounded voxelization; broader GPU memory/failure
-% checks. Evidence: \file{tests/}, \file{config/}, and the explanation README.
-% \end{frame}
+\begin{frame}[t]{RViz examples from the supplied recordings}
+\begin{columns}[T,onlytextwidth]
+\begin{column}{.49\textwidth}
+\centering\projectshot{rviz-screencast-1.png}{\linewidth}
+\par\smallskip\scriptsize First recording: 32.035 s. Points, candidate boxes and scores.
+\end{column}
+\begin{column}{.49\textwidth}
+\centering\projectshot{rviz-screencast-2.png}{\linewidth}
+\par\smallskip\scriptsize Second recording: 16.023 s. Wider road view.
+\end{column}
+\end{columns}
+\medskip
+\small
+Full frames from local screencasts with 20 October filenames, preserved as PNGs.
+The visible rendering does not establish the bag, engine, feature recipe or
+correctness of individual boxes. No ground truth or calibrated image overlay is shown.
+\medskip
+\footnotesize
+\textbf{Documentation checked 23 October:} 64 Python tests passed; selected saved
+results matched inventory hashes. No new GPU experiment or runtime change.
+\par\smallskip
+\textbf{Next:} resolve input/training contract and bounded voxelization, validate
+accuracy on untouched data, then complete worker/QoS/metrics and benchmarks.
+\par\smallskip
+\scriptsize Provenance: \file{docs/figures/provenance.json}.
+Results: \file{docs/CURRENT_STATUS_AND_RESULTS.md}.
+Ouster: Koide/AIST, CC-BY-4.0; KITTI: Geiger et al., CC-BY-NC-SA-3.0.
+Screenshot experiment identity is unverified.
+\end{frame}
 
 \end{document}

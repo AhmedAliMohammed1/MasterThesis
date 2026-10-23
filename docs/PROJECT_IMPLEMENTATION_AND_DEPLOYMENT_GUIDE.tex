@@ -1,5 +1,6 @@
 \documentclass[11pt,a4paper]{article}
 \usepackage[T1]{fontenc}
+\usepackage{graphicx}
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern,textcomp}
 \usepackage[margin=22mm]{geometry}
@@ -18,7 +19,18 @@
 \title{PointPillars: From a Fresh Computer to a Running ROS Node\\
 \large Implementation record, deployment commands, and recovery guide}
 \author{MasterThesis project: \code{pp_infer}}
-\date{3 October 2026}
+\date{23 October 2026}
+
+% Locate illustration assets from docs/ or the repository root. The built-in
+% standalone compiler may not receive other project files; warn visibly then.
+\newcommand{\projectshot}[2]{%
+  \IfFileExists{figures/#1}{\includegraphics[width=#2]{figures/#1}}{%
+    \IfFileExists{docs/figures/#1}{\includegraphics[width=#2]{docs/figures/#1}}{%
+      \PackageWarningNoLine{project}{Screenshot #1 unavailable; illustrated output incomplete}%
+      \fbox{\parbox{.85\linewidth}{\centering\small Screenshot asset unavailable.\par
+      Keep \texttt{\detokenize{#1}} in the project's figures folder.\par
+      See docs/figures/README.md for the original image and provenance.}}}}}
+
 \begin{document}
 \maketitle
 This guide records the completed work and explains how another person can reproduce it. You do not need to understand C++ to follow the Docker deployment. Read each step, run its commands, and check the expected result before moving on.
@@ -28,6 +40,21 @@ The recommended route uses Ubuntu 24.04 and a supported NVIDIA GPU. Docker carri
 The code does not require an RTX 4060. This image targets Linux x86-64 with NVIDIA hardware supported by TensorRT 10.16 and enough GPU memory. It has been physically tested on one RTX 4060 Laptop GPU. ARM and Jetson need a separate platform build. There is no universal image for every PC or operating system.
 
 Build, engine generation, synthetic ROS/GPU checks, real-bag message checks, and live RViz rendering passed. These demonstrate integration and display support, not real-world detection accuracy or real-time performance.
+\subsection*{Current status: reviewed 23 October 2026}
+Source review baseline: local commit \code{ee6b36c}. Recorded numerical results
+are from 1--14 October; supplied screencast filenames are dated 20 October.
+This documentation pass ran 64 Python tests successfully and checked saved
+result hashes; it performed no new GPU inference, installation or image rebuild.
+The current Linux checkout is \path{/media/ae/New Volume/MasterThesis}.
+
+The labeled KITTI test split still has zero moderate 3D matches. Later normalized
+Ouster replay matched 556 input/output occurrences, and the frontal KITTI clip
+matched 154 frames. Those are integration results, not accuracy acceptance.
+Detailed results, visual examples and limitations are included below and in
+\path{docs/CURRENT_STATUS_AND_RESULTS.md}. Earlier dates and counts retain the
+scope of their original experiments. Old PDFs are historical until regenerated
+from this source. If screenshot assets are unavailable to a standalone compiler,
+a visible placeholder marks the incomplete illustrated output.
 \tableofcontents
 \newpage
 
@@ -172,7 +199,7 @@ Look for NVIDIA in the runtime list. Restarting Docker can affect existing conta
 
 \section{Step 5: get the deployment files}
 \label{sec:assets}
-Install the small host utilities and clone the project after the maintainer pushes these deployment edits:
+Install the small host utilities and clone the project. Local history includes deployment and validation changes through \code{ee6b36c}; verify the selected published revision before rebuilding:
 \begin{lstlisting}
 sudo apt install python3 git dpkg tar
 git clone https://github.com/AhmedAliMohammed1/MasterThesis.git "$HOME/pointpillars"
@@ -720,7 +747,7 @@ colcon test-result --verbose
 \end{lstlisting}
 The smoke executable is a build artifact, not an installed ROS node. Its path above follows colcon's default build directory. If using a custom build base, use that base followed by \path{pp_infer/runtime_smoke}. Select the engine you successfully generated on this GPU.
 
-Recorded GPU checks exercised capacity rejection, ten frames, profiling, empty output, and destruction. Compute Sanitizer 12.0 failed before meaningful instrumentation; GPU memory checking remains inconclusive.
+Recorded GPU checks exercised capacity rejection, ten frames, profiling, empty output, and destruction. Compute Sanitizer 12.0 initially failed before meaningful instrumentation. Later CUDA 12.9 allocation probes reported zero errors on two executions, as detailed below; full GPU memory/tensor-bounds validation remains incomplete.
 
 
 \section{Recovery after credits or session interruption}
@@ -871,6 +898,200 @@ Cyan means frozen first-pass TRT8 predictions, green means calibrated ground tru
 
 Nine focused reference/capacity controls and 50 total Python tests passed. Read \path{docs/MODEL_REFERENCE_COMPARISON.md} and \path{config/kitti_reference_inventory.json} for exact results, hashes, repeat ranges, source evidence, commands and recovery limits. W01 remains in progress. Next verify bounded voxelization, the original input/training contract and decoder behavior, then evaluate a justified correction or suitable model on untouched data with agreed targets.
 
+
+\section{Ouster feature results: 13 October 2026}
+Two OS1-32 calibration recordings have 291 and 265 source clouds, each with
+32,768 entries. They have no object-detection ground truth. The original
+FLOAT32 intensity is signal, reaching 9,059; it is different from the separate
+reflectivity channel. A scale of 1.0 passed this signal directly into a model
+whose fourth feature is documented in the range 0--1.
+
+The controlled experiment froze 16 scans, four feature encodings and three
+repeats: 192 raw observations. Only the fourth feature changed; XYZ bits,
+point count/order and zero returns were retained. Existing FP32 engine, NMS
+IoU 0.01 and top-N 4096 were fixed. Any invalid candidate rejected the whole
+observation, matching production behavior.
+\begin{longtable}{p{.33\textwidth}rrrr}
+\toprule Fourth feature & Rejected & Invalid rows & Median boxes & Score median \\
+\midrule
+Original signal & 15/48 & 33 & 590 & 1.000 \\
+Signal / 65,535 & 0/48 & 0 & 15 & 0.164 \\
+Reflectivity / 255 & 0/48 & 0 & 18.5 & 0.166 \\
+min(reflectivity / 100, 1) & 0/48 & 0 & 26 & 0.173 \\
+\bottomrule
+\end{longtable}
+Box-count medians use accepted observations; score values are medians of
+per-observation final-score medians. All 33 invalid rows had nonfinite length.
+There were no invalid rows in the 144 normalized observations. Full
+\code{reflectivity_div255} replay then matched 291/291 and 265/265 input/output
+occurrences with no recorded invalid message fields or detector log errors.
+Duplicate source headers were counted as separate occurrences.
+
+This establishes a contribution from the unscaled fourth feature to numerical
+failure on these recordings. It does not establish precision/recall, correct box
+placement or training calibration. Reflectivity/255 is a bounded code encoding,
+not proven linear physical reflectance. The general helper still defaults to
+\code{raw_signal}. No weights, confidence threshold or production voxelization
+were changed. See \path{docs/OUSTER_FEATURE_COMPARISON.md} and
+\path{config/ouster_feature_inventory.json}.
+
+\section{Camera playback and original Ouster detail: 13--14 October}
+Both recordings contain original 2448$\times$2048 BGR8 camera images.
+The 58- and 53-image sequences produce 1280$\times$1070 MP4 previews lasting
+29.000 s and 26.433 s. Source rate is approximately 2 Hz; a 30 fps video holds
+images rather than creating additional observations. Merged ROS playback
+preserved 111 image payloads, 111 CameraInfo payloads and 556 normalized clouds.
+
+Camera and LiDAR header clocks differ. Playback coordinates bag-record times,
+not proven acquisition-time synchronization. The RViz Image panel is separate
+from the cloud/detection display; no calibrated image overlay is implemented.
+Attribution: Kenji Koide, AIST, calibration dataset v3,
+DOI \code{10.5281/zenodo.7780490}, CC-BY-4.0.
+
+The detail workflow adds the original serialized cloud on
+\code{/ouster/raw_points}, retaining original signal and all auxiliary fields,
+alongside normalized inference. Five live pairs passed byte comparisons of all
+non-intensity bytes. In the selected experiment, 13,206--15,775 of 32,768 entries
+per scan had zero range and zero XYZ. They overlap at the origin and do not
+represent additional scene surfaces. Closer/brighter rendering does not create
+points. Original bags remain intact.
+
+With inference already running, stop the intended earlier Ouster player, then
+run the player and viewer in separate terminals:
+\begin{lstlisting}
+bash tools/rosbag_ouster.sh stop
+bash tools/rosbag_ouster_detail.sh
+# Separate terminal, same ROS_DOMAIN_ID:
+RVIZ_CONFIG="$PWD/rviz/ouster_detail.rviz" bash tools/visualize.sh
+# Export/reuse camera-only MP4 previews:
+bash tools/rosbag_ouster.sh videos
+\end{lstlisting}
+The detail wrapper explicitly selects \code{reflectivity_div255}, original-data
+view and camera playback. Run it only after stopping conflicting playback.
+Preparation needs host ROS Jazzy Python packages, NumPy/Pillow as used by the
+helpers; encoding uses FFmpeg or the separate demo-tools image. See
+\path{docs/OUSTER_CAMERA_VISUALS.md} and
+\path{docs/FRONTAL_COMPARISON_AND_RVIZ_DETAIL.md} for complete prerequisites.
+
+\section{Frontal KITTI recording: 14 October 2026}
+A separate official raw drive, \code{2011_09_26_drive_0005_sync}, provides a
+forward-facing left color camera and full 360-degree HDL-64E clouds. This differs
+from the sequence04/drive0016 demo and from the labeled object diagnostic set.
+No object labels are published by this raw-data helper.
+\begin{longtable}{p{.45\textwidth}p{.46\textwidth}}
+\toprule Property & Recorded result \\ \midrule
+Clouds / images / CameraInfo & 154 / 154 / 154 \\
+Points per scan & 98,532--124,122; median 122,651 \\
+Matched detections & 154/154; no recorded detector log errors \\
+Published boxes per frame & 83--132; median 106 \\
+Original cloud timeline & 15.7996 s \\
+Camera image / MP4 & 1242$\times$375 / 1242$\times$376, 15.900 s \\
+Paired image minus cloud header & 9.99--10.61 ms \\
+\bottomrule
+\end{longtable}
+All published XYZI hashes and all decoded camera pixel arrays matched source
+data. No point crop, sampling or scaling was added; the video has one padding
+row. Source calibration is retained without an invented world TF or image-box
+overlay. Box counts do not establish accuracy. Attribution: Andreas Geiger,
+Philip Lenz, Christoph Stiller and Raquel Urtasun, KIT/TTI-C, CC-BY-NC-SA-3.0.
+
+Stop conflicting playback before starting this helper. With the detector running:
+\begin{lstlisting}
+bash tools/rosbag_kitti_front.sh prepare
+bash tools/rosbag_kitti_front.sh
+# Separate terminal:
+RVIZ_CONFIG="$PWD/rviz/kitti_front.rviz" bash tools/visualize.sh
+# Stop only this helper's owned player:
+bash tools/rosbag_kitti_front.sh stop
+\end{lstlisting}
+Default playback is half recorded speed and looping. Match ROS domains across
+all processes. Assets are ignored under
+\path{.recovery/rosbags/kitti_front_0005}; see
+\path{config/kitti_front_inventory.json} for the source identities and evidence.
+
+\section{Visual examples from supplied recordings: 20 October filenames}
+Two frames were extracted from local WebM screencasts in
+\path{/media/ae/New Volume/datasets/vedios}. They are full 1920$\times$1080 PNGs
+without crop, scaling or annotations. Source and image SHA256 values, offsets
+and extraction details are retained in \path{docs/figures/provenance.json}.
+\begin{figure}[htbp]
+\centering
+\projectshot{rviz-screencast-1.png}{.94\linewidth}
+\caption{First screencast at 32.035 s: RViz shows LiDAR geometry, candidate boxes
+and score labels. This is a visual illustration, not an accuracy measurement.}
+\end{figure}
+\begin{figure}[htbp]
+\centering
+\projectshot{rviz-screencast-2.png}{.94\linewidth}
+\caption{Second screencast at 16.023 s: a wider road view with points and boxes.
+The screenshot alone does not identify the underlying bag, engine or feature recipe.}
+\end{figure}
+The filename date is not independently verified acquisition provenance.
+Neither selected frame shows reviewed ground truth or a calibrated camera
+projection. Earlier actual KITTI RViz rendering and later profile configuration
+checks retain their original scopes; these screenshots are not a retrospective
+validation of every saved profile.
+\clearpage
+
+\section{Documentation verification: 23 October 2026}
+All 64 existing Python tests passed. Six HTTP-fixture tests initially lacked
+permission to bind loopback sockets in the sandbox; the complete rerun with
+local socket access passed. The review rehashed 8 baseline, 11 reference and
+9 Ouster feature JSON artifacts against inventories, all matching. The complete
+frontal observation file matched its recorded hash and summary; the Ouster
+raw-view observation matched its inventory. These checks do not rerun GPU tests.
+
+Review began at local \code{ee6b36c} with only untracked \code{prompt.md}; that
+user file was preserved. \code{CLA.md} retains its legal text. Runtime sources,
+thresholds, frozen datasets and measured results were not modified. Logs are
+under \path{.recovery/verification/docs-2026-10-23/}. Final compiler diagnostics
+are recorded in \path{recovery/PROGRESS.md}; older PDF renditions are historical.
+
+\section{Confidence filtering and box-count monitoring: 23 October 2026}
+The updated publication layer keeps boxes with score at least
+\code{confidence_threshold}, default 0.5. Below-threshold boxes are absent from
+the detection topic and RViz; kept boxes retain their full original information,
+order and cloud header. This extra gate runs after NMS and does not change the
+engine or NMS thresholds. It reduces low-score clutter but cannot eliminate
+incorrect high-confidence boxes. The previous accuracy tables remain frozen
+measurements of the earlier unfiltered publication policy.
+
+The threshold is a finite double in [0,1], adjustable for subsequent scans:
+\begin{lstlisting}
+ros2 param set /pointpillars confidence_threshold 0.7
+ros2 topic echo /bbox/stats
+# Initial Docker override, after publishing/building the updated source:
+sudo env PP_CONFIDENCE_THRESHOLD=0.7 bash tools/deploy.sh
+\end{lstlisting}
+An unset Docker environment override uses the YAML setting. Use 0.0 to disable
+this additional score gate. Existing containers require the new executable/image;
+the remote-source Docker build still excludes unpushed changes. No existing
+container was replaced while implementing this feature.
+
+\code{/bbox} remains a standard Detection3DArray. Its array length is the
+published count. \code{/bbox/stats} is a DiagnosticArray with post-NMS count,
+removed count, published count, effective threshold, cumulative detection events
+and frame-error counters. A valid empty/all-filtered scan publishes an empty
+array with a zero count; a dropped frame reports count unavailable and leaves
+successful totals unchanged. Totals reset at startup and are not unique-object
+counts. Monitoring topics follow detection-topic remapping.
+
+All seven saved RViz profiles now enable score labels and a MarkerArray display
+on \code{/bbox/count} (or \code{/kitti/predictions/count}). It shows the latest
+scan's published count, count before the score gate, threshold and removed count.
+The label is retained until another update; inspect header stamps/topic rate for
+freshness. The cloud frame is preserved, without a new world transform.
+
+New KITTI baseline collection explicitly disables the gate and checks matching
+per-frame statistics so changed filtering cannot silently alter the recorded
+policy. Changed identities require a new output directory; saved results were
+not overwritten. The full TensorRT-enabled package built, five C++/ROS tests and
+67 Python tests passed, with a focused rerun of the stricter baseline check.
+Actual ROS output/statistics/marker publication was tested without GPU inference.
+New GPU replay and desktop count rendering remain unverified because this
+session could not communicate with the NVIDIA driver. See
+\path{docs/CONFIDENCE_FILTER_AND_MONITORING.md} and the dated progress entry.
+
 \section{Evidence and remaining work}
 \begin{longtable}{p{0.13\textwidth}p{0.20\textwidth}p{0.58\textwidth}}
 \toprule Task & State & Meaning \\ \midrule
@@ -932,4 +1153,3 @@ Ubuntu, Docker, NVIDIA Toolkit, CUDA, and TensorRT guidance were checked on 2 Oc
 \url{https://docs.docker.com/reference/dockerfile/#adding-files-from-a-git-repository}
 \end{description}
 \end{document}
-

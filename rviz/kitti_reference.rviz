@@ -51,7 +51,7 @@ Visualization Manager:
     Only Edge: true
     Line Width: 0.04
     Alpha: 1
-    Show Score: false
+    Show Score: true
     ConfigPath: rviz/class_colors.yaml
     Namespaces:
       bounding_box: true
@@ -73,6 +73,16 @@ Visualization Manager:
       Depth: 1
       Reliability Policy: Reliable
       Durability Policy: Transient Local
+    Namespaces: {}
+  - Class: rviz_default_plugins/MarkerArray
+    Name: Detection count (latest scan)
+    Enabled: true
+    Topic:
+      Value: /kitti/predictions/count
+      Depth: 1
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+      History Policy: Keep Last
     Namespaces: {}
   Enabled: true
   Global Options:

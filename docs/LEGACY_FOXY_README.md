@@ -1,5 +1,7 @@
 # Historical Foxy / TensorRT 8 README
 
+> **Status reviewed 23 October 2026.** Archived Foxy instructions below are historical. Current deployment uses Jazzy/TensorRT 10, and direct RViz Detection3DArray display is available through vision_msgs_rviz_plugins. The old visualization limitation and installation commands do not describe the current implementation. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
+
 This preserves the original deployment instructions for reference. They do not describe the current Jazzy / TensorRT 10 build. Use the current README and PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex instead. Do not copy the plugin overwrite commands into the current installation.
 
 This is a ROS2 node for 3D object detection in point clouds using [TAO-PointPillars](https://catalog.ngc.nvidia.com/orgs/nvidia/teams/tao/models/pointpillarnet) for inference with TensorRT.

@@ -1,5 +1,7 @@
 # Project review and modernization prompt
 
+> **Status reviewed 23 October 2026.** The original review and modernization prompt below are historical. CPU/ROS foundations, TensorRT 10 migration, deployment, labeled evaluation, compatibility comparison and later sensor demos are now delivered in part; the bounded worker, accuracy/parity acceptance, benchmarks and CI remain unfinished. [Current results and evidence](docs/CURRENT_STATUS_AND_RESULTS.md).
+
 Copy this prompt into a coding agent with access to this repository:
 
 ```text
@@ -18,9 +20,9 @@ Ask for GPU/platform, LiDAR rate and maximum cloud size, model/training configur
 Deliver the review and implementation plan first. If implementation is authorized, apply fixes in small reviewable steps, run meaningful build/correctness/integration checks, and report exactly what was verified. Do not claim live GPU inference works when the driver, engine, sensor, or test data is unavailable.
 ```
 
-# Findings from this checkout
+# Historical findings from the original checkout
 
-Reviewed all three C++ source files, both headers, launch script, README, CMakeLists.txt, and package.xml. No implementation changes were made.
+The original review inspected the three then-existing C++ source files, both headers, launch script, README, CMakeLists.txt and package.xml. Its findings below refer to that baseline; subsequent implementation/results are recorded in the current-status link above.
 
 ## Technology and flow
 
@@ -109,4 +111,4 @@ Labeled KITTI preparation/calibration and a 32-frame diagnostic inference/evalua
 
 ## Independent reference update: 3 October 2026
 
-A separate TensorRT8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately1.53m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and12 frames exceed the export's10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly99.6–100%; no production adaptation was installed. Two actual CUDA12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](docs/MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.
+A separate TensorRT 8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately 1.53 m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all 192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and 12 frames exceed the export's 10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly 99.6–100%; no production adaptation was installed. Two actual CUDA 12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](docs/MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.

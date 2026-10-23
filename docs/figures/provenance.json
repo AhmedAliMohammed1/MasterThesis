@@ -1,0 +1,39 @@
+{
+  "review_date": "2026-10-23",
+  "source_date_basis": "20 October 2026 from user-provided filenames, not independently verified acquisition date",
+  "opencv_version": "4.6.0",
+  "frames": [
+    {
+      "image": "rviz-screencast-1.png",
+      "sha256": "63e705b431c2491f94f9c6042d5b61508f4237ee50dadeefc8844d70c17e540d",
+      "source_filename": "Screencast from 2026-10-20 14-09-09.webm",
+      "source_directory": "/media/ae/New Volume/datasets/vedios",
+      "source_sha256": "5ee3617a075264e0189247c6e321bea7727be8aab6ab97aaec337216719ae8a1",
+      "source_bytes": 103412583,
+      "requested_offset_seconds": 32,
+      "decoded_offset_seconds_rounded": 32.035,
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "processing": "Sequential OpenCV CAP_FFMPEG decode; first decoded frame at or after requested presentation timestamp; BGR to RGB; lossless PNG; no crop, resize or annotation.",
+      "interpretation": "Visible RViz points/boxes; bag/engine/feature identity and detection correctness are not established by the recording."
+    },
+    {
+      "image": "rviz-screencast-2.png",
+      "sha256": "4c8519ed21d69a2bb5bad985700f85a8a22fb1a38c03e738c9c913c9a507b116",
+      "source_filename": "Screencast from 2026-10-20 14-13-14.webm",
+      "source_directory": "/media/ae/New Volume/datasets/vedios",
+      "source_sha256": "48f23e55a03362ea53db7381c91feda4e8db880d012a14c59547a1f0f6a0eb66",
+      "source_bytes": 83241509,
+      "requested_offset_seconds": 16,
+      "decoded_offset_seconds_rounded": 16.023,
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "processing": "Sequential OpenCV CAP_FFMPEG decode; first decoded frame at or after requested presentation timestamp; BGR to RGB; lossless PNG; no crop, resize or annotation.",
+      "interpretation": "Visible RViz points/boxes; bag/engine/feature identity and detection correctness are not established by the recording."
+    }
+  ]
+}

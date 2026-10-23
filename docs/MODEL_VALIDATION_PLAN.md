@@ -1,5 +1,7 @@
 # Verifying the PointPillars model on KITTI
 
+> **Status reviewed 23 October 2026.** Data preparation, frozen prediction export, explicit evaluation policy and diagnostic accuracy scoring are implemented, and an independent TensorRT8 compatibility comparison is recorded. W01 remains in progress because original-training parity and accuracy acceptance have not passed. Ouster encodings remain unlabeled diagnostic candidates. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
+
 This is the plan for W01, started on 2 October 2026. The user chose labeled KITTI scenarios first, followed by their own LiDAR recordings when available. It separates correct implementation of the downloaded model from the model's accuracy on a new dataset. Neither result has been claimed complete.
 
 ## What the first investigation established
@@ -32,7 +34,7 @@ Bind the labels to the verified model hash. Confirm all incoming data sources se
 
 Remaining code for this step: enforce or validate the model contract at startup, integrate the verified labels into current configuration/documentation, and add focused geometry/coordinate mapping fixtures. Do not call every semantic check complete just because the label order is resolved.
 
-## Step 2: prepare labeled KITTI frames
+## Step 2: prepare labeled KITTI frames — implemented
 
 The existing raw-sequence bag and matching MP4 provide integration and scene context; this setup contains no object annotations. They cannot produce an accuracy score.
 
@@ -43,7 +45,7 @@ Use the KITTI **3D object detection training data**, whose annotations are publi
 - calibration matrices;
 - image dimensions, and preferably the camera image for review.
 
-The official download page currently lists 29 GB for the full point-cloud archive, 5 MB for labels and 16 MB for calibration. Downloads require the dataset's official access process. A preparation tool may select a subset through verified ZIP ranges if the endpoint supports it; do not assume range support, valid direct URLs or silently fetch the whole archive.
+The recorded source inventory lists approximately 29 GB for the full point-cloud archive, 5 MB for labels and 16 MB for calibration. Downloads require the dataset's official access process. The implemented preparation tool selects a subset through verified ZIP ranges when the endpoint supports it; do not assume range support, valid direct URLs or silently fetch the whole archive.
 
 Keep assets outside Git, for example ../datasets/kitti_object. Record dataset source, hashes, frame IDs and split identity. The current bag helper does not already prepare labeled object-detection data.
 
@@ -92,7 +94,7 @@ W01 becomes verified only when:
 - per-class/scenario accuracy is measured and meets the agreed targets;
 - the result can be reproduced from saved commands/configuration and evidence.
 
-The project does not yet have agreed accuracy targets. We will measure the baseline, propose useful thresholds, and agree on them before claiming acceptance. A score alone cannot choose what is acceptable for the future application.
+The project does not yet have agreed accuracy targets. The diagnostic baseline has been measured and is poor; define useful targets and a larger untouched evaluation before claiming acceptance. A score alone cannot choose what is acceptable for the future application.
 
 Later, record and annotate representative clouds from the user's actual sensor, audit intensity/frame/range again, and repeat the same protocol. Passing KITTI validation will not validate that sensor automatically.
 
@@ -104,7 +106,7 @@ The raw KITTI annotations remain unchanged, including DontCare and other classes
 
 ## What remains to implement next
 
-Prediction export, explicit evaluator policy and baseline scoring are delivered. A separate TensorRT8.6 compatibility reference is also measured; it is not a trusted training-framework fixture. Next resolve bounded voxelization, shared repeatability and tensor-bounds concerns, verify the original input/training contract and decoder behavior, and define a larger untouched acceptance evaluation. Runtime contract enforcement and verified-label configuration integration remain. The original preparation phase performed no inference; the dated updates below record later measurements.
+Prediction export, explicit evaluator policy and baseline scoring are delivered. A separate TensorRT 8.6 compatibility reference is also measured; it is not a trusted training-framework fixture. Next resolve bounded voxelization, shared repeatability and tensor-bounds concerns, verify the original input/training contract and decoder behavior, and define a larger untouched acceptance evaluation. Runtime contract enforcement and verified-label configuration integration remain. The original preparation phase performed no inference; the dated updates below record later measurements.
 
 ## Sources
 
@@ -126,4 +128,4 @@ The first labeled 32-frame diagnostic baseline is now measured. The 16-frame tes
 
 ## Independent reference update: 3 October 2026
 
-A separate TensorRT8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately1.53m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and12 frames exceed the export's10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly99.6–100%; no production adaptation was installed. Two actual CUDA12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.
+A separate TensorRT 8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately 1.53 m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all 192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and 12 frames exceed the export's 10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly 99.6–100%; no production adaptation was installed. Two actual CUDA 12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.

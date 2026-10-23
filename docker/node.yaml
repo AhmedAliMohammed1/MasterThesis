@@ -4,5 +4,7 @@
     intensity_scale: 1.0
     data_type: fp32
     nms_iou_thresh: 0.01
+    # Publication score gate after NMS; adjustable with ros2 param set.
+    confidence_threshold: 0.5
     pre_nms_top_n: 4096
     max_cloud_bytes: 67108864

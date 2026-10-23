@@ -98,13 +98,19 @@ std::size_t pack_xyzi(const sensor_msgs::msg::PointCloud2& msg,
 
 vision_msgs::msg::Detection3DArray make_detections(
     const std_msgs::msg::Header& header, const std::vector<Bndbox>& boxes,
-    const std::vector<std::string>& classes) {
+    const std::vector<std::string>& classes, double confidence_threshold) {
+  if (!std::isfinite(confidence_threshold) || confidence_threshold < 0 || confidence_threshold > 1)
+    throw std::invalid_argument("confidence_threshold must be finite and in [0,1]");
   vision_msgs::msg::Detection3DArray array;
   array.header = header;
   array.detections.reserve(boxes.size());
   for (const auto& box : boxes) {
-    if (!valid_box(box) || static_cast<std::size_t>(box.id) >= classes.size() || classes[box.id].empty())
+    if (!valid_box(box) || box.score < 0 || box.score > 1 ||
+        static_cast<std::size_t>(box.id) >= classes.size() || classes[box.id].empty())
       throw std::invalid_argument("Detection has invalid geometry/class/score");
+    // Validate every candidate before filtering: a low score must not hide a
+    // malformed runtime result. Equality passes; kept fields/order are unchanged.
+    if (static_cast<double>(box.score) < confidence_threshold) continue;
     vision_msgs::msg::Detection3D detection;
     detection.header = header;
     detection.bbox.center.position.x = box.x;

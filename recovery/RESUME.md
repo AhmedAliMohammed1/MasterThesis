@@ -1,5 +1,21 @@
 # Resume pp_infer work after interrupted credit, context or tooling
 
+> **Status reviewed 23 October 2026.** Start from the consolidated current results and local HEAD ee6b36c. Validation/reference and Ouster/camera/frontal helper work are committed locally; old “uncommitted” statements below describe earlier sessions. No saved PID/container record establishes what is currently running. Keep W01/W04/W05/W07/W09 in progress, W06/W08 pending. [Current results and evidence](../docs/CURRENT_STATUS_AND_RESULTS.md).
+
+## Latest documentation handoff — 23 October 2026
+
+**Subsequent feature implementation:** [confidence filtering and monitoring](../docs/CONFIDENCE_FILTER_AND_MONITORING.md) is now implemented locally. The node defaults to score >= 0.5, supports live `confidence_threshold` updates, and publishes derived `/bbox/stats` diagnostics and `/bbox/count` RViz text (following detection-topic remapping). Seven RViz profiles include the count display. Five C++/ROS tests passed with real isolated DDS publication, and 67 Python tests passed, followed by a focused baseline-check rerun. The full TensorRT-enabled package builds under `.recovery/confidence-filter-runtime/`; no new GPU execution or desktop count rendering was possible because the driver was inaccessible. Existing containers were not rebuilt/replaced, and remote-source Docker builds still require the feature in the selected published Git revision.
+
+New labeled baseline collection disables/verifies this additional gate, matching per-frame statistics by header. Preserve frozen old results and use a fresh output directory for changed runtime/exporter identities. W07 remains in progress for launch/QoS/timing/worker acceptance; do not mistake the publication counters for the planned full timing/worker implementation. Earlier documentation-only statements below retain their original scope. Current feature logs: `.recovery/verification/confidence-filter/`.
+
+Read [current status/results](../docs/CURRENT_STATUS_AND_RESULTS.md) first. The 19 existing project Markdown guides/history files and all three LaTeX sources were refreshed; the contributor agreement and user `prompt.md` were preserved. Two lossless PNGs and source/frame hashes are under `docs/figures/`. The presentation now has six active slides. Old PDFs are historical.
+
+All 64 Python tests passed after allowing the local HTTP fixtures to bind loopback sockets. Selected baseline/reference/Ouster JSON evidence matched inventory hashes; frontal/raw-view observations also matched recorded evidence. No GPU experiments, image rebuilds, runtime edits, dataset mutations or process management were performed.
+
+Compilation was attempted with the built-in compiler for every updated LaTeX source. All failed before parsing because the uncached TeX bundle could not be downloaded. Preserve the source/assets and keep the built-in editor as the default; compilation and rendered layout are unverified. Logs: `.recovery/verification/docs-2026-10-23/`. Missing project images produce explicit placeholders rather than silently omitted figures.
+
+The numerical priorities remain original input/training parity and bounded voxelization, then untouched accuracy acceptance. W06 worker, configurable sensor QoS, timing metrics, benchmarks, full memory/failure validation and CI remain unfinished. The chronological notes below retain their original dates and should not be read as current process/publication status.
+
 Open this repository: `/media/ae/New Volume/MasterThesis`.
 
 The user authorized implementation on 2026-10-01. W02 CPU foundations and W03 local ROS adapters are implemented; W04/W05 runtime source migration builds/links against extracted TensorRT 10.16.1.11 and passes synthetic GPU smoke checks; reference semantics, memory/failure checks and W06 remain pending; read PROGRESS.md/tasks.json and the latest checkpoint for verification and remaining blockers. Docker packaging is implemented and verified with synthetic GPU/ROS checks; see docker/README.md and config/docker_inventory.json. Continue using the protocol below, preserving existing work.

@@ -1,5 +1,7 @@
 # Non-KITTI Ouster ROS 2 bag demo
 
+> **Status reviewed 23 October 2026.** The raw-signal failures below remain the baseline. Explicit reflectivity_div255 replay later matched all 556 input/output occurrences without recorded detector errors. Camera playback and the original-data detail view are available; raw_signal is still this helper’s default, and accuracy remains unmeasured. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
+
 This separate helper uses Kenji Koide's (AIST) **LiDAR-camera calibration dataset, v3**, recorded with an **Ouster OS1-32** and an STC-MCS500POE camera. The source is [Zenodo record 7780490](https://zenodo.org/records/7780490), DOI `10.5281/zenodo.7780490`, licensed CC-BY-4.0. Preserve that attribution with redistributed data.
 
 The publisher's `ouster.tar.gz` contains two native ROS 2 bags with `/points` (`sensor_msgs/msg/PointCloud2`), `/image`, and `/camera_info`. The download is **1,521,635,387 bytes** (about 1.52 GB), pinned by the publisher's MD5 `a0a56bbb93433f729a9e924744ad6b0c`. Extracted-file SHA256 hashes and a complete scan audit are saved locally. This is a different sensor and scene source from KITTI; it is calibration data, **not labeled object-detection evaluation data**.

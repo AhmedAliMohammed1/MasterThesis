@@ -1,5 +1,7 @@
 # Automatic Docker build and deployment
 
+> **Status reviewed 23 October 2026.** Deployment behavior is unchanged. Later normalized Ouster replay matched 556 occurrences and frontal KITTI replay matched 154 frames; these are integration results. The labeled KITTI accuracy baseline remains poor, and the synchronous depth-700 subscriber is still present. [Current results and evidence](../docs/CURRENT_STATUS_AND_RESULTS.md).
+
 On a Linux x86-64 host with a supported NVIDIA GPU, working driver, Docker and NVIDIA Container Toolkit, run from the project folder:
 
 ```bash
@@ -42,7 +44,7 @@ For another repository, set `PP_GIT_REPO` in the wrapper or `GIT_REPO` as a buil
 
 ## Model and engine lifecycle
 
-Documentation updated on **5 October 2026** to include the latest ONNX/engine explanation. The GPU and accuracy evidence below still refers to the earlier recorded tests.
+Documentation reviewed on **23 October 2026**. The GPU and accuracy evidence below retains its original dates; later sensor results are consolidated in the current-status link above.
 
 | Phase | What happens | File location inside the container |
 | --- | --- | --- |
@@ -56,7 +58,7 @@ The entrypoint prepares the engine **before** executing `ros2 run pp_infer pp_in
 
 Normal container startup still needs ONNX for its checksum when reusing a cached engine. Direct `ros2 run` needs an already prepared engine, required libraries and parameters; it does not download ONNX or build an engine. The node's legacy `model_path` is stored but does not load ONNX, and `data_type` does not change the loaded engine's precision. Transfer the image to another supported computer and let startup prepare its matching engine. A nonempty but corrupted cache file is not automatically rebuilt.
 
-For the complete explanation and both diagrams, see the [explanation README](../README_PROJECT_EXPLANATIONS.md#7-downloads-and-engine-generation-in-docker-today). The [latest discussion continuation](../docs/CHAT_DISCUSSION_RECORD.md#explanation-and-presentation-continuation-saved-5-october-2026) records the questions and presentation changes; the [three-page presentation](../output/pdf/PROJECT_MIGRATION_PRESENTATION.pdf) gives the short version.
+For the complete explanation and both diagrams, see the [explanation README](../README_PROJECT_EXPLANATIONS.md#7-downloads-and-engine-generation-in-docker-today). The [latest discussion continuation](../docs/CHAT_DISCUSSION_RECORD.md#explanation-and-presentation-continuation-saved-5-october-2026) records the questions and presentation changes; the [updated presentation source](../docs/PROJECT_MIGRATION_PRESENTATION.tex) gives the short version.
 
 Node `/pointpillars` receives `/point_cloud` (`sensor_msgs/msg/PointCloud2`) and publishes `/bbox` (`vision_msgs/msg/Detection3DArray`). Start a sensor or bag publisher separately; the container does not generate real data. Input needs little-endian scalar FLOAT32 XYZI and a compatible reliable publisher.
 
@@ -67,9 +69,13 @@ sudo env POINT_CLOUD_TOPIC=/lidar/points ROS_DOMAIN_ID=7 \
   PP_GPU_INDEX=0 PP_WORKSPACE_MIB=256 bash tools/deploy.sh
 ```
 
+The new `PP_CONFIDENCE_THRESHOLD` setting overrides the node YAML's default score gate of 0.5. For example, `sudo env PP_CONFIDENCE_THRESHOLD=0.7 bash tools/deploy.sh`. An unset/empty value leaves the YAML setting in effect. The threshold can also change live through `ros2 param set /pointpillars confidence_threshold 0.7` (use `/entrypoint.sh` through `docker exec` when running inside the container).
+
+New images publish only boxes at or above the threshold. The standard detection array remains on `/bbox`; `/bbox/stats` adds per-frame/cumulative counts as DiagnosticArray, and `/bbox/count` publishes the RViz text marker. Monitoring topics follow detection-topic remapping. The Docker stages now declare diagnostic/visualization message packages and the build includes a fifth, GPU-free ROS output integration test. See [the feature guide](../docs/CONFIDENCE_FILTER_AND_MONITORING.md). Local changes still need publication in the selected Git revision before this remote-source Docker build includes them; no existing image/container is updated automatically.
+
 GPU indexes refer to the visible CUDA set. Workspace limits do not cap total GPU memory. The image is Linux amd64 and follows [TensorRT 10.x hardware support](https://docs.nvidia.com/deeplearning/tensorrt/10.x.x/getting-started/support-matrix.html), with capability 7.5 as a floor. ARM/Jetson requires a separate image. Only the available RTX 4060 has been physically tested.
 
-Exact model class order is verified; numerical input/output reference parity and accuracy acceptance remain unfinished. Defaults remain generic labels and scale 1.0. Synthetic tests do not establish real-data accuracy. Bounded-worker integration, configurable QoS, CUDA memory instrumentation and operational acceptance remain unfinished.
+Exact model class order is verified; numerical input/output reference parity and accuracy acceptance remain unfinished. Defaults remain generic labels and scale 1.0. Synthetic tests do not establish real-data accuracy. Bounded-worker integration, configurable QoS, full CUDA memory/failure validation and operational acceptance remain unfinished.
 
 See the [A-to-Z LaTeX guide](../docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex), [README](../README.md) and [progress record](../recovery/PROGRESS.md) for setup, verification and limits.
 
@@ -89,4 +95,4 @@ The published runtime image was exercised on 32 matched KITTI diagnostic frames.
 
 ## Independent reference update: 3 October 2026
 
-A separate TensorRT8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately1.53m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and12 frames exceed the export's10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly99.6–100%; no production adaptation was installed. Two actual CUDA12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](../docs/MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.
+A separate TensorRT 8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately 1.53 m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all 192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and 12 frames exceed the export's 10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly 99.6–100%; no production adaptation was installed. Two actual CUDA 12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](../docs/MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.

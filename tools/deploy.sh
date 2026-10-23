@@ -20,6 +20,7 @@ exec docker run --rm --init --name "$container" \
   -e "ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}" \
   -e "POINT_CLOUD_TOPIC=${POINT_CLOUD_TOPIC:-/point_cloud}" \
   -e "DETECTIONS_TOPIC=${DETECTIONS_TOPIC:-/bbox}" \
+  -e "PP_CONFIDENCE_THRESHOLD=${PP_CONFIDENCE_THRESHOLD:-}" \
   -e "PP_GPU_INDEX=${PP_GPU_INDEX:-0}" \
   -e "PP_WORKSPACE_MIB=${PP_WORKSPACE_MIB:-1024}" \
   -v "$volume:/var/lib/pp_infer" "$image"

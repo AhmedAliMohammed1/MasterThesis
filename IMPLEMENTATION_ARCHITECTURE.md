@@ -1,18 +1,23 @@
 # pp_infer implementation architecture and recovery plan
 
+> **Status reviewed 23 October 2026.** The CPU core, ROS adapter, TensorRT 10 runtime and Docker deployment are implemented. The latest-frame worker diagram below is a proposed architecture: the current node still performs synchronous inference with reliable depth 700. Labeled accuracy remains unaccepted; later Ouster/frontal replay results establish integration only. [Current results and evidence](docs/CURRENT_STATUS_AND_RESULTS.md).
+
 Prepared 2026-10-01. Target confirmed by the user: **Ubuntu 24.04 / ROS 2 Jazzy on an NVIDIA GPU**.
 
-Implementation update: the user authorized implementation on 2026-10-01. W02 CPU core/build boundaries and W03 local ROS adapters/configuration are implemented; see `recovery/PROGRESS.md` for checks and limitations. The remaining runtime/worker/deployment design below is pending. Baseline file/line evidence remains historical.
+Implementation update, 23 October 2026: W02/W03 foundations are verified; W04/W05 runtime migration and Docker integration have recorded GPU/ROS checks but remain in progress for full acceptance. Labeled KITTI scoring and a TensorRT8/10 compatibility comparison are delivered; accuracy and original-training parity remain unaccepted. Ouster normalized replay, camera export and frontal KITTI integration were added on 13–14 October. See [current results](docs/CURRENT_STATUS_AND_RESULTS.md).
 
+This document retains the original staged design and baseline review. Proposed worker, QoS and metric interfaces are not implemented unless explicitly identified below.
 ## Decision and scope
+
+The 23 October [confidence/count output layer](docs/CONFIDENCE_FILTER_AND_MONITORING.md) adds `DetectionOutput` between completed inference/NMS and ROS publication. Its score gate is dynamically adjustable because it does not change engine resources or input processing. Other allocation/model/input parameters retain their restart requirement. This does not implement the planned bounded inference worker.
 
 Keep one ROS package and one process. Use a short subscription callback, one replaceable pending frame, one inference worker, one TensorRT execution context, and one persistent CUDA stream. Separate CPU correctness from GPU integration so useful development continues without a working driver. Optimize only after representative measurements establish the bottleneck.
 
-This deliverable designs the modernization in `PROJECT_REVIEW_AND_UPDATE_PLAN.md` and supplies a working development checkpoint mechanism. The quoted prompt in that document is reference material, not a new instruction to execute its installation commands. The C++ inference code, CMake, ROS package and launch behavior have not been modernized by this planning task.
+This deliverable designs the modernization in `PROJECT_REVIEW_AND_UPDATE_PLAN.md` and supplies a working development checkpoint mechanism. The quoted prompt in that document is reference material, not a new instruction to execute its installation commands. That planning task did not modify inference. Subsequent implementation modernized C++, CMake and ROS adapters; the native launch file still has historical paths/settings.
 
-Start here after an interruption: [recovery/RESUME.md](recovery/RESUME.md). Track work in [recovery/tasks.json](recovery/tasks.json) and [recovery/PROGRESS.md](recovery/PROGRESS.md). All proposed runtime files, flags and launch arguments below are future work unless explicitly described as available now.
+Start here after an interruption: [recovery/RESUME.md](recovery/RESUME.md). Track work in [recovery/tasks.json](recovery/tasks.json) and [recovery/PROGRESS.md](recovery/PROGRESS.md). Use the current status and source to distinguish delivered runtime files from proposed worker/launch interfaces below.
 
-## Verified starting point
+## Historical starting point — 1 October 2026
 
 Source baseline: Git commit `2301135`. The original review document was already untracked when work began; preserve it. File/line references below refer to this baseline.
 
@@ -61,7 +66,7 @@ The implemented `PP_BUILD_RUNTIME=OFF` and `PP_BUILD_ROS_ADAPTER=OFF` configurat
 
 ## 2. Freeze the model contract before selecting the NVIDIA stack
 
-The OS/ROS decision is fixed; exact GPU, driver, CUDA, TensorRT, TAO export and plugin versions are still open. Do not pick the newest TensorRT automatically. The old README's TensorRT 8.2 / OSS 22.02 recipe is historical evidence, not a compatibility guarantee for this target.
+The original plan required pinning GPU, driver, CUDA, TensorRT, export and plugin identities. Those deployment identities are now recorded in `config/*_inventory.json`; model semantics and accuracy acceptance remain partial. Do not pick the newest TensorRT automatically. The old README's TensorRT 8.2 / OSS 22.02 recipe is historical evidence, not a compatibility guarantee for this target.
 
 In W01, produce `config/environment.lock.json` and `config/model_contract.json` with:
 
@@ -98,7 +103,7 @@ For normal frame failures, drop that frame and increment a reasoned counter. For
 
 Allocate one reusable workspace from validated maximum capacities. For linear four-feature FP32 input, an illustrative staging allocation is `P * 4 * sizeof(float)`; compute from actual tensor format/dtype in production. A nine-FP32-field output would be `B * 9 * sizeof(float)` only if that layout is confirmed. Total memory also includes both message pointers, PCL scratch, host and device I/O, NMS scratch, TensorRT engine/context/workspace and plugin allocations. Record measured GPU/host peaks; the I/O formula is not the whole memory budget.
 
-For a confirmed discrete GPU, start with persistent device I/O and capped pinned host staging; compare against reused managed memory on real hardware if worthwhile. The actual GPU is still unknown. Keep PCL first. Reserve reusable point/candidate/output vectors, while acknowledging PCL and ROS serialization can still allocate. Remove per-frame CUDA allocations and stream creation; do not claim completely allocation-free execution.
+For a confirmed discrete GPU, start with persistent device I/O and capped pinned host staging; compare against reused managed memory on real hardware if worthwhile. The subsequently tested GPU is an RTX 4060 Laptop; broader hardware validation remains open. Keep PCL first. Reserve reusable point/candidate/output vectors, while acknowledging PCL and ROS serialization can still allocate. Remove per-frame CUDA allocations and stream creation; do not claim completely allocation-free execution.
 
 Single-stream ordering:
 
@@ -172,4 +177,4 @@ Labeled KITTI preparation/calibration and a 32-frame diagnostic inference/evalua
 
 ## Independent reference update: 3 October 2026
 
-A separate TensorRT8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately1.53m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and12 frames exceed the export's10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly99.6–100%; no production adaptation was installed. Two actual CUDA12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](docs/MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.
+A separate TensorRT 8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately 1.53 m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all 192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and 12 frames exceed the export's 10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly 99.6–100%; no production adaptation was installed. Two actual CUDA 12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](docs/MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.

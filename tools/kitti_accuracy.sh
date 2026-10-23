@@ -62,6 +62,7 @@ if ! docker container inspect "$container" >/dev/null 2>&1; then
     --label pp_infer.kitti_validation=1 \
     -e "ROS_DOMAIN_ID=$ROS_DOMAIN_ID" -e "FASTDDS_BUILTIN_TRANSPORTS=$FASTDDS_BUILTIN_TRANSPORTS" \
     -e POINT_CLOUD_TOPIC=/kitti/point_cloud -e DETECTIONS_TOPIC=/kitti/predictions \
+    -e PP_CONFIDENCE_THRESHOLD=0.0 \
     -v "${PP_ENGINE_VOLUME:-pp-engines}:/var/lib/pp_infer" "$image")
   python3 - "$output" "$container_id" <<'PY'
 import json,sys
@@ -85,9 +86,26 @@ import re
 config=subprocess.check_output(['docker','exec',name,'cat','/opt/pp_infer/node.yaml'],text=True)
 for key,value in {'intensity_scale':'1.0','nms_iou_thresh':'0.01','pre_nms_top_n':'4096','data_type':'fp32'}.items():
  if not re.search(r'^\s*'+key+r':\s*'+re.escape(value)+r'\s*$',config,re.M):raise SystemExit('Image node parameter differs: '+key)
+parameters={'intensity_scale':1.0,'nms_iou_thresh':0.01,'pre_nms_top_n':4096,'data_type':'fp32'}
+# New images have a publication score gate. Preserve unfiltered baseline policy
+# and record its effective value, rather than silently reusing changed outputs.
+# Old images have no gate; their frozen runtime identity stays byte-compatible.
+if re.search(r'^\s*confidence_threshold:',config,re.M):
+ import time
+ if env.get('PP_CONFIDENCE_THRESHOLD')!='0.0':raise SystemExit('Baseline requires PP_CONFIDENCE_THRESHOLD=0.0; inspect/recreate the intended validation container.')
+ deadline=time.monotonic()+120
+ while True:
+  observed=subprocess.run(['docker','exec',name,'/entrypoint.sh','ros2','param','get','/pointpillars','confidence_threshold'],capture_output=True,text=True,timeout=30)
+  value=re.search(r'^Double value is:\s*(\S+)\s*$',observed.stdout,re.M)
+  if observed.returncode==0 and value:
+   if float(value.group(1))!=0.0:raise SystemExit('Baseline live confidence_threshold changed; restore 0.0 before collecting.')
+   break
+  if time.monotonic()>=deadline:raise SystemExit('Could not verify baseline live confidence_threshold; no collection performed.')
+  time.sleep(1)
+ parameters['confidence_threshold']=0.0
 record={'image_id':info['Image'],'container':name,'domain':int(domain),
  'model_sha256':'2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1',
- 'parameters':{'intensity_scale':1.0,'nms_iou_thresh':0.01,'pre_nms_top_n':4096,'data_type':'fp32'},
+ 'parameters':parameters,
  'source_revision':subprocess.check_output(['docker','exec',name,'cat','/opt/pp_infer/source-revision.txt'],text=True).strip(),
  'gpu':subprocess.check_output(['nvidia-smi','--query-gpu=name,uuid,driver_version','--format=csv,noheader'],text=True).strip()}
 path=Path(out)/'runtime.json'

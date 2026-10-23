@@ -33,7 +33,9 @@ std::size_t pack_xyzi(const sensor_msgs::msg::PointCloud2& message,
                      pcl::PointCloud<pcl::PointXYZI>& scratch,
                      std::vector<float>& packed);
 
+// Validate every box, then omit scores below the finite [0,1] threshold.
+// Equality passes. Default 0 preserves an unfiltered adapter for reference tools.
 vision_msgs::msg::Detection3DArray make_detections(
     const std_msgs::msg::Header& header, const std::vector<Bndbox>& boxes,
-    const std::vector<std::string>& classes);
+    const std::vector<std::string>& classes, double confidence_threshold = 0.0);
 }  // namespace pp_infer
