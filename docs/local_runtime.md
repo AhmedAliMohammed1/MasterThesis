@@ -1,5 +1,7 @@
 # Optional native project-local TensorRT setup
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 > **Status reviewed 23 October 2026.** The native SDK instructions describe the recorded TensorRT 10 setup. Later reference allocation probes reported zero errors in two executions, but full memory safety and accuracy acceptance remain open. Use fresh native build directories after the checkout move. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
 
 Docker now downloads its own SDK/model and needs none of this host setup. For native work after moving the checkout, use fresh build/install directories: old generated CMake caches and ROS setup files can contain the previous absolute path. Choose new `--build-base`/`--install-base` directories consistently for build, test and overlay sourcing. The commands below assume fresh default directories.

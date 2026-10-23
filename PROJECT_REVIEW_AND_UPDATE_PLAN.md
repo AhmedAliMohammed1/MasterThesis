@@ -1,5 +1,7 @@
 # Project review and modernization prompt
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](docs/CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 > **Status reviewed 23 October 2026.** The original review and modernization prompt below are historical. CPU/ROS foundations, TensorRT 10 migration, deployment, labeled evaluation, compatibility comparison and later sensor demos are now delivered in part; the bounded worker, accuracy/parity acceptance, benchmarks and CI remain unfinished. [Current results and evidence](docs/CURRENT_STATUS_AND_RESULTS.md).
 
 Copy this prompt into a coding agent with access to this repository:

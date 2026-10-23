@@ -1,5 +1,7 @@
 # Automatic Docker build and deployment
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](../docs/CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 > **Status reviewed 23 October 2026.** Deployment behavior is unchanged. Later normalized Ouster replay matched 556 occurrences and frontal KITTI replay matched 154 frames; these are integration results. The labeled KITTI accuracy baseline remains poor, and the synchronous depth-700 subscriber is still present. [Current results and evidence](../docs/CURRENT_STATUS_AND_RESULTS.md).
 
 On a Linux x86-64 host with a supported NVIDIA GPU, working driver, Docker and NVIDIA Container Toolkit, run from the project folder:
@@ -8,7 +10,7 @@ On a Linux x86-64 host with a supported NVIDIA GPU, working driver, Docker and N
 sudo bash tools/deploy.sh
 ```
 
-This one command builds the image and starts the node in the foreground. Ctrl+C stops it. The wrapper will not replace an existing container with the same name; stop/remove the intended old instance first or select another `PP_CONTAINER_NAME`.
+This one command always invokes `docker build --pull` and then creates a new foreground `docker run --rm` container. Docker reuses eligible cached layers, but the wrapper has no update-only check or immediate image-only launch mode. It does not update an existing running container. Ctrl+C stops it. The wrapper will not replace an existing container with the same name; stop/remove the intended old instance first or select another `PP_CONTAINER_NAME`.
 
 `docker build` creates an image. It cannot keep a ROS node running after its build container exits. The wrapper runs `docker build` followed by `docker run`; target-GPU engine creation happens at container startup. Host drivers and Docker GPU integration must already work.
 
@@ -96,3 +98,5 @@ The published runtime image was exercised on 32 matched KITTI diagnostic frames.
 ## Independent reference update: 3 October 2026
 
 A separate TensorRT 8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately 1.53 m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all 192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and 12 frames exceed the export's 10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly 99.6–100%; no production adaptation was installed. Two actual CUDA 12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](../docs/MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.
+
+The 23 October trial was stopped after verifying the published feature; the tagged image and `pp-engines` cache remain. [Exact trial results and restart](../docs/CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).

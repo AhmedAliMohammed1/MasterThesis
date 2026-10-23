@@ -20,7 +20,8 @@
     "2026-10-03: W01.3 measurement delivered, poor baseline and repeatability/vertical errors recorded; no accuracy acceptance. Validation detector/player/RViz left running on isolated domain42. LaTeX source updated but PDF compile unavailable before parsing.",
     "2026-10-03: W01.4 TRT8 compatibility comparison measured poor, same-raw NMS agrees in192 observations; capacity controls improve repeatability. Accuracy, numerical/training parity and full memory acceptance remain unmet.",
     "2026-10-23: publication confidence gate (default 0.5, live configurable), derived statistics/count topics and RViz count displays implemented. Five native C++/ROS tests and 67 Python tests passed; TensorRT-enabled package builds. No new GPU replay or desktop rendering: NVIDIA driver inaccessible in this session. Frozen baseline collection explicitly disables and verifies the new gate.",
-    "2026-10-23: Added read-only tools/monitor_detections.sh (watch/once/threshold/rviz), with host/Docker routing and bounded snapshot/parameter waits. Expanded RViz marker with cumulative published/filtered totals and frame-drop counts. Six helper tests, actual controlled ROS reads and all five C++/ROS tests passed. No existing deployment replaced or actual GPU/desktop rendering claimed."
+    "2026-10-23: Added read-only tools/monitor_detections.sh (watch/once/threshold/rviz), with host/Docker routing and bounded snapshot/parameter waits. Expanded RViz marker with cumulative published/filtered totals and frame-drop counts. Six helper tests, actual controlled ROS reads and all five C++/ROS tests passed. No existing deployment replaced or actual GPU/desktop rendering claimed.",
+    "2026-10-23: Feature 8a87a73 published and GPU-deployed; 73 Python/five Docker C++-ROS tests, native smoke, 60 native plus 60 deployed matched replay frames and actual RViz counters verified. Trial detector/player/RViz stopped at user request 19:47 UTC; image/engine/data preserved. Documentation updated; W07 remains in progress."
   ],
   "state_values": [
     "pending",
@@ -434,7 +435,7 @@
         "QoS and clock compatibility checked",
         "Stage times, drop reasons and header preservation validated"
       ],
-      "next_action": "Confidence publication gate, per-frame/cumulative statistics and RViz count configuration delivered locally. Validate on target GPU/desktop after rebuilding the selected source. Continue W06 and installed launch/QoS/stage-timing/operational acceptance; W07 remains in progress.",
+      "next_action": "GPU filtering, counters and actual RViz rendering verified from published source 8a87a73. Trial stopped at user request. Continue W06 and installed launch/QoS/stage-timing/operational acceptance; accuracy remains open.",
       "evidence": [
         {
           "command": "docker exec -i pointpillars /entrypoint.sh python3 - < .recovery/verification/inspect-live-bag.py",
@@ -510,6 +511,31 @@
           "result": "Actual host helper once/threshold reads passed against an isolated controlled ROS fixture, not GPU inference; temporary publisher stopped.",
           "log": ".recovery/verification/monitor-helper/live-checks.json",
           "log_sha256": "1295d926adc82ca508efca75e6466f5f6455b256963578fb806cf3fee8649073"
+        },
+        {
+          "result": "73 Python tests passed.",
+          "log": ".recovery/verification/published-deployment/python-tests.log",
+          "log_sha256": "a64bd7bffacf365ead708208f1ddaf1e3efa2438ea7ae7530523a5421a14d0af"
+        },
+        {
+          "result": "Published feature image built; five C++/ROS tests passed; GPU startup reused engine cache.",
+          "log": ".recovery/verification/published-deployment/deploy.log",
+          "log_sha256": "3b4b96397268edde26e9c1d5658838722e92daa73f392d730e77f26522500a60"
+        },
+        {
+          "result": "60 native GPU frames verified at thresholds 0.0/0.5/0.95.",
+          "log": ".recovery/verification/published-deployment/native-live-output-check.json",
+          "log_sha256": "e1adb9645db8f12e7d39857b96fdc9724466adf382a28eb97b5e746d1032dd0a"
+        },
+        {
+          "result": "60 deployed GPU frames verified; headers, published scores/counts, diagnostic arithmetic and marker totals agreed; threshold restored to 0.5.",
+          "log": ".recovery/verification/published-deployment/live-output-check.json",
+          "log_sha256": "db518cba3ab102da2127ba6b2a53234415ee7536a3636c74a2c4287299bfab28"
+        },
+        {
+          "result": "Recorded trial detector/player/RViz stopped at user request; data and engine volume preserved.",
+          "log": ".recovery/verification/published-deployment/shutdown.json",
+          "log_sha256": "8c133eeaa8ef4dd8581b63f5e1cbae885a955a5cded8e5260f5e2dedebb79340"
         }
       ]
     },

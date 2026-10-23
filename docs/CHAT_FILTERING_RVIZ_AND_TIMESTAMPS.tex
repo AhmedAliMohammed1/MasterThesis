@@ -411,4 +411,76 @@ is not independently established. Preserve the relevant source terms with data.
 See \path{docs/CURRENT_STATUS_AND_RESULTS.md} for the consolidated tables and
 \path{recovery/PROGRESS.md} for final link/asset/compiler verification.
 
+
+\section{Published filtering trial and shutdown: 23 October 2026}
+Feature source \texttt{8a87a73} was pushed to main, rebuilt through the Docker
+wrapper and verified on the RTX 4060 Laptop GPU. All 73 Python tests and five
+Docker-build C++/ROS tests passed. Native GPU smoke passed. Native and deployed
+KITTI replay each verified 60 matched frames: 20 at each threshold 0.0, 0.5 and
+0.95. Published scores, headers, detection lengths, diagnostic arithmetic and
+actual marker totals agreed. Different thresholds sampled different scans;
+these checks do not establish detection accuracy.
+
+The publication gate keeps scores greater than or equal to
+\texttt{confidence\_threshold}, a finite double in $[0,1]$, default 0.5.
+Below-threshold boxes publish no individual detection information. The unchanged
+Detection3DArray contains accepted boxes; \texttt{/bbox/stats} reports per-frame
+and cumulative counters and \texttt{/bbox/count} carries RViz text.
+Published totals are after filtering and count repeated detection events across
+scans, not unique tracked objects. The before-filter count is after NMS.
+
+\subsection{Which shell file opens RViz?}
+The last trial used the following command from the project root:
+\begin{lstlisting}
+RVIZ_CONFIG="$PWD/rviz/kitti_front.rviz" bash tools/monitor_detections.sh rviz
+\end{lstlisting}
+The monitor's \texttt{rviz} mode calls \texttt{tools/visualize.sh} and opens a
+\textbf{new RViz process/window}. It does not reconfigure an existing window or
+start inference/playback. In an existing RViz window, choose
+\textbf{File / Open Config} and select \texttt{rviz/kitti\_front.rviz} to load the
+complete profile. To preserve your layout, add only a MarkerArray display on
+\texttt{/bbox/count}, using Reliable and Transient Local QoS and the cloud frame.
+The monitor's other modes stream statistics (default), read one snapshot
+(\texttt{once}), or query the live threshold (\texttt{threshold}); they do not
+change the threshold or reset counters.
+
+\subsection{Deployment behavior and stopped state}
+\texttt{tools/deploy.sh} first refuses an existing same-name container; otherwise
+it always invokes \texttt{docker build --pull}. Docker can reuse eligible cached
+layers. The wrapper has no separate update-only check and does not update an
+existing running container. After a successful build it creates a fresh
+foreground \texttt{docker run --rm} container. The image and named engine volume
+persist when the container exits; this trial reused the existing cached engine.
+
+At the user's request, the recorded detector and KITTI front-drive player
+containers were stopped and the exact trial RViz process was closed at
+\textbf{19:47 UTC / 21:47 Europe/Berlin on 23 October 2026}. Follow-up inspection
+confirmed their exit. The last live threshold was \textbf{0.5}; no live parameter
+is available while inference is stopped. The image, engine volume, datasets and
+frozen reports were preserved. Restart in three separate terminals:
+\begin{lstlisting}
+# Terminal 1: inference, including the normal build check
+PP_CONFIDENCE_THRESHOLD=0.5 bash tools/deploy.sh
+# Terminal 2: prepared KITTI front-drive replay
+bash tools/rosbag_kitti_front.sh
+# Terminal 3: a new RViz window
+RVIZ_CONFIG="$PWD/rviz/kitti_front.rviz" bash tools/monitor_detections.sh rviz
+\end{lstlisting}
+Use Docker permissions appropriate to the host and one cloud player per domain/topic.
+Local test/deployment/shutdown logs remain under
+\texttt{\detokenize{.recovery/verification/published-deployment/}}.
+W07 remains in progress for worker, launch, QoS, timing and operational acceptance;
+the frozen accuracy baseline and unresolved input/training contract are unchanged.
+
+\begin{figure}[htbp]
+\centering
+\projectshot{rviz-filter-counters-2026-10-23.png}{.97\linewidth}
+\caption{Actual RViz capture before shutdown: 3 published boxes from 94 post-NMS
+boxes, with 91 removed at threshold 0.5. Cumulative counts are detection events.
+The front camera is a separate panel, not a calibrated detection projection.
+KITTI raw drive 0005; Geiger, Lenz, Stiller and Urtasun, KIT/TTI-C,
+CC-BY-NC-SA-3.0. Capture hash and deployment identity:
+\texttt{\detokenize{docs/figures/filter-counters-provenance.json}}.}
+\end{figure}
+
 \end{document}

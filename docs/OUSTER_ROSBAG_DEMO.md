@@ -1,5 +1,7 @@
 # Non-KITTI Ouster ROS 2 bag demo
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 > **Status reviewed 23 October 2026.** The raw-signal failures below remain the baseline. Explicit reflectivity_div255 replay later matched all 556 input/output occurrences without recorded detector errors. Camera playback and the original-data detail view are available; raw_signal is still this helper’s default, and accuracy remains unmeasured. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
 
 This separate helper uses Kenji Koide's (AIST) **LiDAR-camera calibration dataset, v3**, recorded with an **Ouster OS1-32** and an STC-MCS500POE camera. The source is [Zenodo record 7780490](https://zenodo.org/records/7780490), DOI `10.5281/zenodo.7780490`, licensed CC-BY-4.0. Preserve that attribution with redistributed data.

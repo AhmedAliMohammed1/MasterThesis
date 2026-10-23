@@ -1,5 +1,7 @@
 # KITTI accuracy baseline and live RViz comparison
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 > **Status reviewed 23 October 2026.** The frozen labeled baseline below remains the latest recorded accuracy measurement: zero moderate 3D matches, with BEV AP_R40 5.7516% Car, 0% Pedestrian and 0.02577% Cyclist. Later Ouster normalization and frontal KITTI replay did not replace or improve this frozen accuracy result. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
 
 On 3 October 2026, the current deployed PointPillars node was measured on the 32 frozen labeled KITTI diagnostic frames. **The baseline is poor. There were no accepted 3D matches on the 16 test frames at KITTI's class-specific overlap thresholds.** Some cars and cyclists matched in bird's-eye view. Integration and visualization work, but this model/runtime combination has not passed accuracy acceptance.

@@ -1,5 +1,7 @@
 # How this PointPillars project reached its current stage
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 > **Status reviewed 23 October 2026.** This history preserves earlier observations and publication states. The current local baseline is ee6b36c; KITTI evaluation/reference work and later Ouster/camera/frontal demos are committed locally. The latest results and visual examples are consolidated separately. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
 
 **Project history, decisions, changes and evidence — initial record 1–2 October 2026; addenda 3 and 5 October 2026**
@@ -916,3 +918,11 @@ Source review started at local commit `ee6b36c` with only untracked `prompt.md`;
 The results remain: zero moderate KITTI 3D matches on the 16-frame test split; identical selected NMS boxes on 192 same-candidate reference observations; no invalid rows in 144 normalized Ouster observations; 556 matched normalized Ouster replay occurrences; and 154 matched frontal KITTI frames. These have different scopes and do not constitute accuracy acceptance.
 
 Frames from both supplied 20 October screencasts now illustrate RViz rendering with local-source hashes and offsets. The screenshots do not identify the engine/bag/feature recipe or prove accuracy. The fresh 64-test Python suite passed with local socket access. No runtime code, thresholds, datasets, engine, container or publication state was changed. See [current status and results](CURRENT_STATUS_AND_RESULTS.md), [figure provenance](figures/README.md) and the dated recovery progress entry for verification/compilation details.
+
+## Filtering, monitor behavior and trial closure — 23 October 2026
+
+The user requested publication and a live trial. Feature source `8a87a73` and verification documentation `8fc05d2` were pushed. The rebuilt image passed five C++/ROS tests; 73 Python tests, native GPU smoke and 60 native plus 60 deployed matched replay frames passed. Thresholds 0.0, 0.5 and 0.95 were exercised and the final live setting restored to 0.5. RViz visibly displayed points, accepted boxes/scores and per-frame/cumulative counters. This is integration evidence, not improved accuracy.
+
+The last launcher was `RVIZ_CONFIG="$PWD/rviz/kitti_front.rviz" bash tools/monitor_detections.sh rviz`. The user asked how it differs from `visualize.sh`: it delegates to that script and opens a new window. To configure an existing window, use File → Open Config, or add the `/bbox/count` MarkerArray display without replacing the layout. Other monitor modes stream statistics, take one snapshot or read the current threshold; they do not launch inference/playback or change parameters. Published totals count detections after filtering, including repeated observations across scans.
+
+`deploy.sh` refuses existing same-name containers, always invokes Docker build with --pull and can reuse eligible layers; after success it creates a fresh --rm container. It has no update-only check. The user then requested closing current processes and updating all docs: the recorded detector/player containers and exact RViz process were stopped at 19:47 UTC. The image, engine cache and datasets were preserved. [Current status and restart](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).

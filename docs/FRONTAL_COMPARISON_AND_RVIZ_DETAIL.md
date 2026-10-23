@@ -1,5 +1,7 @@
 # Original LiDAR detail and a forward-camera KITTI comparison
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 > **Status reviewed 23 October 2026.** The saved frontal KITTI check matched all 154 clouds/detections/images/CameraInfo messages, preserving original XYZI and camera pixels. Five Ouster raw/normalized cloud pairs passed non-intensity byte checks. The supplied later screencasts add visual examples, without establishing which bag/engine/feature variant they used. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
 
 This update addresses the sparse RViz scene and adds a different road recording. It does not change model weights, confidence thresholds, NMS or existing source recordings.

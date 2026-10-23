@@ -1,5 +1,7 @@
 # Ouster input-feature comparison
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 > **Status reviewed 23 October 2026.** The recorded comparison remains 192 observations, including 15/48 raw-signal rejections and 0/144 rejections across normalized variants. Full reflectivity_div255 replay matched 556/556 occurrences. These results demonstrate numerical/message-flow improvement, not calibrated features or detection accuracy. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
 
 Measured on 13 October 2026. **The unscaled Ouster signal is a demonstrated contributor to numerical failures in this model.** Changing only the fourth input feature removed infinite box lengths in all tested normalized observations and sharply reduced the excessive predictions. This establishes a numerical/input improvement on these recordings, not detection accuracy or an accepted sensor calibration.

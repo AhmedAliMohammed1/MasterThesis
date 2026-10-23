@@ -1,5 +1,7 @@
 # pp_infer implementation architecture and recovery plan
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](docs/CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 > **Status reviewed 23 October 2026.** The CPU core, ROS adapter, TensorRT 10 runtime and Docker deployment are implemented. The latest-frame worker diagram below is a proposed architecture: the current node still performs synchronous inference with reliable depth 700. Labeled accuracy remains unaccepted; later Ouster/frontal replay results establish integration only. [Current results and evidence](docs/CURRENT_STATUS_AND_RESULTS.md).
 
 Prepared 2026-10-01. Target confirmed by the user: **Ubuntu 24.04 / ROS 2 Jazzy on an NVIDIA GPU**.

@@ -1,5 +1,7 @@
 # Verifying the PointPillars model on KITTI
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 > **Status reviewed 23 October 2026.** Data preparation, frozen prediction export, explicit evaluation policy and diagnostic accuracy scoring are implemented, and an independent TensorRT8 compatibility comparison is recorded. W01 remains in progress because original-training parity and accuracy acceptance have not passed. Ouster encodings remain unlabeled diagnostic candidates. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
 
 This is the plan for W01, started on 2 October 2026. The user chose labeled KITTI scenarios first, followed by their own LiDAR recordings when available. It separates correct implementation of the downloaded model from the model's accuracy on a new dataset. Neither result has been claimed complete.

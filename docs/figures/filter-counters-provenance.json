@@ -1,0 +1,58 @@
+{
+  "container_id": "9b7f55d2af28f791ec6ac1f448ef9bd1cbb97971674b2d494a16208602f92c4d",
+  "image_id": "sha256:5b905d5901e16634ecc2a92fd767b9165cd588a0b14442331af8281fbc799a95",
+  "source_revision": "8a87a7378c8c11ad187e7c19bc4ecc6e649948c8",
+  "container": "pointpillars",
+  "engine_volume": "pp-engines",
+  "domain": 0,
+  "engine_path": "/var/lib/pp_infer/4b6ea34734d959f49e9a9be3326b9bdffa13d5ec7293022b16e322ac77a94b4a.engine",
+  "engine_sha256": "605cd84571cd3fafa0a015e7d5003434d8267e950163d068ef241f604ba94885",
+  "engine_modified": "2026-10-13 19:46:25.503702704 +0000",
+  "model_sha256": "2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1",
+  "driver_gpu": "NVIDIA GeForce RTX 4060 Laptop GPU, 595.99.02",
+  "threshold": 0.5,
+  "bag_container_id": "30fae553750e1d2320b2e85d605bcf050ab203ed341db5034120907d6409edf1",
+  "rviz_window_id": "0x24001f7",
+  "figure": "rviz-filter-counters-2026-10-23.png",
+  "sha256": "5ed1984b0eaa6181f3148dc39757aee7eda723e82e79e837612c6626f6efb144",
+  "size_pixels": [
+    1600,
+    900
+  ],
+  "capture_date": "2026-10-23",
+  "source": "Actual RViz window captured by xwd and losslessly converted with ffmpeg; no crop, resize or added overlay.",
+  "configuration": "rviz/kitti_front.rviz",
+  "dataset": "KITTI raw 2011_09_26_drive_0005_sync",
+  "attribution": "Andreas Geiger, Philip Lenz, Christoph Stiller and Raquel Urtasun; KIT/TTI-C; CC-BY-NC-SA-3.0",
+  "limits": "No ground truth or calibrated camera projection; counts are detection events, not unique objects or accuracy.",
+  "shutdown": {
+    "stopped_at_utc": "2026-10-23T19:47:08Z",
+    "resources": [
+      {
+        "name": "pointpillars-kitti-front-bag",
+        "id": "30fae553750e1d2320b2e85d605bcf050ab203ed341db5034120907d6409edf1",
+        "action": "docker stop"
+      },
+      {
+        "name": "pointpillars",
+        "id": "9b7f55d2af28f791ec6ac1f448ef9bd1cbb97971674b2d494a16208602f92c4d",
+        "action": "docker stop"
+      },
+      {
+        "name": "rviz2",
+        "pid": 51693,
+        "start_ticks": "533630",
+        "action": "SIGINT"
+      }
+    ],
+    "source_revision": "8a87a7378c8c11ad187e7c19bc4ecc6e649948c8",
+    "last_verified_threshold": 0.5,
+    "preserved": [
+      "Docker image",
+      "pp-engines volume",
+      "datasets",
+      "frozen results",
+      "untracked prompt.md"
+    ]
+  }
+}

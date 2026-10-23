@@ -1,5 +1,7 @@
 # Historical Foxy / TensorRT 8 README
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 > **Status reviewed 23 October 2026.** Archived Foxy instructions below are historical. Current deployment uses Jazzy/TensorRT 10, and direct RViz Detection3DArray display is available through vision_msgs_rviz_plugins. The old visualization limitation and installation commands do not describe the current implementation. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
 
 This preserves the original deployment instructions for reference. They do not describe the current Jazzy / TensorRT 10 build. Use the current README and PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex instead. Do not copy the plugin overwrite commands into the current installation.

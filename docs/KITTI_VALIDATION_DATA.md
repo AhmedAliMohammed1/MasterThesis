@@ -1,5 +1,7 @@
 # Preparing labeled KITTI scenarios
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 > **Status reviewed 23 October 2026.** Preparation is complete for 32 frozen labeled frames. Prediction export, evaluator policy and baseline scoring are also implemented; the 16-frame test set has zero moderate 3D matches. The 154-frame frontal raw-data clip is a separate integration example with no detection ground truth in that workflow. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
 
 This is the first implementation step in the [model validation plan](MODEL_VALIDATION_PLAN.md). It prepares matched point clouds, object annotations, calibration and camera images. It does not run inference or calculate accuracy. The earlier sequence04 bag and camera video remain useful integration examples, but have no object annotations in this project.

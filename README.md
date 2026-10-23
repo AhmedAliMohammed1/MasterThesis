@@ -1,5 +1,7 @@
 # PointPillars inference for ROS 2 Jazzy
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](docs/CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 > **Status reviewed 23 October 2026.** The latest results include the poor labeled KITTI baseline, the TensorRT compatibility comparison, 556 matched normalized Ouster replay occurrences, and 154 matched frontal KITTI frames. Integration works; accuracy, exact training parity and real-time acceptance remain open. [Current results and evidence](docs/CURRENT_STATUS_AND_RESULTS.md).
 
 This project receives LiDAR point clouds and publishes 3D detection messages using a pretrained PointPillars ONNX model and TensorRT 10.16.1.11. The current deployment uses Ubuntu 24.04 and Docker; the image builds the ROS package with colcon.
@@ -8,13 +10,13 @@ For a plain-language account of the migration, CPU/GPU roles, model downloads, N
 
 The [LaTeX presentation](docs/PROJECT_MIGRATION_PRESENTATION.tex) now includes measured results and visual examples alongside the migration and engine-flow diagrams. The [A-to-Z LaTeX guide](docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex) covers setup, deployment, playback, validation and recovery. The [filtering/RViz/timestamp discussion](docs/CHAT_FILTERING_RVIZ_AND_TIMESTAMPS.tex) retains its original explanations and adds a dated results continuation. Older PDFs under `output/` are historical renditions; use the updated source and its recorded compilation status.
 
-Read the [project history](docs/PROJECT_HISTORY_AND_DECISION_RECORD.md) and [discussion record](docs/CHAT_DISCUSSION_RECORD.md) for earlier decisions and requests. Their dated statements about uncommitted changes, running processes and incomplete implementation describe their original sessions. Current local source HEAD at review is `ee6b36c`; this does not assert remote publication or a new image build.
+Read the [project history](docs/PROJECT_HISTORY_AND_DECISION_RECORD.md) and [discussion record](docs/CHAT_DISCUSSION_RECORD.md) for earlier decisions and requests. Their dated statements about uncommitted changes, running processes and incomplete implementation describe their original sessions. The feature/runtime source `8a87a73` and results documentation `8fc05d2` were pushed to `origin/main`. The tested image contains runtime source `8a87a73`; later documentation commits do not change that image.
 
 ## Build and run with one command
 
 **New: confidence filtering and box counts.** The updated node publishes only detections with `score >= confidence_threshold` (default **0.5**). Change it live with `ros2 param set /pointpillars confidence_threshold 0.7`; monitor per-frame/cumulative counts with `ros2 topic echo /bbox/stats`. Saved RViz profiles include a **Detection count (latest scan)** label on `/bbox/count`. See [configuration, monitoring and validation](docs/CONFIDENCE_FILTER_AND_MONITORING.md). This reduces low-score clutter; it cannot guarantee removal of high-confidence false positives. Existing containers need the updated executable/image.
 
-For shell-based monitoring, run `bash tools/monitor_detections.sh` to stream counters, `bash tools/monitor_detections.sh once` for one snapshot, or `bash tools/monitor_detections.sh threshold` to read the current setting. `bash tools/monitor_detections.sh rviz` opens the existing RViz view with per-scan and cumulative counts. Use `--help` for Docker, domain, topic and manual-default settings.
+For shell-based monitoring, run `bash tools/monitor_detections.sh` to stream counters, `bash tools/monitor_detections.sh once` for one snapshot, or `bash tools/monitor_detections.sh threshold` to read the current setting. `bash tools/monitor_detections.sh rviz` calls `tools/visualize.sh` to open a **new RViz window** with per-scan and cumulative counts. It does not reconfigure an open window; use RViz **File → Open Config** for that. Use `--help` for Docker, domain, topic and manual-default settings.
 
 With a working host NVIDIA driver, Docker and NVIDIA Container Toolkit, run from the project folder:
 
@@ -62,7 +64,7 @@ Normal startup follows these steps:
 
 The current ROS node does not open ONNX. Its legacy `model_path` parameter is stored but unused for loading; `data_type` does not change the precision of an existing engine. Calling `ros2 run` directly does not download a model or build an engine: prepare the engine and required libraries first. Normal container startup still needs the ONNX file even when an engine is cached, because the script calculates its checksum.
 
-See the [step-by-step explanation and engine diagram](README_PROJECT_EXPLANATIONS.md#how-the-engine-is-created-step-by-step) and the [CPU/GPU/ROS diagram](README_PROJECT_EXPLANATIONS.md#5-cpu-and-gpu-responsibilities-and-who-talks-to-whom). These documentation updates introduce no new GPU test results or accuracy acceptance.
+See the [step-by-step explanation and engine diagram](README_PROJECT_EXPLANATIONS.md#how-the-engine-is-created-step-by-step) and the [CPU/GPU/ROS diagram](README_PROJECT_EXPLANATIONS.md#5-cpu-and-gpu-responsibilities-and-who-talks-to-whom). The 23 October feature trial verified GPU filtering and counters; it did not establish accuracy acceptance.
 
 ## Prepare another computer
 
@@ -70,7 +72,7 @@ Use Ubuntu 24.04 on Linux x86-64 with a supported NVIDIA GPU, enough GPU memory,
 
 TensorRT 10.x lists compute capability 7.5 or newer as its hardware floor. Only the RTX 4060 Laptop has been physically tested here; other targets need validation. ARM64/Jetson requires a separate image, and this Linux host-network recipe has not been validated on Windows/WSL2. See [NVIDIA's support matrix](https://docs.nvidia.com/deeplearning/tensorrt/10.x.x/getting-started/support-matrix.html).
 
-After these deployment edits have been committed and pushed, obtain the project on another computer:
+The deployment edits are published; obtain the project on another computer:
 
 ```bash
 git clone https://github.com/AhmedAliMohammed1/MasterThesis.git "$HOME/pointpillars"

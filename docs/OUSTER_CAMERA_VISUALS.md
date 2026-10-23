@@ -1,5 +1,7 @@
 # Camera reference for the Ouster bags
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 > **Status reviewed 23 October 2026.** Both exported previews and merged playback are recorded: 111 image payloads, 111 CameraInfo payloads and 556 normalized clouds were preserved. Sensor header clocks remain unaligned; there is no calibrated detection overlay. New screencast figures illustrate RViz rendering without proving camera synchronization. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
 
 Both source recordings contain `/image` and `/camera_info`. The images are original 2448×2048 BGR8 camera frames from Kenji Koide's AIST [LiDAR-camera calibration dataset v3](https://zenodo.org/records/7780490), DOI `10.5281/zenodo.7780490`, licensed **CC-BY-4.0**. Preserve that attribution with shared videos/data.

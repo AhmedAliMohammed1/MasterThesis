@@ -1,5 +1,7 @@
 # What the independent model comparison found
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 > **Status reviewed 23 October 2026.** The compatibility comparison below is delivered, but exact numerical/training parity and accuracy acceptance remain unmet. Later Ouster tests isolated the unscaled fourth feature as a contributor to numerical failure on those recordings; that finding does not explain away the KITTI vertical error. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
 
 Measured on 3 October 2026. The poor KITTI baseline is reproduced in an independent TensorRT 8.6 environment. The evidence does **not** support blaming the pretrained weights alone. We now have a shared preprocessing/capacity concern to investigate, as well as the model's input/training conventions. Accuracy acceptance and exact numerical parity remain unmet.

@@ -1,5 +1,5 @@
-% Six active slides: migration, flow, engine lifecycle, accuracy, sensor results,
-% and screenshots. Reviewed 23 October 2026; experiments recorded 1--14 October.
+% Seven active slides: migration, flow, engine lifecycle, accuracy, sensor results,
+% screenshots and the published filtering trial. Reviewed 23 October 2026; experiments recorded 1--14 October.
 % Screenshot assets are under docs/figures; missing assets produce a warning
 % and visible placeholder in standalone compiler environments.
 \documentclass[aspectratio=169,11pt]{beamer}
@@ -376,7 +376,7 @@ The visible rendering does not establish the bag, engine, feature recipe or
 correctness of individual boxes. No ground truth or calibrated image overlay is shown.
 \medskip
 \footnotesize
-\textbf{Documentation checked 23 October:} 64 Python tests passed; selected saved
+\textbf{Initial documentation check, 23 October:} 64 Python tests passed; selected saved
 results matched inventory hashes. No new GPU experiment or runtime change.
 \par\smallskip
 \textbf{Next:} resolve input/training contract and bounded voxelization, validate
@@ -386,6 +386,40 @@ accuracy on untouched data, then complete worker/QoS/metrics and benchmarks.
 Results: \file{docs/CURRENT_STATUS_AND_RESULTS.md}.
 Ouster: Koide/AIST, CC-BY-4.0; KITTI: Geiger et al., CC-BY-NC-SA-3.0.
 Screenshot experiment identity is unverified.
+\end{frame}
+
+
+\begin{frame}[t]{Published filtering trial and final stopped state}
+\begin{columns}[T,onlytextwidth]
+\begin{column}{.43\textwidth}
+\small
+\textbf{Published source:} \file{8a87a73}. Default score gate: $s\geq0.5$.
+\begin{itemize}
+\item 73 Python and five C++/ROS tests passed.
+\item 60 native + 60 deployed GPU frames verified at 0.0 / 0.5 / 0.95.
+\item Headers, accepted scores, counts and marker totals agreed.
+\item Actual RViz rendering verified; accuracy remains unaccepted.
+\end{itemize}
+\scriptsize
+The monitor's \file{rviz} option calls \file{visualize.sh} and opens a new window.
+Use File / Open Config for an existing window.
+\end{column}
+\begin{column}{.55\textwidth}
+\projectshot{rviz-filter-counters-2026-10-23.png}{\linewidth}
+\scriptsize Captured scan: 3 accepted / 94 post-NMS; 91 removed at 0.5.
+Totals count detections after filtering, not unique objects.
+\end{column}
+\end{columns}
+\smallskip
+\footnotesize
+\textbf{Stopped at user request:} detector, KITTI player and RViz closed on
+23 October, 19:47 UTC. Image, engine cache and data preserved. Last threshold 0.5.
+\par\smallskip
+\scriptsize
+Deploy always invokes a cache-aware build, then creates a fresh container;
+it refuses an existing name. Restart commands: \file{docs/CURRENT_STATUS_AND_RESULTS.md}.
+KITTI: Geiger et al., KIT/TTI-C, CC-BY-NC-SA-3.0.
+Capture identity: \file{docs/figures/filter-counters-provenance.json}.
 \end{frame}
 
 \end{document}

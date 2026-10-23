@@ -1,5 +1,7 @@
 # Confidence filtering and detection monitoring
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 Implemented on 23 October 2026. The publication layer keeps detections whose **score is at least `confidence_threshold`**. Detections below it are absent from `/bbox`: no box, class, position, pose or score for those detections reaches RViz or another subscriber. Kept detections retain their original fields, order, timestamp and frame ID.
 
 The default is **0.5**, an adjustable starting setting, not an accuracy-calibrated recommendation. The threshold must be a finite ROS double in `[0,1]`. Equality passes. Set `0.0` to disable this additional gate; the model's built-in decode cutoff and existing NMS still apply. Scores are compared at their actual numeric values, rather than rounded score labels.
@@ -44,10 +46,12 @@ The native YAML must also provide a valid engine path and existing required mode
 
 ## Monitor the latest scan in RViz
 
-The read-only shell helper can open the saved view:
+The shell helper's `rviz` mode delegates to `tools/visualize.sh` and opens a **new RViz process/window** with the selected saved configuration. It does not configure an already-open window or start inference/playback. For an existing window, choose **File → Open Config** and select `rviz/kitti_front.rviz` (this loads the complete profile), or add only the MarkerArray display described below.
+
+The last verified trial used:
 
 ```bash
-bash tools/monitor_detections.sh rviz
+RVIZ_CONFIG="$PWD/rviz/kitti_front.rviz" bash tools/monitor_detections.sh rviz
 # Keep the Ouster camera/detail view if that is your selected input:
 RVIZ_CONFIG="$PWD/rviz/ouster_detail.rviz" bash tools/monitor_detections.sh rviz
 ```
@@ -171,6 +175,14 @@ Source `8a87a73` is now pushed to `main` and deployed through `tools/deploy.sh`.
 
 The complete Python suite passed **73 tests**; the Docker build passed **five C++/ROS tests**. A native GPU smoke check passed. Native and deployed KITTI replay each verified **60 matched frames**, 20 at each threshold 0.0, 0.5 and 0.95. Checks matched input headers, detection scores, actual published lengths, diagnostic arithmetic and marker text/totals. Different thresholds sampled different scans, so their counts are not an accuracy comparison. The final live threshold is **0.5**.
 
-The real RViz window was visually inspected: original points, accepted boxes and scores, latest-scan counts, cumulative published/removed totals and processed/dropped frames were visible. The detector, KITTI front-drive player and RViz were left running on domain 0. Inspect current state before starting another player. To watch the running container's counters, use `PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh`; append `threshold` to read its current setting.
+The real RViz window was visually inspected: original points, accepted boxes and scores, latest-scan counts, cumulative published/removed totals and processed/dropped frames were visible. The trial used domain 0. The detector, KITTI front-drive player and RViz were subsequently stopped at the user's request at 19:47 UTC; the final configured threshold was 0.5. After restarting inference and one player, to watch the container's counters, use `PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh`; append `threshold` to read its current setting.
 
 Exact local logs, frame reports, deployment/engine identities and the captured `rviz-live.png` are under `.recovery/verification/published-deployment/` (ignored local evidence). Broader W07 timing/worker/QoS acceptance and detection accuracy remain open.
+
+![Verified live RViz filtering and counters](figures/rviz-filter-counters-2026-10-23.png)
+
+This captured scan shows **3 published boxes from 94 post-NMS boxes**, with **91 removed** at threshold **0.5**. The cumulative published count is after filtration and counts repeated detections across scans, not unique objects. The screenshot predates shutdown; it is not a current live view. [Capture identity and attribution](figures/filter-counters-provenance.json).
+
+## Deployment and shutdown behavior
+
+`tools/deploy.sh` first refuses an existing container with the selected name. Otherwise it always invokes `docker build --pull`; Docker can reuse unchanged layers, but the wrapper does not implement a separate update-only check or bypass the build command. After a successful build it creates a new foreground `docker run --rm` container. Stopping that container removes it; the tagged image and `pp-engines` volume persist. See [restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).

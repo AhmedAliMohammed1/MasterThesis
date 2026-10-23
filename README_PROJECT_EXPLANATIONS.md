@@ -1,5 +1,7 @@
 # PointPillars: project explanations and migration reference
 
+> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](docs/CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+
 > **Status reviewed 23 October 2026.** This explanation now includes the 13–14 October Ouster feature/camera and frontal KITTI results, plus figures extracted from the supplied 20 October screencasts. Earlier dated findings remain historical evidence. [Current results and evidence](docs/CURRENT_STATUS_AND_RESULTS.md).
 
 Updated **23 October 2026** against local source `ee6b36c`, inventories and saved results. Numerical evidence remains dated to its recorded experiments on 1–14 October. This documentation pass also inspected the supplied screencasts dated 20 October; it did not run new GPU inference.
@@ -354,7 +356,7 @@ Read this reference for explanation, [README.md](README.md) for operation, [reco
 
 Source checkpoints omit SDKs, engines, models, bags, media and most generated evidence. Keep independent backups. Docker engine caching and source checkpointing solve different problems.
 
-The [LaTeX presentation](docs/PROJECT_MIGRATION_PRESENTATION.tex) now has six active slides: the original purpose/migration, CPU/GPU/ROS flow and engine lifecycle, followed by measured KITTI accuracy, later Ouster/frontal results and two screencast figures. Inline TikZ diagrams remain editable; screenshot PNGs live under `docs/figures/`. Keep those assets beside the source for the complete illustrated output. The standalone preview provides a labeled placeholder when project images are unavailable.
+The [LaTeX presentation](docs/PROJECT_MIGRATION_PRESENTATION.tex) now has seven active slides: the original purpose/migration, CPU/GPU/ROS flow and engine lifecycle, followed by measured KITTI accuracy, later Ouster/frontal results and two screencast figures, plus the published filtering trial and verified counter capture. Inline TikZ diagrams remain editable; screenshot PNGs live under `docs/figures/`. Keep those assets beside the source for the complete illustrated output. The standalone preview provides a labeled placeholder when project images are unavailable.
 
 The built-in compiler was attempted for all three updated LaTeX sources on 23 October. All failed before source parsing because its TeX bundle was not cached and could not be downloaded. Compilation and rendered page layout remain unverified. The source stays in the built-in editor; no terminal TeX installation was added. The old `output/pdf/PROJECT_MIGRATION_PRESENTATION.pdf` is a separate historical three-page rendition, not a compiled or current version of the expanded source. Diagnostics are retained under `.recovery/verification/docs-2026-10-23/latex-compilation.json`.
 
