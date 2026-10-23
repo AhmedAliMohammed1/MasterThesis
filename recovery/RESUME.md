@@ -2,6 +2,12 @@
 
 > **Status reviewed 23 October 2026.** Start from the consolidated current results and local HEAD ee6b36c. Validation/reference and Ouster/camera/frontal helper work are committed locally; old “uncommitted” statements below describe earlier sessions. No saved PID/container record establishes what is currently running. Keep W01/W04/W05/W07/W09 in progress, W06/W08 pending. [Current results and evidence](../docs/CURRENT_STATUS_AND_RESULTS.md).
 
+## Latest published runtime — 23 October 2026
+
+User authorized pushing and trying the feature. Source `8a87a7378c8c11ad187e7c19bc4ecc6e649948c8` is pushed to `origin/main` and deployed. The current-session `pointpillars` container, `pointpillars-kitti-front-bag` player and RViz were left running on domain 0, threshold **0.5**. Check actual state and `.recovery/verification/published-deployment/deployment.json` before process management. Host GPU execution works; earlier restricted-context driver failures do not describe the host deployment. Existing engine volume was reused.
+
+73 Python tests, five Docker-build C++/ROS tests, native GPU smoke and 60 native plus 60 deployed matched replay frames passed. Actual RViz rendering of boxes, scores and counters was visually verified. Detailed results are in [current status](../docs/CURRENT_STATUS_AND_RESULTS.md) and the new progress entry. Old local-only/no-GPU statements below describe earlier checks. `prompt.md` remains the user's untracked file. W07 remains in progress and frozen accuracy results are unchanged.
+
 ## Latest documentation handoff — 23 October 2026
 
 **Subsequent feature implementation:** [confidence filtering and monitoring](../docs/CONFIDENCE_FILTER_AND_MONITORING.md) is now implemented locally. The node defaults to score >= 0.5, supports live `confidence_threshold` updates, and publishes derived `/bbox/stats` diagnostics and `/bbox/count` RViz text (following detection-topic remapping). Seven RViz profiles include the count display. Five C++/ROS tests passed with real isolated DDS publication, and 67 Python tests passed, followed by a focused baseline-check rerun. The full TensorRT-enabled package builds under `.recovery/confidence-filter-runtime/`; no new GPU execution or desktop count rendering was possible because the driver was inaccessible. Existing containers were not rebuilt/replaced, and remote-source Docker builds still require the feature in the selected published Git revision.

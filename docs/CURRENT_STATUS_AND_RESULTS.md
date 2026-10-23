@@ -1,6 +1,14 @@
 # Current project status and results
 
-Reviewed **23 October 2026** against source commit `ee6b36c95808ee1f6edd90b33976c536d71b1b34`, the working tree, result inventories and saved reports. This is the documentation review date. Numerical experiments below were recorded on **1–14 October**; the supplied screencast filenames are dated **20 October**. No new GPU experiment was run for this update.
+Reviewed **23 October 2026** against source commit `ee6b36c95808ee1f6edd90b33976c536d71b1b34`, the working tree, result inventories and saved reports. This is the documentation review date. Numerical experiments below were recorded on **1–14 October**; the supplied screencast filenames are dated **20 October**. That documentation-only review ran no new GPU experiment; the subsequent deployment verification below supersedes that limitation.
+
+## Published deployment verification — 23 October 2026
+
+Feature source `8a87a7378c8c11ad187e7c19bc4ecc6e649948c8` was pushed to `origin/main`, built through `tools/deploy.sh` and verified inside the running `pointpillars` container. The RTX 4060 Laptop GPU is accessible through host execution; the earlier driver failure reflected the restricted execution context. Startup reused the existing `pp-engines` engine cache. KITTI front-drive playback and RViz were started on domain 0, with the final threshold restored to **0.5**.
+
+All **73 Python tests** and **five Docker-build C++/ROS tests** passed. A native GPU smoke test passed. Real replay verified 20 matching input/detection/statistics/marker frames at each of thresholds 0.0, 0.5 and 0.95, both natively and in the deployed image: **60 native plus 60 deployed frames**. Published scores, message headers, per-frame count arithmetic and marker totals agreed. The live RViz window visibly rendered points, accepted boxes, scores and the four-line counter text. This verifies filtering and monitoring, not detection accuracy; the frozen accuracy results below are unchanged.
+
+Local evidence: `.recovery/verification/published-deployment/` contains `deployment.json`, `deploy.log`, `python-tests.log`, `native-gpu-smoke.log`, `native-live-output-check.json`, `live-output-check.json`, `latest-stats.txt`, `final-threshold.txt` and `rviz-live.png`. These ignored local artifacts are not included in Git. See [the feature guide](CONFIDENCE_FILTER_AND_MONITORING.md) for monitoring commands. Process identities describe this observation only; inspect actual state before future process management.
 
 ## Purpose and implementation
 

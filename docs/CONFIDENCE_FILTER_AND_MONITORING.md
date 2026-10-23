@@ -161,6 +161,16 @@ To investigate accuracy at other thresholds, design a separate tuning/evaluation
 
 The TensorRT-enabled executable built successfully against the existing local SDK. All **five C++/ROS tests** and **67 Python tests** passed; the latest stricter baseline check also passed the focused three-test rerun. The GPU-free ROS integration test exercises the same output class used by production: score boundaries, preserved full fields/headers/order, malformed outputs, live and rejected atomic parameter updates, real remapped detection/statistics/marker delivery, cumulative/zero/error counts and late subscribers. Python controls protect the baseline exporter against changed filtering. Shell/embedded-Python syntax and all seven RViz configurations were checked.
 
-New GPU replay and actual desktop rendering of the count display remain unverified: `nvidia-smi` could not communicate with the host driver in this session. No existing container/image was replaced. Exact logs and scope are recorded in [the progress entry](../recovery/PROGRESS.md).
+At the initial implementation check, new GPU replay and desktop rendering were unverified: `nvidia-smi` could not communicate with the host driver in this session. No existing container/image was replaced. Exact logs and scope are recorded in [the progress entry](../recovery/PROGRESS.md).
 
 The shell helper subsequently passed six isolated routing/error/timeout tests and actual host ROS `once`/`threshold` reads from a temporary controlled fixture on domain 116. The TensorRT-enabled package was rebuilt and all five C++/ROS tests passed again, including cumulative totals and dropped-frame values in the actual MarkerArray text. These message-level checks do not establish desktop rendering or GPU accuracy. All fixture processes were stopped after the checks.
+
+## Published GPU and RViz verification — 23 October 2026
+
+Source `8a87a73` is now pushed to `main` and deployed through `tools/deploy.sh`. Host execution successfully accessed the RTX 4060 Laptop GPU (driver 595.99.02), superseding the restricted-context driver limitation above. Startup reused the existing cached engine in `pp-engines`; the deployed source revision was checked inside the container.
+
+The complete Python suite passed **73 tests**; the Docker build passed **five C++/ROS tests**. A native GPU smoke check passed. Native and deployed KITTI replay each verified **60 matched frames**, 20 at each threshold 0.0, 0.5 and 0.95. Checks matched input headers, detection scores, actual published lengths, diagnostic arithmetic and marker text/totals. Different thresholds sampled different scans, so their counts are not an accuracy comparison. The final live threshold is **0.5**.
+
+The real RViz window was visually inspected: original points, accepted boxes and scores, latest-scan counts, cumulative published/removed totals and processed/dropped frames were visible. The detector, KITTI front-drive player and RViz were left running on domain 0. Inspect current state before starting another player. To watch the running container's counters, use `PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh`; append `threshold` to read its current setting.
+
+Exact local logs, frame reports, deployment/engine identities and the captured `rviz-live.png` are under `.recovery/verification/published-deployment/` (ignored local evidence). Broader W07 timing/worker/QoS acceptance and detection accuracy remain open.
