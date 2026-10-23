@@ -1,4 +1,4 @@
-% Seven active slides: migration, flow, engine lifecycle, accuracy, sensor results,
+% Eight active slides: migration, flow, engine lifecycle, accuracy, sensor results,
 % screenshots and the published filtering trial. Reviewed 23 October 2026; experiments recorded 1--14 October.
 % Screenshot assets are under docs/figures; missing assets produce a warning
 % and visible placeholder in standalone compiler environments.
@@ -6,6 +6,7 @@
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{booktabs,tabularx,tikz,graphicx}
+\usepackage{listings}
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric}
 \geometry{paperwidth=216mm,paperheight=121.5mm}
 \definecolor{ink}{HTML}{16324F}
@@ -35,13 +36,14 @@
 \newcommand{\flowCpuIn}{CPU: validate and pack XYZI}
 \newcommand{\flowGpu}{GPU: PointPillars engine}
 \newcommand{\flowCpuOut}{CPU: validate boxes and run NMS}
-\newcommand{\flowMessage}{CPU: construct Detection3DArray}
+\newcommand{\flowFilter}{CPU: confidence gate, $s\geq\tau$}
+\newcommand{\flowMessage}{CPU: accepted boxes + counters}
 \newcommand{\flowView}{RViz or another consumer}
 \newcommand{\flowCaption}{TensorRT's CPU API schedules GPU work. ROS runs on the CPU.}
 \newcommand{\flowInputTransfer}{ROS /point\_cloud}
 \newcommand{\flowToGpu}{CUDA: copy points and count\\to GPU}
 \newcommand{\flowFromGpu}{CUDA: copy candidate boxes\\to CPU}
-\newcommand{\flowOutputTransfer}{ROS /bbox}
+\newcommand{\flowOutputTransfer}{ROS /bbox, /bbox/stats, /bbox/count}
 \newcommand{\flowDirect}{ROS point-cloud topic}
 \newcommand{\engineDownload}{Docker build: download ONNX\\and verify its checksum}
 \newcommand{\engineStartup}{Container startup:\\check GPU, model and cache}
@@ -84,21 +86,23 @@
     \node[stage] (cpuin) at (0,-2.02) {\flowCpuIn};
     \node[stage] (gpu) at (0,-3.42) {\flowGpu};
     \node[stage] (cpuout) at (0,-4.82) {\flowCpuOut};
-    \node[stage] (message) at (0,-5.74) {\flowMessage};
-    \node[stage] (view) at (0,-6.84) {\flowView};
+    \node[stage] (filter) at (0,-5.74) {\flowFilter};
+    \node[stage] (message) at (0,-6.66) {\flowMessage};
+    \node[stage] (view) at (0,-7.76) {\flowView};
     \draw[->,accent,line width=.9pt] (input.south) -- (callback.north);
     \draw[->,accent,line width=.9pt] (callback.south) -- (cpuin.north);
     \draw[->,accent,line width=.9pt] (cpuin.south) -- (gpu.north);
     \draw[->,accent,line width=.9pt] (gpu.south) -- (cpuout.north);
-    \draw[->,accent,line width=.9pt] (cpuout.south) -- (message.north);
+    \draw[->,accent,line width=.9pt] (cpuout.south) -- (filter.north);
+    \draw[->,accent,line width=.9pt] (filter.south) -- (message.north);
     \draw[->,accent,line width=.9pt] (message.south) -- (view.north);
     \node[transfer] at (.12,-.55) {\flowInputTransfer};
     \node[transfer] at (.12,-2.72) {\flowToGpu};
     \node[transfer] at (.12,-4.12) {\flowFromGpu};
-    \node[transfer] at (.12,-6.29) {\flowOutputTransfer};
+    \node[transfer] at (.12,-7.21) {\flowOutputTransfer};
     % Direct source-to-consumer edge, independent of the detection pipeline.
     \draw[->,accent,line width=.8pt] (input.west) -- (-3.4,0)
-      -- (-3.4,-6.84) -- (view.west);
+      -- (-3.4,-7.76) -- (view.west);
     \node[rotate=90,font=\scriptsize,fill=white,text=muted,inner sep=2pt]
       at (-3.4,-3.42) {\flowDirect};
   \end{tikzpicture}%
@@ -225,7 +229,7 @@ checked data sizes, reliable cleanup and fewer GPU allocations.
 \textbf{CPU responsibility}
 
 Check and pack XYZI points. Validate returned boxes, remove duplicates with NMS,
-and publish detections with the cloud's timestamp and coordinate frame.
+apply the confidence gate, then publish accepted boxes and counters with the cloud's timestamp and coordinate frame.
 
 \medskip
 \textbf{GPU responsibility}
@@ -420,6 +424,46 @@ Deploy always invokes a cache-aware build, then creates a fresh container;
 it refuses an existing name. Restart commands: \file{docs/CURRENT_STATUS_AND_RESULTS.md}.
 KITTI: Geiger et al., KIT/TTI-C, CC-BY-NC-SA-3.0.
 Capture identity: \file{docs/figures/filter-counters-provenance.json}.
+\end{frame}
+
+
+\begin{frame}[t,fragile]{Current output layers: filtering and detection counts}
+\centering
+\begin{tikzpicture}[font=\scriptsize,>=Stealth,
+ stage/.style={draw=accent,align=center,text width=4.5cm,minimum height=.68cm},
+ link/.style={->,accent,line width=.8pt}]
+\node[stage] (nms) at (0,0) {CPU NMS: $N$ valid post-NMS boxes};
+\node[stage] (gate) at (0,-1) {Confidence gate: keep score $s\geq\tau$};
+\node[stage] (boxes) at (-5.4,-2.2) {\file{/bbox}: $K$ accepted boxes\\Detection3DArray; original header};
+\node[stage] (stats) at (0,-2.2) {\file{/bbox/stats}: aggregate counts\\DiagnosticArray; terminal / program};
+\node[stage] (marker) at (5.4,-2.2) {\file{/bbox/count}: counter text\\MarkerArray; RViz display};
+\draw[link] (nms) -- (gate);
+\draw[link] (gate) -- (boxes);
+\draw[link] (gate) -- (stats);
+\draw[link] (gate) -- (marker);
+\end{tikzpicture}
+\par\smallskip
+\footnotesize\raggedright
+\textbf{Count meaning:} published $K$; removed $N-K$; before score filter $N$.
+Cumulative published totals sum accepted detections across scans, not unique objects;
+they reset on node restart. Failure counts are unavailable, not zero.
+\par\smallskip
+\textbf{Read from the project root} (Docker permissions as configured on your host):
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh once
+PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh threshold
+# Omit "once" to stream counters. Set the running threshold:
+sudo docker exec pointpillars /entrypoint.sh ros2 param set /pointpillars confidence_threshold 0.7
+\end{lstlisting}
+\scriptsize
+\textbf{RViz:} MarkerArray on \file{/bbox/count}, Reliable / Transient Local, cloud frame.
+\textbf{Program:} array length on \file{/bbox}, or keys \file{published_count},
+\file{filtered_count}, \file{published_detections_total} in diagnostic values.
+Match headers for the same scan; retained counters may be old.
+\par\smallskip
+\textbf{Defaults:} node/YAML 0.5; existing local deploy-script fallback 0.4.
+Explicit environment values override startup; query the live parameter.
+Filtering runs on the CPU after NMS; no engine rebuild is needed for a live change.
 \end{frame}
 
 \end{document}

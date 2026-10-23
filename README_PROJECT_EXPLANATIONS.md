@@ -94,8 +94,12 @@ flowchart TD
     B --> C["CPU: validate and pack XYZI"]
     C -->|"CUDA: copy points and count to GPU"| D["GPU: PointPillars engine"]
     D -->|"CUDA: copy candidate boxes to CPU"| E["CPU: validate boxes and run NMS"]
-    E --> F["CPU: construct Detection3DArray"]
+    E --> T["CPU: confidence gate, score >= configured threshold"]
+    T --> F["Construct accepted Detection3DArray"]
     F -->|"ROS /bbox"| G["RViz or another consumer"]
+    T --> H["Update per-frame and cumulative counters"]
+    H -->|"/bbox/stats: DiagnosticArray"| I["Terminal monitor / subscriber"]
+    H -->|"/bbox/count: MarkerArray text"| G
     A -->|"ROS point-cloud topic"| G
 ```
 
@@ -110,7 +114,8 @@ The CPU runs the C++ node and calls TensorRT/CUDA libraries. Those libraries arr
 3. Clear unused GPU input padding and output-count storage. Transfer the valid points and their actual count.
 4. Launch TensorRT and wait for completion. Copy and validate the output count, then copy the required rows and wait again. This is a checked count-first transfer, not a fully asynchronous multi-frame pipeline.
 5. Validate candidates and apply CPU rotated NMS.
-6. Convert yaw to a quaternion and publish class, score and box geometry with the original timestamp/frame. A valid empty cloud skips GPU inference and publishes an empty array.
+6. Validate all post-NMS candidates and keep only scores at or above the configured confidence threshold. Convert accepted yaw values to quaternions and publish class, score and box geometry with the original timestamp/frame.
+7. Update published/filtered detection totals and publish diagnostics plus the RViz text marker. A valid empty cloud skips GPU inference and publishes an empty array.
 
 ### GPU work inside the model
 

@@ -8,6 +8,14 @@ The default is **0.5**, an adjustable starting setting, not an accuracy-calibrat
 
 This is a score filter **after the existing CPU NMS**. It does not change weights, engine generation, the model's decode threshold, NMS IoU/top-N, point selection or coordinates. It can reduce low-score clutter, but cannot guarantee removal of false positives. Incorrect high-confidence boxes remain possible; the earlier raw Ouster experiment had incorrect-looking, saturated scores near 1.0. No new accuracy acceptance is claimed.
 
+## Where the layer fits and where counts come from
+
+Input cloud → CPU validation/packing → GPU PointPillars → CPU validation/NMS → **confidence gate** → accepted `/bbox` detections. `DetectionOutput` counts the post-NMS input boxes and accepted output boxes, then publishes `/bbox/stats` diagnostics and `/bbox/count` RViz text. Count messages contain aggregate values, not individual rejected detections. See [the current architecture diagram](../IMPLEMENTATION_ARCHITECTURE.md#current-implemented-layers-after-confidence-filtering).
+
+To obtain the count in another program, subscribe to `/bbox` and use `len(message.detections)` for that successful scan. For before-filter, removed and cumulative counts, subscribe to `/bbox/stats` and read the string key/value fields in `status[0].values`: `published_count`, `post_nms_count`, `filtered_count`, `published_detections_total`. On a failure, per-frame fields are `unavailable`; do not parse them as zero. Match diagnostic and detection headers to compare the same scan, rather than combining independently received latest messages. No separate numeric count field is added to the standard Detection3DArray schema.
+
+**Local shell setting at this review:** the existing working-tree edit to `tools/deploy.sh` makes its default `PP_CONFIDENCE_THRESHOLD` fallback **0.4**. C++/YAML still default to **0.5**. Explicit environment overrides take precedence at startup; query `confidence_threshold` to know the running setting. The architecture documentation does not modify that shell edit.
+
 ## Configure it
 
 With the newly built node running, change the threshold for subsequent scans without restarting:

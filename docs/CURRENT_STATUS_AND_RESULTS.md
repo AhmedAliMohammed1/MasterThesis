@@ -24,7 +24,12 @@ flowchart TD
     B --> C[CPU: validate layout and pack finite XYZI]
     C --> D[GPU: PointPillars engine with reusable buffers]
     D --> E[CPU: validate candidate boxes and rotated BEV NMS]
-    E --> F[Detection3DArray /bbox with original cloud header]
+    E --> T[CPU: configurable confidence publication gate]
+    T --> F[Accepted Detection3DArray /bbox with original cloud header]
+    T --> H[Per-frame and cumulative counters]
+    H --> I[DiagnosticArray /bbox/stats: terminal or subscriber]
+    H --> J[MarkerArray /bbox/count: RViz text]
+    J --> G
     B --> G[Host RViz]
     F --> G
 ```
@@ -35,6 +40,7 @@ flowchart TD
 | CPU geometry | `src/postprocess.cpp`, `include/pp_infer/postprocess.h`: rotated overlap, stable score ordering, validated NMS; production suppression is class-agnostic. |
 | Input/output adapter | `src/pointcloud_adapter.cpp`: little-endian scalar FLOAT32 XYZI, checked layout/row padding/byte limits, finite-point filtering, intensity division, numeric class IDs, center/yaw/header mapping. |
 | GPU runtime | `src/pointpillar.cpp`: four named tensors, batch-one contract, `enqueueV3`, owned context/stream/buffers, checked counts and candidate decoding. |
+| Publication/filter and counters | `src/detection_output.cpp`: dynamic score gate, accepted messages, per-frame/cumulative diagnostics and RViz text; validates/maps through `make_detections`. |
 | ROS entry point | `src/pp_inference_node.cpp`: synchronous subscription callback, reliable depth 700, publication on `bbox`; container remaps node name/topics. |
 | Deployment | `Dockerfile`, `tools/deploy.sh`, `docker/entrypoint.sh`, `docker/node.yaml`: published Git source, checksum-pinned ONNX, target-GPU engine generation/cache, node startup. |
 | Data and results | `tools/prepare_*`, `tools/kitti_*`, `tools/compare_ouster_*`: preparation, frozen predictions, calibration/evaluation and controlled reference/feature experiments. |

@@ -9,6 +9,39 @@ Prepared 2026-10-01. Target confirmed by the user: **Ubuntu 24.04 / ROS 2 Jazzy 
 Implementation update, 23 October 2026: W02/W03 foundations are verified; W04/W05 runtime migration and Docker integration have recorded GPU/ROS checks but remain in progress for full acceptance. Labeled KITTI scoring and a TensorRT8/10 compatibility comparison are delivered; accuracy and original-training parity remain unaccepted. Ouster normalized replay, camera export and frontal KITTI integration were added on 13–14 October. See [current results](docs/CURRENT_STATUS_AND_RESULTS.md).
 
 This document retains the original staged design and baseline review. Proposed worker, QoS and metric interfaces are not implemented unless explicitly identified below.
+## Current implemented layers after confidence filtering
+
+The following diagram describes the current executable, rather than the proposed worker design later in this document. Processing is still synchronous with reliable depth 700; confidence filtering does not add an inference thread or change the engine.
+
+```mermaid
+flowchart TD
+    A[LiDAR driver or bag] --> B[PointCloud2 /point_cloud]
+    B --> C[CPU callback: validate and pack finite XYZI]
+    C --> D[GPU: PointPillars inference and candidate decoding]
+    D --> E[CPU: candidate validation and rotated BEV NMS]
+    E --> F[DetectionOutput: validate candidates and apply score gate]
+    P[Live confidence_threshold parameter] --> F
+    F --> G[Accepted Detection3DArray /bbox]
+    F --> H[Per-frame counts and cumulative state]
+    H --> I[DiagnosticArray /bbox/stats]
+    H --> J[MarkerArray text /bbox/count]
+    B --> K[RViz points]
+    G --> L[RViz boxes or another subscriber]
+    J --> M[RViz count label]
+    I --> N[Terminal monitor or diagnostic subscriber]
+    C -. invalid input .-> X[Failure status and drop counter]
+    D -. inference failure .-> X
+    X --> H
+```
+
+`src/pp_inference_node.cpp` orchestrates input/runtime/output. `src/pointpillar.cpp` executes inference and postprocessing; `src/postprocess.cpp` implements CPU NMS. `src/detection_output.cpp` owns the live score parameter, publishers and cumulative counters, delegating message validation/filtering to `make_detections` in `src/pointcloud_adapter.cpp`. Individual below-threshold detections are not published on any output topic. The counter branch exposes aggregate information only. Errors report counts as unavailable and leave successful totals unchanged.
+
+For each successful scan, `post_nms_count = filtered_count + published_count`; `published_count` also equals `/bbox.detections.size()`. `published_detections_total` sums accepted detection events since node startup, including repeated observations of the same object. Totals reset on restart. An empty/all-filtered valid scan publishes an empty detection array with a zero count. Statistics and marker messages carry the input header and use Reliable / Transient Local QoS; retained data may be old. Monitor topic names follow the resolved detection topic.
+
+Read counts from the project root with `PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh once` (one snapshot), or omit `once` to stream. Open the selected RViz profile with `RVIZ_CONFIG="$PWD/rviz/kitti_front.rviz" bash tools/monitor_detections.sh rviz`; an existing viewer can add a MarkerArray display on `/bbox/count`. The marker includes latest published/pre-filter counts, removed boxes, cumulative totals and processed/dropped frames. See [the complete monitoring commands](docs/CONFIDENCE_FILTER_AND_MONITORING.md#monitor-the-statistics-topic).
+
+The C++ and YAML default is **0.5**. At this architecture review, an existing local edit in `tools/deploy.sh` sets the shell fallback to **0.4**; an explicit `PP_CONFIDENCE_THRESHOLD` overrides it. A live parameter update overrides the running node until restart. Query the actual node rather than inferring its current value from either default. This documentation change preserves that existing shell edit.
+
 ## Decision and scope
 
 The 23 October [confidence/count output layer](docs/CONFIDENCE_FILTER_AND_MONITORING.md) adds `DetectionOutput` between completed inference/NMS and ROS publication. Its score gate is dynamically adjustable because it does not change engine resources or input processing. Other allocation/model/input parameters retain their restart requirement. This does not implement the planned bounded inference worker.
@@ -37,7 +70,7 @@ Source baseline: Git commit `2301135`. The original review document was already 
 
 Read-only machine checks during this task found x86_64 Ubuntu 24.04.4, `/opt/ros/jazzy`, colcon, Python 3.12.3, CMake 3.28.3 and CUDA compiler 12.0.140. `nvidia-smi` exited 9 because it could not communicate with the driver. No `NvInfer.h` was found under `/usr/include`; this does not rule out another installation. No `.engine`, `.plan`, `.etlt` or `.onnx` exists in this checkout. A CUDA compiler is not evidence of usable GPU inference. No C++ build or GPU benchmark was performed.
 
-## 1. Small, explicit component boundaries
+## 1. Proposed component boundaries and worker architecture
 
 ```mermaid
 flowchart LR
