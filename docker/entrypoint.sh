@@ -17,7 +17,7 @@ printf '%s\n' "$gpu_identity"
 # The installed NVIDIA driver version is host-wide; do not assume NVML GPU 0
 # corresponds to CUDA's selected visible device.
 driver_identity=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader | sort -u)
-workspace_mib="${PP_WORKSPACE_MIB:-1024}"
+workspace_mib="${PP_WORKSPACE_MIB:-512}"
 [[ "$workspace_mib" =~ ^[1-9][0-9]*$ ]] || { echo "PP_WORKSPACE_MIB must be a positive integer" >&2; exit 2; }
 recipe="TensorRT-10.16.1.11-fp32-noTF32-batch1-workspace=$workspace_mib"
 cache_key=$(printf '%s\n' "$model_hash" "$gpu_identity" "$driver_identity" "$recipe" | sha256sum | cut -d' ' -f1)

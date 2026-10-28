@@ -64,7 +64,7 @@ COPY --from=base /usr/share/keyrings/ros-archive-keyring.gpg /usr/share/keyrings
 COPY --from=base /etc/apt/sources.list.d/ros2.list /etc/apt/sources.list.d/ros2.list
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates util-linux ros-jazzy-ros-base ros-jazzy-vision-msgs \
-      ros-jazzy-diagnostic-msgs ros-jazzy-visualization-msgs libpcl-common1.14 && \
+      ros-jazzy-diagnostic-msgs ros-jazzy-visualization-msgs ros-jazzy-rmw-zenoh-cpp libpcl-common1.14 && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=sdk /usr/lib/x86_64-linux-gnu/libnvinfer*.so* /opt/tensorrt/lib/
 COPY --from=sdk /usr/lib/x86_64-linux-gnu/libnvonnxparser.so* /opt/tensorrt/lib/

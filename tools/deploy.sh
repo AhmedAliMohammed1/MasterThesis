@@ -18,9 +18,10 @@ docker build --pull --tag "$image" \
 exec docker run --rm --init --name "$container" \
   --gpus all --network host --ipc host \
   -e "ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}" \
+  -e "RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}" \
   -e "POINT_CLOUD_TOPIC=${POINT_CLOUD_TOPIC:-/point_cloud}" \
   -e "DETECTIONS_TOPIC=${DETECTIONS_TOPIC:-/bbox}" \
   -e "PP_CONFIDENCE_THRESHOLD=${PP_CONFIDENCE_THRESHOLD:-0.4}" \
   -e "PP_GPU_INDEX=${PP_GPU_INDEX:-0}" \
-  -e "PP_WORKSPACE_MIB=${PP_WORKSPACE_MIB:-1024}" \
+  -e "PP_WORKSPACE_MIB=${PP_WORKSPACE_MIB:-512}" \
   -v "$volume:/var/lib/pp_infer" "$image"

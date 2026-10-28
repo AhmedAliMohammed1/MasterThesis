@@ -1,5 +1,11 @@
 # PointPillars inference for ROS 2 Jazzy
 
+For the 28 October RTX A4500 host setup, Zenoh discovery, driver recovery and
+the outstanding live Ouster input-format issue, see
+[live Ouster deployment troubleshooting](docs/LIVE_OUSTER_TROUBLESHOOTING.md).
+The builder workspace now defaults to 512 MiB; the runtime image includes Zenoh,
+and `tools/deploy.sh` forwards `RMW_IMPLEMENTATION` (Fast DDS by default).
+
 > **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](docs/CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
 
 > **Status reviewed 23 October 2026.** The latest results include the poor labeled KITTI baseline, the TensorRT compatibility comparison, 556 matched normalized Ouster replay occurrences, and 154 matched frontal KITTI frames. Integration works; accuracy, exact training parity and real-time acceptance remain open. [Current results and evidence](docs/CURRENT_STATUS_AND_RESULTS.md).
