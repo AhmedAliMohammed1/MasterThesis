@@ -32,7 +32,25 @@ sudo bash tools/deploy.sh
 
 This builds the image and starts `/pointpillars` in the foreground. It automatically clones the latest published GitHub `main`, installs ROS Jazzy/CUDA/TensorRT 10.16.1.11 dependencies and headers, downloads the pinned NGC pretrained ONNX, verifies its checksum, and builds/tests with colcon. First startup generates an FP32 batch-one engine on the selected GPU; later matching launches reuse it in `pp-engines`. No local SDK, installer, model or engine preparation is needed. Stop with Ctrl+C.
 
-`docker build` alone produces an image; it cannot leave a persistent node running after the build. The wrapper performs both build and run. You can also build from just the Dockerfile:
+For every later run, reuse the saved image without rebuilding, pulling images,
+or installing/upgrading packages:
+
+```bash
+sudo bash tools/start.sh
+```
+
+Both scripts run in the foreground; Ctrl+C stops and removes the container.
+The image and `pp-engines` cache remain, so `start.sh` creates a fresh container
+from the same image. It refuses to replace an existing named container and tells
+you to run `deploy.sh` if the local image is missing. Run `deploy.sh` again only
+when you intentionally want to rebuild/update. Both launchers accept the same
+runtime environment settings; repeat any custom settings on each launch,
+including `RMW_IMPLEMENTATION` and `POINT_CLOUD_TOPIC`. Their confidence threshold
+defaults to **0.4**, overriding the node YAML's **0.5**, and workspace defaults to
+**512 MiB**. A matching cached engine is reused; a missing engine or changed
+GPU/driver/build settings still requires engine generation at startup.
+
+`docker build` alone produces an image; it cannot leave a persistent node running after the build. The deployment wrapper performs both build and run. You can also build from just the Dockerfile:
 
 ```bash
 sudo docker build -t pp-infer:jazzy-trt10 - < Dockerfile

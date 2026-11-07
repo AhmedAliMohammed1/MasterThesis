@@ -10,7 +10,34 @@ On a Linux x86-64 host with a supported NVIDIA GPU, working driver, Docker and N
 sudo bash tools/deploy.sh
 ```
 
-This one command always invokes `docker build --pull` and then creates a new foreground `docker run --rm` container. Docker reuses eligible cached layers, but the wrapper has no update-only check or immediate image-only launch mode. It does not update an existing running container. Ctrl+C stops it. The wrapper will not replace an existing container with the same name; stop/remove the intended old instance first or select another `PP_CONTAINER_NAME`.
+Use that command for first setup or an intentional rebuild/update. For later runs:
+
+```bash
+sudo bash tools/start.sh
+```
+
+`deploy.sh` always invokes `docker build --pull`; `start.sh` uses only the local
+image with `docker run --pull=never`, without building, downloading updates or
+installing/upgrading packages. Both create a foreground `--rm` container:
+Ctrl+C stops and removes it, while the image and persistent engine volume remain.
+The next launch creates a fresh container from that image and reuses a matching
+engine. Missing engines or changed GPU/driver/build settings still trigger engine
+generation. `start.sh` reports a missing image and asks you to run `deploy.sh`.
+Neither launcher replaces an existing named container; stop/remove the intended
+instance first or select another `PP_CONTAINER_NAME`.
+
+Both scripts use the same runtime settings, including `RMW_IMPLEMENTATION`
+(default `rmw_fastrtps_cpp`), confidence threshold **0.4** and workspace **512 MiB**.
+Repeat custom settings on every launch; they are not saved by either wrapper.
+For example, after deployment with Zenoh and the first Ouster sensor:
+
+```bash
+sudo env RMW_IMPLEMENTATION=rmw_zenoh_cpp ROS_DOMAIN_ID=0 \
+  POINT_CLOUD_TOPIC=/ouster1/points bash tools/start.sh
+```
+
+`PP_GIT_REPO`, `PP_GIT_REF` and extra build arguments apply only to `deploy.sh`.
+Use `bash tools/start.sh --help` for the launch settings.
 
 `docker build` creates an image. It cannot keep a ROS node running after its build container exits. The wrapper runs `docker build` followed by `docker run`; target-GPU engine creation happens at container startup. Host drivers and Docker GPU integration must already work.
 
