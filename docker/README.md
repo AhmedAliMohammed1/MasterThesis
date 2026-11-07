@@ -39,6 +39,15 @@ sudo env RMW_IMPLEMENTATION=rmw_zenoh_cpp ROS_DOMAIN_ID=0 \
 `PP_GIT_REPO`, `PP_GIT_REF` and extra build arguments apply only to `deploy.sh`.
 Use `bash tools/start.sh --help` for the launch settings.
 
+For live Ouster input, the separate `sudo bash tools/start_ouster.sh` launcher
+starts the adapter and detector together in one foreground container, selecting
+reflectivity / 255 by default or signal / 65535 with the `signal` argument. It
+requires an updated saved image containing `ouster_adapter`; older images are
+refused. Its middleware default is `rmw_zenoh_cpp` for the recorded live Ouster
+host. The sensor driver must already be running. See
+[the live Ouster adapter guide](../docs/LIVE_OUSTER_ADAPTER.md) for settings,
+shutdown behavior and image update requirements.
+
 `docker build` creates an image. It cannot keep a ROS node running after its build container exits. The wrapper runs `docker build` followed by `docker run`; target-GPU engine creation happens at container startup. Host drivers and Docker GPU integration must already work.
 
 The Dockerfile automatically:

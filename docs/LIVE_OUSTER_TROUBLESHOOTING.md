@@ -1,5 +1,11 @@
 # Live Ouster deployment troubleshooting — 28 October 2026
 
+**Implementation update — 7 November 2026:** a separate
+[live Ouster adapter](LIVE_OUSTER_ADAPTER.md) now validates incoming PointCloud2
+messages and converts the selected signal/reflectivity field to FLOAT32 intensity.
+The outstanding-conversion section below records the state on 28 October;
+deployment on the physical host and live model accuracy still need verification.
+
 This records user-supplied terminal evidence from physical host alfonso-h017,
 Ubuntu 24.04.4, RTX A4500 Embedded GPU (8 GiB). These are host-session results,
 not GPU checks performed in the CPU-only cloud development environment.

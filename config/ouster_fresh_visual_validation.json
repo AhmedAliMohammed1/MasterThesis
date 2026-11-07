@@ -1,0 +1,193 @@
+{
+  "source": "https://zenodo.org/records/19353314",
+  "archive_md5": "574708d047bedf4b6263c24b7ae977f0",
+  "archive_sha256": "41b53ec9efebbd19bb03edb446ec0934926849eec56f94340a68f6833c74a42b",
+  "archive_bytes": 963458462,
+  "fresh_download": true,
+  "publisher_checksum_verified": true,
+  "source_files_unchanged_after_playback": true,
+  "source_files_rehashed": 9,
+  "source_files": {
+    "original/digitrans_40kmh_100mmh/metadata.yaml": {
+      "bytes": 13760,
+      "sha256": "25b508b116905353b04cfd4d756fb3733c86313b2dc35958811bc25b00674240"
+    },
+    "original/digitrans_40kmh_100mmh/mosep_met_2023_10_05-14_57_48_converted_0.mcap": {
+      "bytes": 1259059726,
+      "sha256": "d24d547b9026244169457f2ba167bcf43ecfcdc8f6e0effd0a4b0f2c5bb095c2"
+    },
+    "original/digitrans_40kmh_100mmh/ouster_metadata.txt": {
+      "bytes": 6293,
+      "sha256": "c010de71dd0c6735360ff3955fb514e39beed66e7fccb4c333acdad801f716a4"
+    },
+    "original/digitrans_40kmh_30mmh/metadata.yaml": {
+      "bytes": 13760,
+      "sha256": "0bdc4a290362136c8d0b6f6143f68ac9511c9f830811a26914a9d709486a9bfb"
+    },
+    "original/digitrans_40kmh_30mmh/mosep_met_2023_10_05-12_18_33_converted_0.mcap": {
+      "bytes": 1237231696,
+      "sha256": "d333d096eb06b2a212144e12f0989e064bc1aca132d49aaea8c63f74df28b957"
+    },
+    "original/digitrans_40kmh_30mmh/ouster_metadata.txt": {
+      "bytes": 6293,
+      "sha256": "c010de71dd0c6735360ff3955fb514e39beed66e7fccb4c333acdad801f716a4"
+    },
+    "original/digitrans_40kmh_dry/metadata.yaml": {
+      "bytes": 13760,
+      "sha256": "b51ddcfa77e1434521c5eb7b9087e827d3554ddc33e6af095f805ade32909053"
+    },
+    "original/digitrans_40kmh_dry/mosep_met_2023_10_05-10_45_43_converted_0.mcap": {
+      "bytes": 1054966139,
+      "sha256": "765c8cbd2df061d0486227bd25691a8f052e83fbab7ccf15fe812b865cfcda3a"
+    },
+    "original/digitrans_40kmh_dry/ouster_metadata.txt": {
+      "bytes": 6293,
+      "sha256": "c010de71dd0c6735360ff3955fb514e39beed66e7fccb4c333acdad801f716a4"
+    }
+  },
+  "bag": "digitrans_40kmh_dry",
+  "input_topic": "/sensing/lidar/points",
+  "adapted_topic": "/ouster_fresh/xyzi",
+  "detections_topic": "/ouster_fresh/bbox",
+  "ros_domain_id": 99,
+  "middleware": "rmw_fastrtps_cpp",
+  "intensity_source": "reflectivity",
+  "intensity_divisor": 255.0,
+  "playback_rate": 0.5,
+  "looping": true,
+  "image_tag": "pp-infer:ouster-fresh-test",
+  "base_image_unchanged": true,
+  "test_image_adapter_source": {
+    "base_image": "sha256:fdb21a19e8a4bc0071ed931eb7be05ab05952f46d8c007e60b54b8ac15a9f7bd",
+    "files": {
+      "src/ouster_adapter.cpp": "9fdce161d6b3e8ed9614ac9637616d08a45e773b32a981e69fd597639ef7da52",
+      "src/ouster_adapter_node.cpp": "175af7a41a473005cd078f0dcd19cf74c405c02d91b59aa20a0bd988771ba9b8",
+      "src/ouster_adapter_main.cpp": "2cf87a92ad036e083bc22f749385fb62780a050e85e2d2ad5f0aaf36fc848ea8",
+      "include/pp_infer/ouster_adapter.hpp": "2d8fe8f0d1d9669a078e41085eea8478b016e80feaa7004ca0e582b62e260aac",
+      "include/pp_infer/model_contract.hpp": "d006c5c6382a993419211ed98e3efaa6c9a816c3e5ea1044c66697fd6ca6268b"
+    }
+  },
+  "live_verification": {
+    "observed": {
+      "raw": 43,
+      "adapted": 43,
+      "detections": 42
+    },
+    "verified_raw_adapted_pairs": 40,
+    "matched_detection_headers": 39,
+    "input_schema": {
+      "frame_id": "lidar/os_lidar",
+      "width": 1024,
+      "height": 64,
+      "point_step": 48,
+      "fields": [
+        {
+          "name": "x",
+          "offset": 0,
+          "datatype": 7,
+          "count": 1
+        },
+        {
+          "name": "y",
+          "offset": 4,
+          "datatype": 7,
+          "count": 1
+        },
+        {
+          "name": "z",
+          "offset": 8,
+          "datatype": 7,
+          "count": 1
+        },
+        {
+          "name": "intensity",
+          "offset": 16,
+          "datatype": 7,
+          "count": 1
+        },
+        {
+          "name": "t",
+          "offset": 20,
+          "datatype": 6,
+          "count": 1
+        },
+        {
+          "name": "reflectivity",
+          "offset": 24,
+          "datatype": 4,
+          "count": 1
+        },
+        {
+          "name": "ring",
+          "offset": 26,
+          "datatype": 4,
+          "count": 1
+        },
+        {
+          "name": "ambient",
+          "offset": 28,
+          "datatype": 4,
+          "count": 1
+        },
+        {
+          "name": "range",
+          "offset": 32,
+          "datatype": 6,
+          "count": 1
+        }
+      ]
+    },
+    "stats": {
+      "adapter": {
+        "input_topic": "/sensing/lidar/points",
+        "output_topic": "/ouster_fresh/xyzi",
+        "input_publishers": "1",
+        "intensity_source": "reflectivity",
+        "intensity_divisor": "255.000000",
+        "received": "37",
+        "converted": "37",
+        "rejected": "0",
+        "schema": "1024x64 point_step=48 x(type=7,offset=0,count=1) y(type=7,offset=4,count=1) z(type=7,offset=8,count=1) intensity(type=7,offset=16,count=1) t(type=6,offset=20,count=1) reflectivity(type=4,offset=24,count=1) ring(type=4,offset=26,count=1) ambient(type=4,offset=28,count=1) range(type=6,offset=32,count=1)",
+        "pointcloud_topics": "/sensing/lidar/points "
+      },
+      "detector": {
+        "frame_status": "ok",
+        "confidence_threshold": "0.40000000000000002",
+        "post_nms_count": "22",
+        "filtered_count": "22",
+        "published_count": "0",
+        "processed_frames_total": "42",
+        "published_detections_total": "13",
+        "filtered_detections_total": "905",
+        "invalid_cloud_frames_total": "0",
+        "inference_error_frames_total": "0"
+      }
+    },
+    "errors": [],
+    "conversion_passed": true,
+    "detection_integration_passed": true,
+    "accuracy_validated": false
+  },
+  "rviz_rendering_visually_checked": true,
+  "accuracy_validated": false,
+  "detector_counter_snapshot": {
+    "frame_status": "ok",
+    "confidence_threshold": "0.40000000000000002",
+    "post_nms_count": "17",
+    "filtered_count": "16",
+    "published_count": "1",
+    "processed_frames_total": "103",
+    "published_detections_total": "29",
+    "filtered_detections_total": "2190",
+    "invalid_cloud_frames_total": "0",
+    "inference_error_frames_total": "0"
+  },
+  "screenshot": ".recovery/ouster-fresh-test/rviz-detections.png",
+  "screenshot_context": {
+    "header_frame": "lidar/os_lidar",
+    "stamp_sec": 2584,
+    "stamp_nanosec": 36178000,
+    "detections_in_trigger_message": 1,
+    "screenshot": "/media/ae/New Volume/MasterThesis/.recovery/ouster-fresh-test/rviz-detections.png"
+  }
+}

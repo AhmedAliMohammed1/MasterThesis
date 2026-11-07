@@ -1,0 +1,87 @@
+{
+  "checked_at_utc": "2026-11-07T21:30:50.997234+00:00",
+  "test_mode": "offline CDR -> production C++ converter -> detector XYZI packer",
+  "gpu_inference_tested": false,
+  "network_transport_tested": false,
+  "source_databases_unchanged": true,
+  "fixture_notes": [
+    "Original bags contain FLOAT32 intensity (recorded signal) and UINT16 reflectivity.",
+    "Legacy signal fixture explicitly renames intensity to signal in memory.",
+    "Live-layout fixtures numerically convert integer-valued signal to UINT16 and reflectivity to UINT8.",
+    "Reconstructed point_step=48 uses documented live offsets; scan dimensions remain those recorded.",
+    "No physical 128-channel recording, GPU detections, accuracy or cross-process transport is validated."
+  ],
+  "probe_sha256": "4631e74ded75032d095c93a35036beb7dae45a87154956f47f0bdac27126e612",
+  "source_sha256": {
+    "src/ouster_adapter.cpp": "9fdce161d6b3e8ed9614ac9637616d08a45e773b32a981e69fd597639ef7da52",
+    "src/pointcloud_adapter.cpp": "6f5d4b3654c0cf0c3451de1647885cead7e6472b0a090f2b73295397a071860c",
+    "tools/check_ouster_adapter_bags.py": "43e24bb404c916315d1cd614daf685d8a46d9ea6e36366387b90af894b21622c"
+  },
+  "bags": [
+    {
+      "bag": "rosbag2_2023_03_28-16_25_54",
+      "source_database_sha256": {
+        "ouster/rosbag2_2023_03_28-16_25_54/rosbag2_2023_03_28-16_25_54_0.db3": "efd1cab7da28aae1ca0a44a1c02fc5be274150ce453631c53a9e78298356baae"
+      },
+      "cases": {
+        "recorded_reflectivity": {
+          "frames": 291,
+          "points": 9535488,
+          "intensity_min": 0.0,
+          "intensity_max": 1.0
+        },
+        "legacy_signal_name_mapping": {
+          "frames": 291,
+          "points": 9535488,
+          "intensity_min": 0.0,
+          "intensity_max": 0.13823148608207703
+        },
+        "reconstructed_live_reflectivity": {
+          "frames": 291,
+          "points": 9535488,
+          "intensity_min": 0.0,
+          "intensity_max": 1.0
+        },
+        "reconstructed_live_signal": {
+          "frames": 291,
+          "points": 9535488,
+          "intensity_min": 0.0,
+          "intensity_max": 0.13823148608207703
+        }
+      }
+    },
+    {
+      "bag": "rosbag2_2023_03_28-16_26_51",
+      "source_database_sha256": {
+        "ouster/rosbag2_2023_03_28-16_26_51/rosbag2_2023_03_28-16_26_51_0.db3": "480ff115da15d00447d3c41e5d761b6071178802c9c549fbc5cbb46ef4a1981c"
+      },
+      "cases": {
+        "recorded_reflectivity": {
+          "frames": 265,
+          "points": 8683520,
+          "intensity_min": 0.0,
+          "intensity_max": 1.0
+        },
+        "legacy_signal_name_mapping": {
+          "frames": 265,
+          "points": 8683520,
+          "intensity_min": 0.0,
+          "intensity_max": 0.10543984174728394
+        },
+        "reconstructed_live_reflectivity": {
+          "frames": 265,
+          "points": 8683520,
+          "intensity_min": 0.0,
+          "intensity_max": 1.0
+        },
+        "reconstructed_live_signal": {
+          "frames": 265,
+          "points": 8683520,
+          "intensity_min": 0.0,
+          "intensity_max": 0.10543984174728394
+        }
+      }
+    }
+  ],
+  "status": "passed"
+}

@@ -1,7 +1,20 @@
 # PointPillars inference for ROS 2 Jazzy
 
+The [live Ouster adapter](docs/LIVE_OUSTER_ADAPTER.md) now provides a separate
+ROS node before inference: `/ouster1/points` → validated FLOAT32 XYZI on
+`/point_cloud`. It supports explicit signal or reflectivity conversion, topic
+discovery and input diagnostics. Channel scaling remains an experimental model
+input choice; live sensor accuracy is not established.
+
+With an updated saved image containing the adapter and the Ouster driver already
+running, `sudo bash tools/start_ouster.sh` starts the adapter and detector together
+using reflectivity / 255. Use `sudo bash tools/start_ouster.sh signal` for
+signal / 65535. Ctrl+C stops both. This Ouster launcher defaults to Zenoh and
+`/ouster1/points`; see its `--help` and the adapter guide for overrides and image
+update requirements.
+
 For the 28 October RTX A4500 host setup, Zenoh discovery, driver recovery and
-the outstanding live Ouster input-format issue, see
+the original live Ouster input-format diagnosis, see
 [live Ouster deployment troubleshooting](docs/LIVE_OUSTER_TROUBLESHOOTING.md).
 The builder workspace now defaults to 512 MiB; the runtime image includes Zenoh,
 and `tools/deploy.sh` forwards `RMW_IMPLEMENTATION` (Fast DDS by default).
