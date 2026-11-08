@@ -1,5 +1,7 @@
 # PointPillars inference for ROS 2 Jazzy
 
+> **New measured channel decision — 8 November 2026:** 1,120 current-production GPU observations now include independent Ouster object annotations. Reflectivity/255 has stronger vehicle BEV evidence than signal/65535 on the frozen subset; neither has qualifying 3D accuracy. Both complete the tested numerical runs. See [results, limitations and proposal](docs/OUSTER_CHANNEL_DECISION.md). Older unlabeled Ouster observations below retain their original scope.
+
 The [live Ouster adapter](docs/LIVE_OUSTER_ADAPTER.md) now provides a separate
 ROS node before inference: `/ouster1/points` → validated FLOAT32 XYZI on
 `/point_cloud`. It supports explicit signal or reflectivity conversion, topic

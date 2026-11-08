@@ -1,0 +1,2153 @@
+{
+  "review_date_local": "2026-11-08",
+  "decision": {
+    "experimental_input": "reflectivity_div255",
+    "accurate_3d_configuration_accepted": false,
+    "scope": "Stronger Vehicle BEV ground-truth evidence than signal/65535 on this frozen Dur360 subset. Not universal sensor superiority; normalization and model held fixed. Neither channel accepted for reliable 3D detection."
+  },
+  "measured_inferences": 1120,
+  "excluded_warmup_inferences": 18,
+  "new_gpu_inference": true,
+  "source_revision": "493bdf075ea8847e47a42d55a14edf18365eeadb",
+  "datasets": {
+    "mosep": {
+      "frames": 48,
+      "variants": {
+        "signal_div65535": {
+          "observations": 240,
+          "failures": 0,
+          "median_infer_nms_ms": 7.4611225,
+          "median_boxes_at_0_4": 0.0,
+          "empty_observations_at_0_4": 196
+        },
+        "reflectivity_div255": {
+          "observations": 240,
+          "failures": 0,
+          "median_infer_nms_ms": 7.498627,
+          "median_boxes_at_0_4": 1.0,
+          "empty_observations_at_0_4": 108
+        }
+      },
+      "point_policy": "MOSEP unchanged points; Dur360 encoded model ROI only; no zero removal, no coordinate shifts, no voxel-cap correction.",
+      "source": {
+        "kind": "MOSEP",
+        "source_recipe_sha256": "05986960d1cf28c245d5b9f27419c729a156eee2e576046a54ee9e9fd36bc8d4",
+        "original_files": {
+          "original/digitrans_40kmh_100mmh/metadata.yaml": "25b508b116905353b04cfd4d756fb3733c86313b2dc35958811bc25b00674240",
+          "original/digitrans_40kmh_100mmh/mosep_met_2023_10_05-14_57_48_converted_0.mcap": "d24d547b9026244169457f2ba167bcf43ecfcdc8f6e0effd0a4b0f2c5bb095c2",
+          "original/digitrans_40kmh_100mmh/ouster_metadata.txt": "c010de71dd0c6735360ff3955fb514e39beed66e7fccb4c333acdad801f716a4",
+          "original/digitrans_40kmh_30mmh/metadata.yaml": "0bdc4a290362136c8d0b6f6143f68ac9511c9f830811a26914a9d709486a9bfb",
+          "original/digitrans_40kmh_30mmh/mosep_met_2023_10_05-12_18_33_converted_0.mcap": "d333d096eb06b2a212144e12f0989e064bc1aca132d49aaea8c63f74df28b957",
+          "original/digitrans_40kmh_30mmh/ouster_metadata.txt": "c010de71dd0c6735360ff3955fb514e39beed66e7fccb4c333acdad801f716a4",
+          "original/digitrans_40kmh_dry/metadata.yaml": "b51ddcfa77e1434521c5eb7b9087e827d3554ddc33e6af095f805ade32909053",
+          "original/digitrans_40kmh_dry/mosep_met_2023_10_05-10_45_43_converted_0.mcap": "765c8cbd2df061d0486227bd25691a8f052e83fbab7ccf15fe812b865cfcda3a",
+          "original/digitrans_40kmh_dry/ouster_metadata.txt": "c010de71dd0c6735360ff3955fb514e39beed66e7fccb4c333acdad801f716a4"
+        }
+      },
+      "runtime": {
+        "source_commit": "493bdf075ea8847e47a42d55a14edf18365eeadb",
+        "source_sha256": {
+          "src/pointpillar.cpp": "983cb2fc3a581eddb84dd3d64767d2d76f957b442a4d495fde623e33626b0379",
+          "src/postprocess.cpp": "297c73c7378e14afe845355dd473acb6d50ac16befc2d2b2b758f2abc38b6050",
+          "include/pp_infer/pointpillar.h": "df9513d42ad0c6580ec9136fb5bea2b1b65b459190ae7500837c6e16969f8eff",
+          "include/pp_infer/postprocess.h": "d819506d33c02b0581aa5562001372bad6bc1c10b38f31311a86c5437705d6f7",
+          "include/pp_infer/cuda_resources.hpp": "dc969f336ffdd64f1f3b254cb2dead1bec2c0078c2c325c8993f1052e7fcd2e9",
+          "include/pp_infer/model_contract.hpp": "d006c5c6382a993419211ed98e3efaa6c9a816c3e5ea1044c66697fd6ca6268b",
+          "include/pp_infer/output_contract.hpp": "ba2be89be7324e31b2babd41cd669b0a92f35283de4439b4cc22376f31717927",
+          "docker/reference/production_runner.cpp": "199230d4c36d23e6736c84f8a77634da001fc2c11650e98b7e8267b649367a01"
+        },
+        "image_id": "sha256:1171d26ec8f79c8176450008b745412d9e04632f948c1a5f597358b9886c2b5c",
+        "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU, GPU-4219859e-3a54-d063-1435-a290cd5d28f3, 595.99.02",
+        "engine": "bea83e579931a273617c656538b132346dde6fe96ad37aafd22c46af1e055e29.engine",
+        "parameters": {
+          "nms_iou": 0.01,
+          "top_n": 4096,
+          "class_count": 3,
+          "score_gate_for_export": 0
+        },
+        "recipe_sha256": "1cae705fbe3b52dc8c162e75b7045dc2c4f114b9f16d9dc1e4a33a58e13c3ced",
+        "runner_sha256": "63796ee965c671c94bb4799ff4366632377234c86d0d1b05f01bc3a50280fa10",
+        "engine_sha256": "97ece7c15dbccedaf95693950a5a772e37361d74dd9dd366655a0ec7efae8e14"
+      },
+      "pillar_limit_exceeded_frames": 0,
+      "repeatability_at_0_4": {
+        "variants": {
+          "reflectivity_div255": {
+            "observations": 240,
+            "failed_observations": 0,
+            "failure_statuses": {},
+            "missing_baseline_frames": 0,
+            "unavailable_pairs": 0,
+            "both_empty_pairs": 76,
+            "one_empty_pairs": 25,
+            "nonempty_pairs": 116,
+            "median_nonempty_match_fraction": 1.0
+          },
+          "signal_div65535": {
+            "observations": 240,
+            "failed_observations": 0,
+            "failure_statuses": {},
+            "missing_baseline_frames": 0,
+            "unavailable_pairs": 0,
+            "both_empty_pairs": 152,
+            "one_empty_pairs": 15,
+            "nonempty_pairs": 40,
+            "median_nonempty_match_fraction": 1.0
+          }
+        },
+        "paired_bootstrap": {
+          "frames": 9,
+          "mean_difference": 0.004629629629629632,
+          "ci95": [
+            -0.3148148148148148,
+            0.3611111111111111
+          ],
+          "seed": 20261108,
+          "samples": 10000,
+          "limitation": "Bootstrap resamples paired frames as independent units. Adjacent scans and repeated recordings may be correlated; this interval does not establish recording-level generalization or ground-truth accuracy."
+        }
+      }
+    },
+    "labeled": {
+      "frames": 32,
+      "variants": {
+        "signal_div65535": {
+          "observations": 160,
+          "failures": 0,
+          "median_infer_nms_ms": 9.1059825,
+          "median_boxes_at_0_4": 0.0,
+          "empty_observations_at_0_4": 91
+        },
+        "reflectivity_div255": {
+          "observations": 160,
+          "failures": 0,
+          "median_infer_nms_ms": 9.427937,
+          "median_boxes_at_0_4": 1.0,
+          "empty_observations_at_0_4": 41
+        }
+      },
+      "point_policy": "MOSEP unchanged points. Dur360 encoded model ROI and all-zero-XYZ invalid-return removal, required for engine capacity, identical for both variants. Original files preserved. No coordinate shifts, arbitrary truncation, or voxel-cap correction.",
+      "source": {
+        "kind": "Dur360BEV-Extended",
+        "selection_sha256": "56af2eb3adf8219f6f34abea534b6cf1976677e0a41ec2a33c78d0926ac18608",
+        "published_md5_list_sha256": "aefc05d0ba84739f1a288d24175f54f5d22d0e12de768ee24fb46342fc9ff40a",
+        "selection": "512uniformtarordinalcandidates;16equallyspacedcandidateIDs per publishedsplit; frozen before inference; splitnotverifieddrive-disjoint",
+        "qualification": "Published train/test indices from a single collection, not independent drives. Publisher annotations independent of this experiment; no official benchmark score claimed."
+      },
+      "runtime": {
+        "source_commit": "493bdf075ea8847e47a42d55a14edf18365eeadb",
+        "source_sha256": {
+          "src/pointpillar.cpp": "983cb2fc3a581eddb84dd3d64767d2d76f957b442a4d495fde623e33626b0379",
+          "src/postprocess.cpp": "297c73c7378e14afe845355dd473acb6d50ac16befc2d2b2b758f2abc38b6050",
+          "include/pp_infer/pointpillar.h": "df9513d42ad0c6580ec9136fb5bea2b1b65b459190ae7500837c6e16969f8eff",
+          "include/pp_infer/postprocess.h": "d819506d33c02b0581aa5562001372bad6bc1c10b38f31311a86c5437705d6f7",
+          "include/pp_infer/cuda_resources.hpp": "dc969f336ffdd64f1f3b254cb2dead1bec2c0078c2c325c8993f1052e7fcd2e9",
+          "include/pp_infer/model_contract.hpp": "d006c5c6382a993419211ed98e3efaa6c9a816c3e5ea1044c66697fd6ca6268b",
+          "include/pp_infer/output_contract.hpp": "ba2be89be7324e31b2babd41cd669b0a92f35283de4439b4cc22376f31717927",
+          "docker/reference/production_runner.cpp": "199230d4c36d23e6736c84f8a77634da001fc2c11650e98b7e8267b649367a01"
+        },
+        "image_id": "sha256:1171d26ec8f79c8176450008b745412d9e04632f948c1a5f597358b9886c2b5c",
+        "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU, GPU-4219859e-3a54-d063-1435-a290cd5d28f3, 595.99.02",
+        "engine": "bea83e579931a273617c656538b132346dde6fe96ad37aafd22c46af1e055e29.engine",
+        "parameters": {
+          "nms_iou": 0.01,
+          "top_n": 4096,
+          "class_count": 3,
+          "score_gate_for_export": 0
+        },
+        "recipe_sha256": "880cf8302d66b097614170047cb16356d2f7acc4945e31e8c93868e1d39ef2c6",
+        "runner_sha256": "63796ee965c671c94bb4799ff4366632377234c86d0d1b05f01bc3a50280fa10",
+        "engine_sha256": "97ece7c15dbccedaf95693950a5a772e37361d74dd9dd366655a0ec7efae8e14"
+      },
+      "pillar_limit_exceeded_frames": 20,
+      "repeatability_at_0_4": {
+        "variants": {
+          "reflectivity_div255": {
+            "observations": 160,
+            "failed_observations": 0,
+            "failure_statuses": {},
+            "missing_baseline_frames": 0,
+            "unavailable_pairs": 0,
+            "both_empty_pairs": 29,
+            "one_empty_pairs": 7,
+            "nonempty_pairs": 99,
+            "median_nonempty_match_fraction": 1.0
+          },
+          "signal_div65535": {
+            "observations": 160,
+            "failed_observations": 0,
+            "failure_statuses": {},
+            "missing_baseline_frames": 0,
+            "unavailable_pairs": 0,
+            "both_empty_pairs": 70,
+            "one_empty_pairs": 5,
+            "nonempty_pairs": 58,
+            "median_nonempty_match_fraction": 1.0
+          }
+        },
+        "paired_bootstrap": {
+          "frames": 15,
+          "mean_difference": -0.06527777777777778,
+          "ci95": [
+            -0.21805555555555556,
+            0.07500000000000001
+          ],
+          "seed": 20261108,
+          "samples": 10000,
+          "limitation": "Bootstrap resamples paired frames as independent units. Adjacent scans and repeated recordings may be correlated; this interval does not establish recording-level generalization or ground-truth accuracy."
+        }
+      },
+      "accuracy_at_0_4": [
+        {
+          "split": "test",
+          "variant": "reflectivity_div255",
+          "repeats": 5,
+          "classes": {
+            "Vehicle": {
+              "bev": {
+                "tp": {
+                  "mean": 4,
+                  "min": 4,
+                  "max": 4
+                },
+                "fp": {
+                  "mean": 10.4,
+                  "min": 10,
+                  "max": 11
+                },
+                "fn": {
+                  "mean": 56,
+                  "min": 56,
+                  "max": 56
+                },
+                "precision": {
+                  "mean": 0.27809523809523806,
+                  "min": 0.26666666666666666,
+                  "max": 0.2857142857142857
+                },
+                "recall": {
+                  "mean": 0.06666666666666667,
+                  "min": 0.06666666666666667,
+                  "max": 0.06666666666666667
+                },
+                "ap_continuous": {
+                  "mean": 0.019425685425685426,
+                  "min": 0.01808080808080808,
+                  "max": 0.019761904761904762
+                }
+              },
+              "3d": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 14.4,
+                  "min": 14,
+                  "max": 15
+                },
+                "fn": {
+                  "mean": 60,
+                  "min": 60,
+                  "max": 60
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              }
+            },
+            "Pedestrian": {
+              "bev": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 3,
+                  "min": 3,
+                  "max": 3
+                },
+                "fn": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              },
+              "3d": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 3,
+                  "min": 3,
+                  "max": 3
+                },
+                "fn": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              }
+            }
+          }
+        },
+        {
+          "split": "test",
+          "variant": "signal_div65535",
+          "repeats": 5,
+          "classes": {
+            "Vehicle": {
+              "bev": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 6.4,
+                  "min": 6,
+                  "max": 7
+                },
+                "fn": {
+                  "mean": 60,
+                  "min": 60,
+                  "max": 60
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              },
+              "3d": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 6.4,
+                  "min": 6,
+                  "max": 7
+                },
+                "fn": {
+                  "mean": 60,
+                  "min": 60,
+                  "max": 60
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              }
+            },
+            "Pedestrian": {
+              "bev": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fn": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              },
+              "3d": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fn": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              }
+            }
+          }
+        },
+        {
+          "split": "train",
+          "variant": "reflectivity_div255",
+          "repeats": 5,
+          "classes": {
+            "Vehicle": {
+              "bev": {
+                "tp": {
+                  "mean": 5,
+                  "min": 5,
+                  "max": 5
+                },
+                "fp": {
+                  "mean": 9.4,
+                  "min": 8,
+                  "max": 12
+                },
+                "fn": {
+                  "mean": 58,
+                  "min": 58,
+                  "max": 58
+                },
+                "precision": {
+                  "mean": 0.35003232062055595,
+                  "min": 0.29411764705882354,
+                  "max": 0.38461538461538464
+                },
+                "recall": {
+                  "mean": 0.07936507936507936,
+                  "min": 0.07936507936507936,
+                  "max": 0.07936507936507936
+                },
+                "ap_continuous": {
+                  "mean": 0.05153962439676725,
+                  "min": 0.05054945054945055,
+                  "max": 0.05246913580246913
+                }
+              },
+              "3d": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 14.4,
+                  "min": 13,
+                  "max": 17
+                },
+                "fn": {
+                  "mean": 63,
+                  "min": 63,
+                  "max": 63
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              }
+            },
+            "Pedestrian": {
+              "bev": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 4,
+                  "min": 3,
+                  "max": 5
+                },
+                "fn": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              },
+              "3d": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 4,
+                  "min": 3,
+                  "max": 5
+                },
+                "fn": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              }
+            }
+          }
+        },
+        {
+          "split": "train",
+          "variant": "signal_div65535",
+          "repeats": 5,
+          "classes": {
+            "Vehicle": {
+              "bev": {
+                "tp": {
+                  "mean": 2.4,
+                  "min": 2,
+                  "max": 3
+                },
+                "fp": {
+                  "mean": 3.4,
+                  "min": 2,
+                  "max": 5
+                },
+                "fn": {
+                  "mean": 60.6,
+                  "min": 60,
+                  "max": 61
+                },
+                "precision": {
+                  "mean": 0.4238095238095238,
+                  "min": 0.2857142857142857,
+                  "max": 0.5
+                },
+                "recall": {
+                  "mean": 0.03809523809523809,
+                  "min": 0.031746031746031744,
+                  "max": 0.047619047619047616
+                },
+                "ap_continuous": {
+                  "mean": 0.03492063492063492,
+                  "min": 0.031746031746031744,
+                  "max": 0.03968253968253968
+                }
+              },
+              "3d": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 5.8,
+                  "min": 4,
+                  "max": 7
+                },
+                "fn": {
+                  "mean": 63,
+                  "min": 63,
+                  "max": 63
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              }
+            },
+            "Pedestrian": {
+              "bev": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 1.4,
+                  "min": 1,
+                  "max": 2
+                },
+                "fn": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              },
+              "3d": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 1.4,
+                  "min": 1,
+                  "max": 2
+                },
+                "fn": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              }
+            }
+          }
+        }
+      ],
+      "accuracy_policy": {
+        "confidence_threshold": 0.4,
+        "iou_thresholds": {
+          "0": 0.7,
+          "1": 0.5,
+          "2": 0.5
+        },
+        "roi": [
+          -50.0,
+          -50.0,
+          -1.4,
+          50.0,
+          50.0,
+          4.4
+        ],
+        "roi_rule": "Box center min-inclusive max-exclusive, same for GT and predictions",
+        "roi_reason": "Publisher annotation coverage is 100m x 100m; vertical limits remain the model range",
+        "box_convention": "LiDAR geometric center, length/width/height, yaw radians; no z shift",
+        "matching": "Same class, confidence-ranked greedy highest-IoU unmatched GT per frame",
+        "ap": "Continuous precision-envelope area, diagnostic; NOT official KITTI or COCO AP",
+        "ap_scope": "Only predictions at or above the stated confidence threshold are available",
+        "unsupported_classes": "Cyclist evaluated only if supplied ground truth contains Cyclist",
+        "failure_policy": "Failed frames retain all in-ROI GT as false negatives",
+        "repeat_aggregation": "Mean/min/max of run metrics; repetitions are not pooled as independent scenes"
+      },
+      "paired_test_vehicle_bev": {
+        "split": "test",
+        "left_variant": "reflectivity_div255",
+        "right_variant": "signal_div65535",
+        "class": "Vehicle",
+        "metric": "bev",
+        "paired_repeats": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "frames": 16,
+        "per_frame_mean_counts": [
+          {
+            "frame_id": "1000001527",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 10
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 10
+              }
+            }
+          },
+          {
+            "frame_id": "1000001568",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 2,
+                "fn": 8
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 1,
+                "fn": 8
+              }
+            }
+          },
+          {
+            "frame_id": "1000003174",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              }
+            }
+          },
+          {
+            "frame_id": "1000003935",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 1,
+                "fn": 1
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 1,
+                "fn": 1
+              }
+            }
+          },
+          {
+            "frame_id": "1000004775",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 2,
+                "fn": 6
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 1,
+                "fn": 6
+              }
+            }
+          },
+          {
+            "frame_id": "1000005825",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 1
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 2
+              }
+            }
+          },
+          {
+            "frame_id": "1000006954",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              }
+            }
+          },
+          {
+            "frame_id": "1000007660",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 1,
+                "fp": 1,
+                "fn": 0
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              }
+            }
+          },
+          {
+            "frame_id": "1000009153",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 2
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0.4,
+                "fn": 2
+              }
+            }
+          },
+          {
+            "frame_id": "1000010722",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 1,
+                "fp": 0.2,
+                "fn": 1
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 2
+              }
+            }
+          },
+          {
+            "frame_id": "1000010779",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 1,
+                "fn": 2
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 2,
+                "fn": 2
+              }
+            }
+          },
+          {
+            "frame_id": "1000011836",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              }
+            }
+          },
+          {
+            "frame_id": "1000013470",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 1,
+                "fp": 2,
+                "fn": 10
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 11
+              }
+            }
+          },
+          {
+            "frame_id": "1000013548",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 1,
+                "fn": 2
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 1,
+                "fn": 2
+              }
+            }
+          },
+          {
+            "frame_id": "1000015291",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              }
+            }
+          },
+          {
+            "frame_id": "1000015386",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 0.2,
+                "fn": 9
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 9
+              }
+            }
+          }
+        ],
+        "estimates": {
+          "precision": {
+            "left": 0.2777777777777778,
+            "right": 0.0,
+            "difference_right_minus_left": -0.2777777777777778,
+            "ci95": [
+              -0.5,
+              -0.08064516129032258
+            ],
+            "valid_bootstrap_samples": 10000
+          },
+          "recall": {
+            "left": 0.06666666666666667,
+            "right": 0.0,
+            "difference_right_minus_left": -0.06666666666666667,
+            "ci95": [
+              -0.15625,
+              -0.015384615384615385
+            ],
+            "valid_bootstrap_samples": 10000
+          }
+        },
+        "seed": 20261108,
+        "bootstrap_samples": 10000,
+        "method": "Average paired-repeat counts per frame; bootstrap paired frames; ratios from aggregate counts",
+        "limitation": "Frames are resampled as independent; scans in this single collection can be correlated. Intervals do not establish independent-drive or collection generalization. No-ground-truth bootstrap samples have undefined recall and are omitted only from recall intervals."
+      },
+      "test_exclusions_repeat0": [
+        {
+          "split": "test",
+          "variant": "reflectivity_div255",
+          "repeat": 0,
+          "frames": 16,
+          "failed_frames": 0,
+          "excluded_gt_center_outside_roi": 11,
+          "excluded_predictions_center_outside_roi": 0,
+          "excluded_predictions_unsupported_class": 9
+        },
+        {
+          "split": "test",
+          "variant": "signal_div65535",
+          "repeat": 0,
+          "frames": 16,
+          "failed_frames": 0,
+          "excluded_gt_center_outside_roi": 11,
+          "excluded_predictions_center_outside_roi": 0,
+          "excluded_predictions_unsupported_class": 2
+        }
+      ]
+    },
+    "bounded_control": {
+      "frames": 32,
+      "variants": {
+        "signal_div65535": {
+          "observations": 160,
+          "failures": 0,
+          "median_infer_nms_ms": 7.808489499999999,
+          "median_boxes_at_0_4": 0.0,
+          "empty_observations_at_0_4": 90
+        },
+        "reflectivity_div255": {
+          "observations": 160,
+          "failures": 0,
+          "median_infer_nms_ms": 8.1894185,
+          "median_boxes_at_0_4": 2.0,
+          "empty_observations_at_0_4": 40
+        }
+      },
+      "point_policy": "Separate capacity-control sensitivity: finite nonzero model-ROI points, first10000 encountered XY pillars, first32points each, preserved input order, same selection for both variants.",
+      "source": {
+        "kind": "Dur360BEV-Extended",
+        "selection_sha256": "56af2eb3adf8219f6f34abea534b6cf1976677e0a41ec2a33c78d0926ac18608",
+        "published_md5_list_sha256": "aefc05d0ba84739f1a288d24175f54f5d22d0e12de768ee24fb46342fc9ff40a",
+        "selection": "512uniformtarordinalcandidates;16equallyspacedcandidateIDs per publishedsplit; frozen before inference; splitnotverifieddrive-disjoint",
+        "qualification": "Published train/test indices from a single collection, not independent drives. Publisher annotations independent of this experiment; no official benchmark score claimed."
+      },
+      "runtime": {
+        "source_commit": "493bdf075ea8847e47a42d55a14edf18365eeadb",
+        "source_sha256": {
+          "src/pointpillar.cpp": "983cb2fc3a581eddb84dd3d64767d2d76f957b442a4d495fde623e33626b0379",
+          "src/postprocess.cpp": "297c73c7378e14afe845355dd473acb6d50ac16befc2d2b2b758f2abc38b6050",
+          "include/pp_infer/pointpillar.h": "df9513d42ad0c6580ec9136fb5bea2b1b65b459190ae7500837c6e16969f8eff",
+          "include/pp_infer/postprocess.h": "d819506d33c02b0581aa5562001372bad6bc1c10b38f31311a86c5437705d6f7",
+          "include/pp_infer/cuda_resources.hpp": "dc969f336ffdd64f1f3b254cb2dead1bec2c0078c2c325c8993f1052e7fcd2e9",
+          "include/pp_infer/model_contract.hpp": "d006c5c6382a993419211ed98e3efaa6c9a816c3e5ea1044c66697fd6ca6268b",
+          "include/pp_infer/output_contract.hpp": "ba2be89be7324e31b2babd41cd669b0a92f35283de4439b4cc22376f31717927",
+          "docker/reference/production_runner.cpp": "199230d4c36d23e6736c84f8a77634da001fc2c11650e98b7e8267b649367a01"
+        },
+        "image_id": "sha256:1171d26ec8f79c8176450008b745412d9e04632f948c1a5f597358b9886c2b5c",
+        "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU, GPU-4219859e-3a54-d063-1435-a290cd5d28f3, 595.99.02",
+        "engine": "bea83e579931a273617c656538b132346dde6fe96ad37aafd22c46af1e055e29.engine",
+        "parameters": {
+          "nms_iou": 0.01,
+          "top_n": 4096,
+          "class_count": 3,
+          "score_gate_for_export": 0
+        },
+        "recipe_sha256": "2709872abe6a296a1c3f31c623c91489fccc5229f8fd68b9ecf5dbe0ae80e362",
+        "runner_sha256": "63796ee965c671c94bb4799ff4366632377234c86d0d1b05f01bc3a50280fa10",
+        "engine_sha256": "97ece7c15dbccedaf95693950a5a772e37361d74dd9dd366655a0ec7efae8e14"
+      },
+      "pillar_limit_exceeded_frames": 0,
+      "repeatability_at_0_4": {
+        "variants": {
+          "reflectivity_div255": {
+            "observations": 160,
+            "failed_observations": 0,
+            "failure_statuses": {},
+            "missing_baseline_frames": 0,
+            "unavailable_pairs": 0,
+            "both_empty_pairs": 32,
+            "one_empty_pairs": 0,
+            "nonempty_pairs": 96,
+            "median_nonempty_match_fraction": 1.0
+          },
+          "signal_div65535": {
+            "observations": 160,
+            "failed_observations": 0,
+            "failure_statuses": {},
+            "missing_baseline_frames": 0,
+            "unavailable_pairs": 0,
+            "both_empty_pairs": 72,
+            "one_empty_pairs": 0,
+            "nonempty_pairs": 56,
+            "median_nonempty_match_fraction": 1.0
+          }
+        },
+        "paired_bootstrap": {
+          "frames": 13,
+          "mean_difference": 0.009615384615384616,
+          "ci95": [
+            0.0,
+            0.028846153846153848
+          ],
+          "seed": 20261108,
+          "samples": 10000,
+          "limitation": "Bootstrap resamples paired frames as independent units. Adjacent scans and repeated recordings may be correlated; this interval does not establish recording-level generalization or ground-truth accuracy."
+        }
+      },
+      "accuracy_at_0_4": [
+        {
+          "split": "test",
+          "variant": "reflectivity_div255",
+          "repeats": 5,
+          "classes": {
+            "Vehicle": {
+              "bev": {
+                "tp": {
+                  "mean": 4,
+                  "min": 4,
+                  "max": 4
+                },
+                "fp": {
+                  "mean": 14.2,
+                  "min": 14,
+                  "max": 15
+                },
+                "fn": {
+                  "mean": 56,
+                  "min": 56,
+                  "max": 56
+                },
+                "precision": {
+                  "mean": 0.2198830409356725,
+                  "min": 0.21052631578947367,
+                  "max": 0.2222222222222222
+                },
+                "recall": {
+                  "mean": 0.06666666666666667,
+                  "min": 0.06666666666666667,
+                  "max": 0.06666666666666667
+                },
+                "ap_continuous": {
+                  "mean": 0.017555555555555557,
+                  "min": 0.016666666666666666,
+                  "max": 0.017777777777777778
+                }
+              },
+              "3d": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 18.2,
+                  "min": 18,
+                  "max": 19
+                },
+                "fn": {
+                  "mean": 60,
+                  "min": 60,
+                  "max": 60
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              }
+            },
+            "Pedestrian": {
+              "bev": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 5,
+                  "min": 5,
+                  "max": 5
+                },
+                "fn": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              },
+              "3d": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 5,
+                  "min": 5,
+                  "max": 5
+                },
+                "fn": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              }
+            }
+          }
+        },
+        {
+          "split": "test",
+          "variant": "signal_div65535",
+          "repeats": 5,
+          "classes": {
+            "Vehicle": {
+              "bev": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 7,
+                  "min": 7,
+                  "max": 7
+                },
+                "fn": {
+                  "mean": 60,
+                  "min": 60,
+                  "max": 60
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              },
+              "3d": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 7,
+                  "min": 7,
+                  "max": 7
+                },
+                "fn": {
+                  "mean": 60,
+                  "min": 60,
+                  "max": 60
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              }
+            },
+            "Pedestrian": {
+              "bev": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fn": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              },
+              "3d": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fn": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              }
+            }
+          }
+        },
+        {
+          "split": "train",
+          "variant": "reflectivity_div255",
+          "repeats": 5,
+          "classes": {
+            "Vehicle": {
+              "bev": {
+                "tp": {
+                  "mean": 5,
+                  "min": 5,
+                  "max": 5
+                },
+                "fp": {
+                  "mean": 20,
+                  "min": 20,
+                  "max": 20
+                },
+                "fn": {
+                  "mean": 58,
+                  "min": 58,
+                  "max": 58
+                },
+                "precision": {
+                  "mean": 0.2,
+                  "min": 0.2,
+                  "max": 0.2
+                },
+                "recall": {
+                  "mean": 0.07936507936507936,
+                  "min": 0.07936507936507936,
+                  "max": 0.07936507936507936
+                },
+                "ap_continuous": {
+                  "mean": 0.025419829767655854,
+                  "min": 0.025419829767655854,
+                  "max": 0.025419829767655854
+                }
+              },
+              "3d": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 25,
+                  "min": 25,
+                  "max": 25
+                },
+                "fn": {
+                  "mean": 63,
+                  "min": 63,
+                  "max": 63
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              }
+            },
+            "Pedestrian": {
+              "bev": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 5,
+                  "min": 5,
+                  "max": 5
+                },
+                "fn": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              },
+              "3d": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 5,
+                  "min": 5,
+                  "max": 5
+                },
+                "fn": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              }
+            }
+          }
+        },
+        {
+          "split": "train",
+          "variant": "signal_div65535",
+          "repeats": 5,
+          "classes": {
+            "Vehicle": {
+              "bev": {
+                "tp": {
+                  "mean": 2,
+                  "min": 2,
+                  "max": 2
+                },
+                "fp": {
+                  "mean": 4,
+                  "min": 4,
+                  "max": 4
+                },
+                "fn": {
+                  "mean": 61,
+                  "min": 61,
+                  "max": 61
+                },
+                "precision": {
+                  "mean": 0.3333333333333333,
+                  "min": 0.3333333333333333,
+                  "max": 0.3333333333333333
+                },
+                "recall": {
+                  "mean": 0.031746031746031744,
+                  "min": 0.031746031746031744,
+                  "max": 0.031746031746031744
+                },
+                "ap_continuous": {
+                  "mean": 0.021164021164021163,
+                  "min": 0.021164021164021163,
+                  "max": 0.021164021164021163
+                }
+              },
+              "3d": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "fn": {
+                  "mean": 63,
+                  "min": 63,
+                  "max": 63
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              }
+            },
+            "Pedestrian": {
+              "bev": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 1,
+                  "min": 1,
+                  "max": 1
+                },
+                "fn": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              },
+              "3d": {
+                "tp": {
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "fp": {
+                  "mean": 1,
+                  "min": 1,
+                  "max": 1
+                },
+                "fn": {
+                  "mean": 6,
+                  "min": 6,
+                  "max": 6
+                },
+                "precision": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "recall": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                },
+                "ap_continuous": {
+                  "mean": 0.0,
+                  "min": 0.0,
+                  "max": 0.0
+                }
+              }
+            }
+          }
+        }
+      ],
+      "accuracy_policy": {
+        "confidence_threshold": 0.4,
+        "iou_thresholds": {
+          "0": 0.7,
+          "1": 0.5,
+          "2": 0.5
+        },
+        "roi": [
+          -50.0,
+          -50.0,
+          -1.4,
+          50.0,
+          50.0,
+          4.4
+        ],
+        "roi_rule": "Box center min-inclusive max-exclusive, same for GT and predictions",
+        "roi_reason": "Publisher annotation coverage is 100m x 100m; vertical limits remain the model range",
+        "box_convention": "LiDAR geometric center, length/width/height, yaw radians; no z shift",
+        "matching": "Same class, confidence-ranked greedy highest-IoU unmatched GT per frame",
+        "ap": "Continuous precision-envelope area, diagnostic; NOT official KITTI or COCO AP",
+        "ap_scope": "Only predictions at or above the stated confidence threshold are available",
+        "unsupported_classes": "Cyclist evaluated only if supplied ground truth contains Cyclist",
+        "failure_policy": "Failed frames retain all in-ROI GT as false negatives",
+        "repeat_aggregation": "Mean/min/max of run metrics; repetitions are not pooled as independent scenes"
+      },
+      "paired_test_vehicle_bev": {
+        "split": "test",
+        "left_variant": "reflectivity_div255",
+        "right_variant": "signal_div65535",
+        "class": "Vehicle",
+        "metric": "bev",
+        "paired_repeats": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "frames": 16,
+        "per_frame_mean_counts": [
+          {
+            "frame_id": "1000001527",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 10
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 10
+              }
+            }
+          },
+          {
+            "frame_id": "1000001568",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 2,
+                "fn": 8
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 8
+              }
+            }
+          },
+          {
+            "frame_id": "1000003174",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              }
+            }
+          },
+          {
+            "frame_id": "1000003935",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 1,
+                "fn": 1
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 1,
+                "fn": 1
+              }
+            }
+          },
+          {
+            "frame_id": "1000004775",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 2,
+                "fn": 6
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 1,
+                "fn": 6
+              }
+            }
+          },
+          {
+            "frame_id": "1000005825",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 1
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 2
+              }
+            }
+          },
+          {
+            "frame_id": "1000006954",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              }
+            }
+          },
+          {
+            "frame_id": "1000007660",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 1,
+                "fp": 1,
+                "fn": 0
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              }
+            }
+          },
+          {
+            "frame_id": "1000009153",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 2,
+                "fn": 2
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 2,
+                "fn": 2
+              }
+            }
+          },
+          {
+            "frame_id": "1000010722",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 1
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 2
+              }
+            }
+          },
+          {
+            "frame_id": "1000010779",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 1,
+                "fn": 2
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 2,
+                "fn": 2
+              }
+            }
+          },
+          {
+            "frame_id": "1000011836",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              }
+            }
+          },
+          {
+            "frame_id": "1000013470",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 1,
+                "fp": 3.2,
+                "fn": 10
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 1,
+                "fn": 11
+              }
+            }
+          },
+          {
+            "frame_id": "1000013548",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 1,
+                "fn": 2
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 2
+              }
+            }
+          },
+          {
+            "frame_id": "1000015291",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 1
+              }
+            }
+          },
+          {
+            "frame_id": "1000015386",
+            "counts": {
+              "reflectivity_div255": {
+                "tp": 0,
+                "fp": 1,
+                "fn": 9
+              },
+              "signal_div65535": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 9
+              }
+            }
+          }
+        ],
+        "estimates": {
+          "precision": {
+            "left": 0.21978021978021978,
+            "right": 0.0,
+            "difference_right_minus_left": -0.21978021978021978,
+            "ci95": [
+              -0.4166666666666667,
+              -0.0617283950617284
+            ],
+            "valid_bootstrap_samples": 10000
+          },
+          "recall": {
+            "left": 0.06666666666666667,
+            "right": 0.0,
+            "difference_right_minus_left": -0.06666666666666667,
+            "ci95": [
+              -0.15625,
+              -0.015384615384615385
+            ],
+            "valid_bootstrap_samples": 10000
+          }
+        },
+        "seed": 20261108,
+        "bootstrap_samples": 10000,
+        "method": "Average paired-repeat counts per frame; bootstrap paired frames; ratios from aggregate counts",
+        "limitation": "Frames are resampled as independent; scans in this single collection can be correlated. Intervals do not establish independent-drive or collection generalization. No-ground-truth bootstrap samples have undefined recall and are omitted only from recall intervals."
+      },
+      "test_exclusions_repeat0": [
+        {
+          "split": "test",
+          "variant": "reflectivity_div255",
+          "repeat": 0,
+          "frames": 16,
+          "failed_frames": 0,
+          "excluded_gt_center_outside_roi": 11,
+          "excluded_predictions_center_outside_roi": 0,
+          "excluded_predictions_unsupported_class": 11
+        },
+        {
+          "split": "test",
+          "variant": "signal_div65535",
+          "repeat": 0,
+          "frames": 16,
+          "failed_frames": 0,
+          "excluded_gt_center_outside_roi": 11,
+          "excluded_predictions_center_outside_roi": 0,
+          "excluded_predictions_unsupported_class": 3
+        }
+      ]
+    }
+  },
+  "evidence_sha256": {
+    ".recovery/accuracy/ouster-production-mosep-v1/recipe.json": "1cae705fbe3b52dc8c162e75b7045dc2c4f114b9f16d9dc1e4a33a58e13c3ced",
+    ".recovery/accuracy/ouster-production-mosep-v1/runtime.json": "6dc184f85348fb0446f8ad346e1cc6152fd9d6d50bed64c4426bb585e39c4f8f",
+    ".recovery/accuracy/ouster-production-mosep-v1/observations.json": "0d3845c0fd2c681970d717b68381a6324a0091456bdaa848942c51f9c425ab67",
+    ".recovery/accuracy/ouster-production-mosep-v1/repeatability-0.4.json": "2bf7ab45a07cc98b8d7f5b5490f609d8b50d985860c4b828d260ce8c87b07cd7",
+    ".recovery/accuracy/ouster-production-dur360-v2/recipe.json": "880cf8302d66b097614170047cb16356d2f7acc4945e31e8c93868e1d39ef2c6",
+    ".recovery/accuracy/ouster-production-dur360-v2/runtime.json": "09981dd5a27a1885b39e4ecf0911accd0767e48878c751d2927a8fc7a19e90ad",
+    ".recovery/accuracy/ouster-production-dur360-v2/observations.json": "8ce535598f3033c53c182191dc1fcd293e43a8d3f57ea2d7431736f7f47002c9",
+    ".recovery/accuracy/ouster-production-dur360-v2/repeatability-0.4.json": "d780a83df1a0e8e9d8bd48d7e00bf150f1d3de71ad79e5bc6f3c23b5ed5c82af",
+    ".recovery/accuracy/ouster-production-dur360-v2/ground-truth-0.4.json": "16cdff3f8dd8ac70e26e4967251e1796f310957eb135bee03869fc9f213349ff",
+    ".recovery/accuracy/ouster-production-dur360-v2/ground-truth-unfiltered.json": "8c3e411bcbd66db1381b13fa3e9c4e5943aac0e22c5d6080f32a37846990879d",
+    ".recovery/accuracy/ouster-production-dur360-v2/vertical-diagnostic.json": "d02e95c084292b3d290170fe0d91c161d7c1de226ea3b7c3d08e738fcde59d3f",
+    ".recovery/accuracy/ouster-production-dur360-bounded-v1/recipe.json": "2709872abe6a296a1c3f31c623c91489fccc5229f8fd68b9ecf5dbe0ae80e362",
+    ".recovery/accuracy/ouster-production-dur360-bounded-v1/runtime.json": "52accee3c7e6fd623870dc36ab45c3dd7a9bbebdcea492e0a530e7afb49f6d05",
+    ".recovery/accuracy/ouster-production-dur360-bounded-v1/observations.json": "e071c9b655a2728da35e0f53c25d392f4d41274035ded4cdd33b13700bac2b2e",
+    ".recovery/accuracy/ouster-production-dur360-bounded-v1/repeatability-0.4.json": "006a8769f8e5e7274bfd3106803d077f057c238ddf21f287ee6fde6cc74d5659",
+    ".recovery/accuracy/ouster-production-dur360-bounded-v1/ground-truth-0.4.json": "1d4e4eaf113123e0474fabb73716d6eac5c2a7a92fd6262037150f6f905cc855",
+    ".recovery/dur360bevet-study/download-verification.json": "b7c8aef9393d25163224d1b4342e9d60f9068fe5b7b9e021d01c3672da25ba10"
+  },
+  "verification": {
+    "python_tests_passed": 119,
+    "geometry_reference_pairs": 5084,
+    "geometry_max_abs_bev_iou_error": 2.33e-15,
+    "all_labeled_gt_observations_checked_against_publisher_loader": 320,
+    "prepared_xyzi_geometry_paired_bit_exact": true
+  },
+  "vertical_test_repeat0": {
+    "signal_div65535": {
+      "pairs": [],
+      "median_z_error_m": null
+    },
+    "reflectivity_div255": {
+      "pairs": [
+        {
+          "frame_id": "1000007660",
+          "bev_iou": 0.7694400316906759,
+          "3d_iou": 0.38138356370411364,
+          "center_z_error_m": 0.6021910233497619,
+          "score": 0.4863288104534149
+        },
+        {
+          "frame_id": "1000005825",
+          "bev_iou": 0.785438615966401,
+          "3d_iou": 0.14100957984912396,
+          "center_z_error_m": 1.1365095620155334,
+          "score": 0.43161600828170776
+        },
+        {
+          "frame_id": "1000010722",
+          "bev_iou": 0.7615864460069194,
+          "3d_iou": 0.3392030014529289,
+          "center_z_error_m": 0.68343212890625,
+          "score": 0.4099358022212982
+        },
+        {
+          "frame_id": "1000013470",
+          "bev_iou": 0.821568473072617,
+          "3d_iou": 0.20037064245327732,
+          "center_z_error_m": 1.000487714767456,
+          "score": 0.4420606791973114
+        }
+      ],
+      "median_z_error_m": 0.841959921836853
+    }
+  },
+  "limitations": [
+    "Published splits are disjoint indices within one collection; independent-drive generalization is unverified.",
+    "Small diagnostic selection: 16 train and 16 test scans; no Cyclist ground truth.",
+    "Publisher annotations are model-assisted and human-reviewed according to the original paper; the Extended card does not separately document its annotation procedure.",
+    "The 128-beam labeled sensor differs from the 64-beam MOSEP weather sensor; no labeled weather-accuracy claim is made.",
+    "Primary model-ROI evaluation excludes 11 of 77 original test labels: two Car outside XY, eight Car and one Pedestrian outside z.",
+    "Dur360 requires identical ROI/nonzero-return adaptation because its original 262144 points exceed the engine capacity of 204800.",
+    "Fixed signal/65535 versus reflectivity/255 encodings; no claim that every possible signal calibration is inferior.",
+    "The frame bootstrap assumes independence; temporal correlation limits interpretation of its intervals.",
+    "No production adapter, driver, image or default was changed by these experiments.",
+    "ROS UDP transport trials did not complete the A/B. Accuracy observations use unchanged production C++ inference and NMS directly, not ROS delivery.",
+    "Capacity control is a separate mechanical sensitivity test, not an automatic production fix.",
+    "Bundled Dur360 metadata lacks calibration_status; individual factory reflectivity calibration validity is unverified."
+  ],
+  "source_urls": [
+    "https://huggingface.co/datasets/TomEeee/Dur360BEV-Extended",
+    "https://github.com/Tom-E-Durham/Dur360BEV/tree/29e5dfb12d98983949cd7b85ba353b601cdc5248",
+    "https://arxiv.org/html/2503.00675v2",
+    "https://zenodo.org/records/19353314"
+  ]
+}

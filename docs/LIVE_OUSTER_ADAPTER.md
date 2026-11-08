@@ -1,5 +1,7 @@
 # Live Ouster adapter
 
+> **New measured channel decision — 8 November 2026:** 1,120 current-production GPU observations now include independent Ouster object annotations. Reflectivity/255 has stronger vehicle BEV evidence than signal/65535 on the frozen subset; neither has qualifying 3D accuracy. Both complete the tested numerical runs. See [results, limitations and proposal](OUSTER_CHANNEL_DECISION.md). Older unlabeled Ouster observations below retain their original scope.
+
 **Fresh GPU/RViz test — 7 November 2026:** a separately downloaded MOSEP Ouster
 bag was replayed unchanged through the combined launcher and GPU detector, with
 RViz opened on the desktop. Publisher checksum and source hashes passed; live

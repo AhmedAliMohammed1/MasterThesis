@@ -1,0 +1,10 @@
+{
+  "source": "Dur360BEV-Extended, TomEeee / Durham University, publisher CC-BY-4.0",
+  "dataset_revision": "07f166e558d7e1987e9a554ce0a89494f8fb87b0",
+  "selection": "Middle of frozen sixteen test frames, repeat zero; no output-based frame selection",
+  "frame_id": "1000007660",
+  "point_source_sha256": "56619ad8a89a8a7c5c75c67b56931cd114e99ce9c27a2c5aaed681061ed1e481",
+  "observations_sha256": "8ce535598f3033c53c182191dc1fcd293e43a8d3f57ea2d7431736f7f47002c9",
+  "image_sha256": "c3d719ec6ec05f78024d60aa4cdc9af4744bec60e38b57a9471e0155a86e24bb",
+  "plot": "Top XY and side XZ projections, not camera overlay; original source points subsampled for rendering only; score0.4 predictions use evaluation ROI; no z correction."
+}
