@@ -1,9 +1,22 @@
 # syntax=docker/dockerfile:1
-# BuildKit resolves this Git reference on each build; local source is not copied.
-FROM ubuntu:24.04 AS source
+# deploy.sh selects local source. Direct Dockerfile builds can still fetch Git.
+ARG SOURCE_MODE=remote
+FROM ubuntu:24.04 AS source-remote
 ARG GIT_REPO=https://github.com/AhmedAliMohammed1/MasterThesis.git
 ARG GIT_REF=main
 ADD --keep-git-dir=true ${GIT_REPO}#${GIT_REF} /source/
+
+FROM scratch AS source-local
+COPY CMakeLists.txt package.xml LICENSE /source/
+COPY src/ /source/src/
+COPY include/ /source/include/
+COPY launch/ /source/launch/
+COPY tests/core/ /source/tests/core/
+COPY tests/runtime/ /source/tests/runtime/
+COPY tests/ros/ /source/tests/ros/
+COPY docker/node.yaml docker/entrypoint.sh /source/docker/
+
+FROM source-${SOURCE_MODE} AS source
 
 FROM ubuntu:24.04 AS base
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -51,7 +64,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       build-essential cmake git python3-colcon-common-extensions && rm -rf /var/lib/apt/lists/*
 COPY --from=source /source/ /workspace/src/pp_infer/
 WORKDIR /workspace
-RUN git -C src/pp_infer rev-parse HEAD > source-revision.txt && \
+ARG SOURCE_REVISION=local-checkout
+RUN if test -d src/pp_infer/.git; then git -C src/pp_infer rev-parse HEAD > source-revision.txt; \
+    else printf '%s\n' "$SOURCE_REVISION" > source-revision.txt; fi && \
     rm -rf src/pp_infer/.git && \
     source /opt/ros/jazzy/setup.bash && colcon build --packages-select pp_infer \
       --cmake-args -DCMAKE_BUILD_TYPE=Release -DPython3_EXECUTABLE=/usr/bin/python3 && \

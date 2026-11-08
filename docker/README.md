@@ -1,6 +1,11 @@
 # Automatic Docker build and deployment
 
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](../docs/CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+**8 November 2026:** see [startup/replay fixes](../docs/STARTUP_AND_REPLAY.md)
+for local source builds, cached image reuse, single-interrupt shutdown and matching
+Ouster bag settings. Earlier dated deployment statements describe their original
+versions.
+
+> **Historical update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](../docs/CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
 
 > **Status reviewed 23 October 2026.** Deployment behavior is unchanged. Later normalized Ouster replay matched 556 occurrences and frontal KITTI replay matched 154 frames; these are integration results. The labeled KITTI accuracy baseline remains poor, and the synchronous depth-700 subscriber is still present. [Current results and evidence](../docs/CURRENT_STATUS_AND_RESULTS.md).
 
@@ -16,7 +21,10 @@ Use that command for first setup or an intentional rebuild/update. For later run
 sudo bash tools/start.sh
 ```
 
-`deploy.sh` always invokes `docker build --pull`; `start.sh` uses only the local
+`deploy.sh` checks the GPU/Docker and reuses an image whose runtime-input checksum
+matches the local checkout. Changed runtime inputs trigger a cached local build;
+base-image pulls require `PP_PULL_BASE=1`. `PP_BUILD_ONLY=1` builds without starting
+a detector. `start.sh` uses only the local
 image with `docker run --pull=never`, without building, downloading updates or
 installing/upgrading packages. Both create a foreground `--rm` container:
 Ctrl+C stops and removes it, while the image and persistent engine volume remain.
@@ -36,7 +44,7 @@ sudo env RMW_IMPLEMENTATION=rmw_zenoh_cpp ROS_DOMAIN_ID=0 \
   POINT_CLOUD_TOPIC=/ouster1/points bash tools/start.sh
 ```
 
-`PP_GIT_REPO`, `PP_GIT_REF` and extra build arguments apply only to `deploy.sh`.
+`PP_GIT_REPO` and `PP_GIT_REF` select remote source in `deploy.sh`; extra build arguments apply only to that script.
 Use `bash tools/start.sh --help` for the launch settings.
 
 For live Ouster input, the separate `sudo bash tools/start_ouster.sh` launcher
@@ -52,13 +60,13 @@ shutdown behavior and image update requirements.
 
 The Dockerfile automatically:
 
-1. Clones the latest published GitHub `main` source using BuildKit's Git `ADD`.
+1. Uses the local source whitelist with `deploy.sh`; direct Dockerfile builds default to published Git source through BuildKit Git `ADD`.
 2. Installs ROS 2 Jazzy, CUDA 12.9 components, C++/colcon tools and PCL dependencies.
 3. Downloads and installs the exact TensorRT 10.16.1.11 CUDA 12.9 runtime/plugin/parser/tool/header packages from NVIDIA's signed apt repository. All TensorRT dependencies are pinned to the same CUDA variant; large static development packages are omitted.
 4. Downloads NVIDIA NGC PointPillarNet `deployable_v1.1` ONNX and verifies SHA-256 `2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1`.
 5. Builds and tests `pp_infer` with colcon, records the Git commit in `/opt/pp_infer/source-revision.txt`, and packages a runtime image.
 
-No local `.recovery/sdk`, downloaded DEB, ONNX, engine, or build tree is sent to Docker. `.dockerignore` allows only the Dockerfile and ignore file. You can build from the Dockerfile alone:
+No local `.recovery/sdk`, downloaded DEB, ONNX, engine, or build tree is sent to Docker. `.dockerignore` whitelists only runtime source, C++ tests, launch/configuration files and the Dockerfile; models, recordings, SDKs and `.git` remain excluded. You can build from the Dockerfile alone:
 
 ```bash
 sudo docker build -t pp-infer:jazzy-trt10 - < Dockerfile
@@ -72,7 +80,7 @@ sudo docker run --rm --init --name pointpillars \
   -v pp-engines:/var/lib/pp_infer pp-infer:jazzy-trt10
 ```
 
-Push source edits before rebuilding: local uncommitted or unpushed runtime changes are not included. BuildKit resolves the Git reference and caches by source identity, so unchanged dependencies need not be downloaded again. To pin a release, pass `--build-arg GIT_REF=<full-commit-sha>` to the build, or set `PP_GIT_REF` for the wrapper.
+Local uncommitted runtime edits are included by `deploy.sh` by default. Remote mode (`PP_SOURCE_MODE=remote`, `PP_GIT_REF` or `PP_GIT_REPO`) still requires publishing those edits. BuildKit resolves the Git reference and caches by source identity, so unchanged dependencies need not be downloaded again. To pin remote source, set `PP_GIT_REF` for the wrapper, or use `--build-arg SOURCE_MODE=remote --build-arg GIT_REF=<full-commit-sha>` in a direct Docker build.
 
 ```bash
 sudo env PP_GIT_REF='YOUR_FULL_COMMIT_SHA' bash tools/deploy.sh
@@ -107,7 +115,7 @@ sudo env POINT_CLOUD_TOPIC=/lidar/points ROS_DOMAIN_ID=7 \
   PP_GPU_INDEX=0 PP_WORKSPACE_MIB=256 bash tools/deploy.sh
 ```
 
-The new `PP_CONFIDENCE_THRESHOLD` setting overrides the node YAML's default score gate of 0.5. For example, `sudo env PP_CONFIDENCE_THRESHOLD=0.7 bash tools/deploy.sh`. An unset/empty value leaves the YAML setting in effect. The threshold can also change live through `ros2 param set /pointpillars confidence_threshold 0.7` (use `/entrypoint.sh` through `docker exec` when running inside the container).
+The new `PP_CONFIDENCE_THRESHOLD` setting overrides the node YAML's default score gate of 0.5. For example, `sudo env PP_CONFIDENCE_THRESHOLD=0.7 bash tools/deploy.sh`. The launchers use 0.4 when unset/empty; direct entrypoint use without an override retains the YAML default of 0.5. The threshold can also change live through `ros2 param set /pointpillars confidence_threshold 0.7` (use `/entrypoint.sh` through `docker exec` when running inside the container).
 
 New images publish only boxes at or above the threshold. The standard detection array remains on `/bbox`; `/bbox/stats` adds per-frame/cumulative counts as DiagnosticArray, and `/bbox/count` publishes the RViz text marker. Monitoring topics follow detection-topic remapping. The Docker stages now declare diagnostic/visualization message packages and the build includes a fifth, GPU-free ROS output integration test. See [the feature guide](../docs/CONFIDENCE_FILTER_AND_MONITORING.md). Local changes still need publication in the selected Git revision before this remote-source Docker build includes them; no existing image/container is updated automatically.
 

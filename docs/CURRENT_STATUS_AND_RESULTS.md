@@ -1,5 +1,7 @@
 # Current project status and results
 
+> **Current startup — 8 November 2026:** deployment uses local source and reuses matching images; base pulls are explicit. `PP_BUILD_ONLY=1` is optional and prepares the image without starting the detector. For the unchanged MOSEP bag, use `start_ouster.sh bag` with `start_ouster_bag.sh`; both use Fast DDS/domain 99 and the same raw topic. One Ctrl+C stops each launcher. See [current startup, replay, RViz and validation](STARTUP_AND_REPLAY.md). Earlier dated observations and quoted conversations retain their historical context.
+
 > **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
 
 Reviewed **23 October 2026** against source commit `ee6b36c95808ee1f6edd90b33976c536d71b1b34`, the working tree, result inventories and saved reports. This is the documentation review date. Numerical experiments below were recorded on **1–14 October**; the supplied screencast filenames are dated **20 October**. That documentation-only review ran no new GPU experiment; the subsequent deployment verification below supersedes that limitation.
@@ -42,7 +44,7 @@ flowchart TD
 | GPU runtime | `src/pointpillar.cpp`: four named tensors, batch-one contract, `enqueueV3`, owned context/stream/buffers, checked counts and candidate decoding. |
 | Publication/filter and counters | `src/detection_output.cpp`: dynamic score gate, accepted messages, per-frame/cumulative diagnostics and RViz text; validates/maps through `make_detections`. |
 | ROS entry point | `src/pp_inference_node.cpp`: synchronous subscription callback, reliable depth 700, publication on `bbox`; container remaps node name/topics. |
-| Deployment | `Dockerfile`, `tools/deploy.sh`, `docker/entrypoint.sh`, `docker/node.yaml`: published Git source, checksum-pinned ONNX, target-GPU engine generation/cache, node startup. |
+| Deployment | `Dockerfile`, `tools/deploy.sh`, `docker/entrypoint.sh`, `docker/node.yaml`: local source by default (optional remote Git), checksum-pinned ONNX, target-GPU engine generation/cache, node startup. |
 | Data and results | `tools/prepare_*`, `tools/kitti_*`, `tools/compare_ouster_*`: preparation, frozen predictions, calibration/evaluation and controlled reference/feature experiments. |
 | Visualization | `tools/visualize.sh`, `rviz/`: direct vision_msgs display, sensor-specific frames, optional camera, ground truth and reference overlays. |
 | Evidence/recovery | `config/*_inventory.json` indexes identities and saved evidence; `recovery/` records milestones; ignored `.recovery/` holds local data, engines, reports and logs. |
@@ -149,7 +151,7 @@ At **19:47 UTC (21:47 Europe/Berlin)** the user requested closing the current pr
 To repeat the trial, run these in **three separate terminals** from the project root, using Docker permissions appropriate to the host:
 
 ```bash
-# Terminal 1: checks/builds published source, then starts inference.
+# Terminal 1: checks/builds local source, then starts inference.
 PP_CONFIDENCE_THRESHOLD=0.5 bash tools/deploy.sh
 # Terminal 2: starts/reuses the prepared KITTI front-drive player.
 bash tools/rosbag_kitti_front.sh
@@ -157,7 +159,7 @@ bash tools/rosbag_kitti_front.sh
 RVIZ_CONFIG="$PWD/rviz/kitti_front.rviz" bash tools/monitor_detections.sh rviz
 ```
 
-`deploy.sh` always invokes `docker build --pull` after refusing an existing same-name container. Eligible layers can be cached; it is not an update-only deployment manager. It creates a new container after a successful build. Container `--rm` removes it on exit while preserving the image and named engine volume. Use one cloud player per topic/domain.
+`deploy.sh` checks the host GPU/Docker and reuses a matching runtime-input image; changed runtime inputs trigger a cached local build. Base pulls require `PP_PULL_BASE=1`. It preserves an existing same-name container and starts a new detector unless optional `PP_BUILD_ONLY=1` is set. Container `--rm` removes it on exit while preserving the image and named engine volume. Use one cloud player per topic/domain.
 
 The monitor's `rviz` mode calls `tools/visualize.sh`. Both open a new window. To load this profile in an already-open RViz window, use **File → Open Config** and choose `rviz/kitti_front.rviz`; to keep your existing layout, add a Reliable / Transient Local MarkerArray display on `/bbox/count` instead. Monitoring alone starts neither inference nor playback. With inference running, `PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh` streams counters, and the `threshold` option reads the live setting.
 

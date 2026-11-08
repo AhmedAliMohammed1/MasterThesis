@@ -2,6 +2,9 @@
 # Replay the freshly downloaded MOSEP Ouster recording without rewriting it.
 set -euo pipefail
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$project_root/tools/docker_foreground.sh"
+source "$project_root/tools/ouster_profile.sh"
+pp_ouster_profile bag
 case "${1:-}" in
   -h|--help)
     cat <<'EOF'
@@ -12,7 +15,7 @@ Starts only playback; start the adapter/detector and RViz separately.
 Ctrl+C stops playback and removes its container. No download or build occurs.
 
 Defaults (match the fresh visual test):
-  PP_IMAGE              pp-infer:ouster-fresh-test
+  PP_IMAGE              pp-infer:jazzy-trt10 (same as start_ouster.sh bag)
   PP_OUSTER_CONTAINER   pointpillars-ouster-fresh-bag
   PP_OUSTER_FRESH_DIR   <checkout>/.recovery/rosbags/ouster_mosep_fresh_20261107/original
   ROS_DOMAIN_ID         99
@@ -61,7 +64,7 @@ topic=${OUSTER_POINT_CLOUD_TOPIC:-/sensing/lidar/points}
 [[ $topic =~ ^/([a-zA-Z_][a-zA-Z0-9_]*)(/[a-zA-Z_][a-zA-Z0-9_]*)*$ ]] || {
   echo 'OUSTER_POINT_CLOUD_TOPIC must be an absolute ROS topic.' >&2; exit 2;
 }
-image=${PP_IMAGE:-pp-infer:ouster-fresh-test}
+image=$PP_IMAGE
 container=${PP_OUSTER_CONTAINER:-pointpillars-ouster-fresh-bag}
 command -v docker >/dev/null || { echo 'Docker is required.' >&2; exit 1; }
 docker info >/dev/null
@@ -79,7 +82,7 @@ remap_args=()
 [[ $topic == /sensing/lidar/points ]] || remap_args=(--remap "/sensing/lidar/points:=$topic")
 printf 'Original Ouster bag: %s\nOutput: %s; domain: %s; rate: %s; loop: %s. Ctrl+C stops playback.\n' \
   "$bag" "$topic" "$domain" "$rate" "$loop"
-exec docker run --pull=never --rm --init --name "$container" \
+pp_run_container --pull=never --rm --init --name "$container" \
   --label pp_infer.demo=ouster-mosep-fresh --network host --ipc host \
   -e "ROS_DOMAIN_ID=$domain" \
   -e "RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}" \

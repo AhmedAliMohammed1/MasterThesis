@@ -86,7 +86,21 @@ if args[0] not in ('info', 'run'):
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(any('/ouster-stack.sh' in call for call in calls))
             self.assertFalse(any(call[0] in ('stop', 'rm', 'build', 'pull') for call in calls))
-        self.assertIn('published Git source', self.launch(TEST_MISSING_ADAPTER='1')[0].stderr)
+        self.assertIn('current checkout', self.launch(TEST_MISSING_ADAPTER='1')[0].stderr)
+
+    def test_bag_profile_matches_player_without_extra_configuration(self):
+        from test_start_ouster_bag import FreshBagLauncherTests
+        result, calls = self.launch(('bag',))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        player_result, player_calls = FreshBagLauncherTests().launch()
+        self.assertEqual(player_result.returncode, 0, player_result.stderr)
+        for value in ('ROS_DOMAIN_ID=99', 'RMW_IMPLEMENTATION=rmw_fastrtps_cpp',
+                      'OUSTER_POINT_CLOUD_TOPIC=/sensing/lidar/points'):
+            self.assertIn(value, calls[-1])
+            if not value.startswith('OUSTER_'):
+                self.assertIn(value, player_calls[-1])
+        self.assertIn('pp-infer:jazzy-trt10', calls[-1])
+        self.assertIn('pp-infer:jazzy-trt10', player_calls[-1])
 
     def test_invalid_settings_fail_before_docker(self):
         for settings in ({'PP_OUSTER_INTENSITY_SOURCE': 'auto'}, {'PP_OUSTER_INTENSITY_DIVISOR': '0'},

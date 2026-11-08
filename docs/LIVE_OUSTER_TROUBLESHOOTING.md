@@ -1,5 +1,7 @@
 # Live Ouster deployment troubleshooting — 28 October 2026
 
+> **Current startup — 8 November 2026:** deployment uses local source and reuses matching images; base pulls are explicit. `PP_BUILD_ONLY=1` is optional and prepares the image without starting the detector. For the unchanged MOSEP bag, use `start_ouster.sh bag` with `start_ouster_bag.sh`; both use Fast DDS/domain 99 and the same raw topic. One Ctrl+C stops each launcher. See [current startup, replay, RViz and validation](STARTUP_AND_REPLAY.md). Earlier dated observations and quoted conversations retain their historical context.
+
 **Implementation update — 7 November 2026:** a separate
 [live Ouster adapter](LIVE_OUSTER_ADAPTER.md) now validates incoming PointCloud2
 messages and converts the selected signal/reflectivity field to FLOAT32 intensity.

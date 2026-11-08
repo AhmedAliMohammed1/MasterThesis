@@ -13,6 +13,11 @@ signal / 65535. Ctrl+C stops both. This Ouster launcher defaults to Zenoh and
 `/ouster1/points`; see its `--help` and the adapter guide for overrides and image
 update requirements.
 
+For the downloaded MOSEP recording, use `sudo bash tools/start_ouster.sh bag`
+and `sudo bash tools/start_ouster_bag.sh` in separate terminals. They share Fast
+DDS, domain 99 and `/sensing/lidar/points`. See
+[deployment and replay fixes](docs/STARTUP_AND_REPLAY.md) for the full sequence.
+
 For the 28 October RTX A4500 host setup, Zenoh discovery, driver recovery and
 the original live Ouster input-format diagnosis, see
 [live Ouster deployment troubleshooting](docs/LIVE_OUSTER_TROUBLESHOOTING.md).
@@ -43,7 +48,7 @@ With a working host NVIDIA driver, Docker and NVIDIA Container Toolkit, run from
 sudo bash tools/deploy.sh
 ```
 
-This builds the image and starts `/pointpillars` in the foreground. It automatically clones the latest published GitHub `main`, installs ROS Jazzy/CUDA/TensorRT 10.16.1.11 dependencies and headers, downloads the pinned NGC pretrained ONNX, verifies its checksum, and builds/tests with colcon. First startup generates an FP32 batch-one engine on the selected GPU; later matching launches reuse it in `pp-engines`. No local SDK, installer, model or engine preparation is needed. Stop with Ctrl+C.
+This checks the host NVIDIA driver and Docker, then builds from the local checkout and starts `/pointpillars` in the foreground. A saved image with matching runtime inputs is reused without building. Otherwise Docker reuses dependency/model layers; first builds install ROS Jazzy/CUDA/TensorRT 10.16.1.11, download and checksum the pinned ONNX, and build/test with colcon. Documentation-only edits do not trigger a rebuild. Base images are refreshed only with `PP_PULL_BASE=1`. First startup generates an FP32 batch-one engine on the selected GPU; later matching launches reuse it in `pp-engines`. No local SDK, installer, model or engine preparation is needed. Stop with Ctrl+C.
 
 For every later run, reuse the saved image without rebuilding, pulling images,
 or installing/upgrading packages:
@@ -71,7 +76,7 @@ sudo docker build -t pp-infer:jazzy-trt10 - < Dockerfile
 
 Then launch with the direct `docker run` command in [Docker details](docker/README.md). GPU access is required at startup, not during the image build. The wrapper refuses to replace an existing container with the same name; stop/remove the intended old instance first, or choose `PP_CONTAINER_NAME`.
 
-**Push source edits before rebuilding.** GitHub source is used, so uncommitted or unpushed runtime changes are not included. Set `PP_GIT_REF` to a full commit SHA for a fixed release. The image records its source commit in `/opt/pp_infer/source-revision.txt`.
+**Local edits are included by default.** `PP_BUILD_ONLY=1` builds/checks the image without starting a detector. `PP_FORCE_BUILD=1` forces a cached build; `PP_PULL_BASE=1` refreshes base images. Set `PP_SOURCE_MODE=remote` or supply `PP_GIT_REF`/`PP_GIT_REPO` to use published Git source. Local images record the checkout revision plus a runtime-input checksum in `/opt/pp_infer/source-revision.txt`.
 
 | Item | Name |
 | --- | --- |
@@ -117,7 +122,7 @@ cd "$HOME/pointpillars"
 sudo bash tools/deploy.sh
 ```
 
-The build fetches its own source and dependencies. Plan for roughly 40 GB free for a fresh build, an allowance rather than a measured minimum. Docker images/cache occupy Docker's storage filesystem even if the project is on another drive. The recorded Linux checkout moved to `/media/ae/New Volume/MasterThesis`; quote paths containing spaces. A separate explanation review on 5 October used `E:\MasterThesis`; that historical path does not establish Windows runtime support. Large models, SDKs, engines and archives remain excluded by `.gitignore`. No registry image has been published.
+The default build uses this checkout and fetches missing dependencies/model assets; remote-source mode also fetches Git source. Plan for roughly 40 GB free for a fresh build, an allowance rather than a measured minimum. Docker images/cache occupy Docker's storage filesystem even if the project is on another drive. The recorded Linux checkout moved to `/media/ae/New Volume/MasterThesis`; quote paths containing spaces. A separate explanation review on 5 October used `E:\MasterThesis`; that historical path does not establish Windows runtime support. Large models, SDKs, engines and archives remain excluded by `.gitignore`. No registry image has been published.
 
 Alternatively, transfer the built image with `docker save` and `docker load`, then run it on the receiving computer. The guide gives both commands. The image contains the model and libraries and builds its own target engine; do not assume engines transfer between different GPUs. Keep SDK/model licensing terms with redistributed artifacts.
 

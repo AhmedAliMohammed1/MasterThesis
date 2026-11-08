@@ -1,5 +1,7 @@
 # Resume pp_infer work after interrupted credit, context or tooling
 
+> **Current startup — 8 November 2026:** deployment uses local source and reuses matching images; base pulls are explicit. `PP_BUILD_ONLY=1` is optional and prepares the image without starting the detector. For the unchanged MOSEP bag, use `start_ouster.sh bag` with `start_ouster_bag.sh`; both use Fast DDS/domain 99 and the same raw topic. One Ctrl+C stops each launcher. See [current startup, replay, RViz and validation](../docs/STARTUP_AND_REPLAY.md). Earlier dated observations and quoted conversations retain their historical context.
+
 > **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](../docs/CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
 
 > **Status reviewed 23 October 2026.** Start from the consolidated current results. Feature `8a87a73` and verification docs `8fc05d2` are published; old “uncommitted” statements below describe earlier sessions. No saved PID/container record establishes what is currently running. Keep W01/W04/W05/W07/W09 in progress, W06/W08 pending. [Current results and evidence](../docs/CURRENT_STATUS_AND_RESULTS.md).
@@ -34,7 +36,7 @@ The A-to-Z implementation/deployment guide is `docs/PROJECT_IMPLEMENTATION_AND_D
 
 The user moved the checkout to `/media/ae/New Volume/MasterThesis` on 2026-10-02. Quote this path. Docker still uses its own host storage filesystem; moving the project does not move Docker images/cache. Old native build/install outputs contain stale absolute paths; select fresh directories when rebuilding native code. Historical logs/inventories retain their original paths as evidence.
 
-`sudo bash tools/deploy.sh` builds published GitHub source, downloads and verifies the pinned NGC model, installs pinned TensorRT shared runtime/plugins/tools/headers, builds/tests with colcon, then launches the GPU node. Source edits must be pushed before they are included. No local SDK/model inputs are needed. Keep large assets ignored. See the latest progress entry and image inventory for verified build/GPU evidence and current container state. W09 remains in progress for full operational/CI acceptance.
+`sudo bash tools/deploy.sh` checks the host GPU/Docker, reuses a matching local image or builds current local source with cached dependency/model layers, then launches the detector. No push is needed for local edits. Remote source remains optional. No local SDK/model inputs are needed. Keep large assets ignored. See the latest progress entry and image inventory for verified build/GPU evidence and current container state. W09 remains in progress for full operational/CI acceptance.
 
 ## Historical real-bag viewer state (inspect current processes)
 

@@ -50,7 +50,7 @@ if args[0] not in ('info','run'):sys.exit('Unexpected mutation')
         run = calls[-1]
         self.assertEqual(run[0], 'run')
         self.assertIn('--pull=never', run)
-        self.assertIn('pp-infer:ouster-fresh-test', run)
+        self.assertIn('pp-infer:jazzy-trt10', run)
         self.assertIn('ROS_DOMAIN_ID=99', run)
         self.assertIn('RMW_IMPLEMENTATION=rmw_fastrtps_cpp', run)
         self.assertIn('--loop', run)

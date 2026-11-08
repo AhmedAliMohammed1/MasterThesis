@@ -1,4 +1,28 @@
-# Source, SDK and ONNX are fetched inside the build. No local assets are sent.
+# Minimal local source context. SDKs/models/recordings/caches stay out.
 **
 !Dockerfile
 !.dockerignore
+!CMakeLists.txt
+!package.xml
+!LICENSE
+!src/
+!src/**
+!include/
+!include/**
+!launch/
+!launch/*.py
+!tests/
+!tests/core/
+!tests/core/**
+!tests/runtime/
+!tests/runtime/**
+!tests/ros/
+!tests/ros/**
+!docker/
+!docker/node.yaml
+!docker/entrypoint.sh
+**/__pycache__/
+**/*.pyc
+**/.env*
+**/*.pem
+**/*.key

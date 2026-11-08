@@ -1,0 +1,69 @@
+{
+  "review_date_local": "2026-11-08",
+  "test_image": "pp-infer:launcher-fix-test",
+  "saved_production_image_unchanged": true,
+  "local_source_build_passed": true,
+  "cpp_ros_tests_passed": 7,
+  "python_tests_passed": 91,
+  "matching_image_build_skipped": true,
+  "sdk_model_and_dependency_layers_reused": true,
+  "final_build_apt_download_lines": 0,
+  "live_validation": {
+    "raw": 20,
+    "adapted": 20,
+    "detections": 19,
+    "adapter": {
+      "input_topic": "/sensing/lidar/points",
+      "output_topic": "/point_cloud",
+      "input_publishers": "1",
+      "intensity_source": "reflectivity",
+      "intensity_divisor": "255.000000",
+      "received": "12",
+      "converted": "12",
+      "rejected": "0",
+      "schema": "1024x64 point_step=48 x(type=7,offset=0,count=1) y(type=7,offset=4,count=1) z(type=7,offset=8,count=1) intensity(type=7,offset=16,count=1) t(type=6,offset=20,count=1) reflectivity(type=4,offset=24,count=1) ring(type=4,offset=26,count=1) ambient(type=4,offset=28,count=1) range(type=6,offset=32,count=1)",
+      "pointcloud_topics": "/sensing/lidar/points "
+    },
+    "detector": {
+      "frame_status": "ok",
+      "confidence_threshold": "0.40000000000000002",
+      "post_nms_count": "21",
+      "filtered_count": "20",
+      "published_count": "1",
+      "processed_frames_total": "19",
+      "published_detections_total": "4",
+      "filtered_detections_total": "418",
+      "invalid_cloud_frames_total": "0",
+      "inference_error_frames_total": "0"
+    },
+    "shutdown": [
+      {
+        "container": "pp-launcher-verify-bag",
+        "exit_code": 130,
+        "seconds": 0.49,
+        "removed": true
+      },
+      {
+        "container": "pp-launcher-verify",
+        "exit_code": 130,
+        "seconds": 0.487,
+        "removed": true
+      }
+    ],
+    "integration_passed": true,
+    "single_sigint_shutdown_passed": true
+  },
+  "source_sha256": {
+    "Dockerfile": "7f46cfe5f31dbebe1e9a56b3cfdaf968c544c17a1ce54967f63d49aea8e8f617",
+    ".dockerignore": "6c537c45731b5c5566f9ae68ce0ba914a2098da37433eb9562fcdd7d1cdf1a28",
+    "tools/deploy.sh": "7a5dc7d6a1665e571041d972f2125d8a2257243a33c8792908a2b145aa539a8c",
+    "tools/docker_foreground.sh": "221c276864837a3b7d5bb907440d293f0c41dc809a323fcf5f4e303ebcc30161",
+    "tools/ouster_profile.sh": "b0984fb96ebc2f127b138c587e33addd80533e60d9e7d31410d803b05f3bbe8a",
+    "tools/start.sh": "e93826eef497402e5f762513f1f109975244948820a22effdae65e36db509186",
+    "tools/start_ouster.sh": "31608aec910066c27d590628273d8b72c8accf1387334856e203386eb36b7635",
+    "tools/start_ouster_bag.sh": "26f6f9603a39c427f9ed70e2d8d1e1e5fffa1b8cb6c36de34abb0b37aa58ea14",
+    "docker/entrypoint.sh": "419dacdd67e4055859350f11fdae9ababafacd0399c1aa069014c7fe65fa952d"
+  },
+  "all_test_containers_removed": true,
+  "original_bag_mounted_read_only": true
+}

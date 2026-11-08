@@ -67,12 +67,17 @@ unnecessary. It does not build/pull an image or start/reconfigure the sensor
 driver. It always converts the explicitly selected channel; automatic XYZI
 passthrough and choosing a feature based on model accuracy are not implemented.
 
-**Existing images need an update to contain the adapter.** `deploy.sh` still
-builds from published Git source. Publish the adapter changes before using that
-build path, or select an image already built from source containing the adapter.
-`deploy.sh` starts the detector after building: stop it with Ctrl+C, then use
-`start_ouster.sh` to start the combined pipeline. Editing the local files alone
-does not update an existing image. The engine volume is retained across launches.
+**Existing images need an update to contain the adapter.** Build directly from
+the current checkout without starting a detector:
+
+```bash
+sudo env PP_BUILD_ONLY=1 bash tools/deploy.sh
+```
+
+Then use `start_ouster.sh` for live input or `start_ouster.sh bag` for the downloaded
+recording. The latter shares the bag player's Fast DDS/domain 99/raw-topic defaults.
+Local builds no longer require a Git push. Remote-source mode still requires
+publishing changes. The engine volume is retained across launches.
 
 ## Conversion choices
 
@@ -147,9 +152,9 @@ sudo docker run --rm --init --network host --name ouster-adapter \
   -p intensity_source:=reflectivity -p intensity_divisor:=255.0
 ```
 
-Existing images do not contain the adapter. The repository Dockerfile fetches
-published Git source, so a normal `deploy.sh` rebuild only includes this change
-after it is published. No image rebuild or deployment is performed just by
+Older images may not contain the adapter. `deploy.sh` builds current local runtime
+source by default; use `PP_BUILD_ONLY=1` to prepare the image without starting.
+Direct remote-source Dockerfile builds still require a published change. No image rebuild or deployment is performed just by
 editing this checkout.
 
 Start the detector using the adapted topic and the same middleware/domain:

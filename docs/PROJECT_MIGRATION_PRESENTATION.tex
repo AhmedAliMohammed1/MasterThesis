@@ -466,4 +466,23 @@ Explicit environment values override startup; query the live parameter.
 Filtering runs on the CPU after NMS; no engine rebuild is needed for a live change.
 \end{frame}
 
+
+\begin{frame}{Ouster startup update --- 8 November 2026}
+\small
+\begin{itemize}
+\item Deployment checks the host GPU/Docker, builds local source by default,
+and reuses a matching image. Base pulls are explicit; source edits preserve
+independent dependency/model caches.
+\item Optional \texttt{\detokenize{PP_BUILD_ONLY=1}} prepares the image without
+starting the detector. Otherwise deployment starts the detector only.
+\item Run \texttt{\detokenize{start_ouster.sh bag}} and
+\texttt{\detokenize{start_ouster_bag.sh}} in separate terminals: Fast DDS,
+domain 99, original topic \texttt{/sensing/lidar/points}.
+\item Adapter: reflectivity/255 to \texttt{/point\_cloud}; detector to
+\texttt{/bbox}. RViz: Ouster profile, fixed frame \texttt{lidar/os\_lidar}.
+\item One Ctrl+C stops each launcher. Verified 91 Python and seven C++/ROS
+tests plus actual GPU replay. Accuracy remains unvalidated.
+\end{itemize}
+\end{frame}
+
 \end{document}

@@ -2,14 +2,18 @@
 # Start the saved detector image with the live Ouster adapter in one container.
 set -euo pipefail
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$project_root/tools/docker_foreground.sh"
+source "$project_root/tools/ouster_profile.sh"
 case "${1:-}" in
   -h|--help)
     cat <<'EOF'
-Usage: sudo bash tools/start_ouster.sh [reflectivity|signal]
+Usage: sudo bash tools/start_ouster.sh [bag] [reflectivity|signal]
 
 Starts the Ouster adapter and detector together using the saved image. The Ouster
 driver must already be running. Ctrl+C stops both; the engine cache is retained.
 No build, image pull, package installation, or driver configuration is performed.
+For the downloaded bag: start_ouster.sh bag, then start_ouster_bag.sh.
+Bag mode shares the player's Fast DDS, domain 99 and /sensing/lidar/points.
 
 Defaults:
   OUSTER_POINT_CLOUD_TOPIC     /ouster1/points (raw sensor input)
@@ -38,6 +42,9 @@ The intensity divisor must be a positive decimal number; conversion is experimen
 EOF
     exit 0 ;;
 esac
+profile=live
+if [[ ${1:-} == bag ]]; then profile=bag; shift; fi
+pp_ouster_profile "$profile"
 [[ $# -le 1 ]] || { echo 'Use --help; expected at most one source choice.' >&2; exit 2; }
 source_channel=${1:-${PP_OUSTER_INTENSITY_SOURCE:-reflectivity}}
 case "$source_channel" in
@@ -82,13 +89,17 @@ fi
 if ! docker run --pull=never --rm --network none --entrypoint /usr/bin/test "$image" \
     -x /workspace/install/pp_infer/lib/pp_infer/ouster_adapter; then
   echo "Image '$image' lacks the Ouster adapter, or its preflight container failed." >&2
-  echo 'Rebuild from source containing the adapter. deploy.sh fetches published Git source, not local edits.' >&2
+  echo 'Rebuild the current checkout with tools/deploy.sh (PP_BUILD_ONLY=1 builds without starting).' >&2
   exit 1
 fi
 printf 'Ouster pipeline: %s -> [%s / %s] -> %s -> %s\n' \
   "$raw_topic" "$source_channel" "$divisor" "$adapted_topic" "${DETECTIONS_TOPIC:-/bbox}"
 echo 'Starting adapter and detector. Ctrl+C stops both. The Ouster driver must already be running.'
-exec docker run --pull=never --rm --init --stop-timeout 20 --name "$container" \
+printf 'Profile: %s; domain: %s; middleware: %s\n' "$profile" "$domain" "$RMW_IMPLEMENTATION"
+if [[ $profile == live ]]; then
+  echo 'For the downloaded ROS bag use: sudo bash tools/start_ouster.sh bag'
+fi
+pp_run_container --pull=never --rm --init --stop-timeout 10 --name "$container" \
   --gpus all --network host --ipc host \
   --mount "type=bind,source=$supervisor,target=/ouster-stack.sh,readonly" \
   -e "ROS_DOMAIN_ID=$domain" \

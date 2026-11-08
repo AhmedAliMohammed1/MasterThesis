@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Start the saved inference image without building or downloading updates.
 set -euo pipefail
+project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$project_root/tools/docker_foreground.sh"
 
 case "${1:-}" in
   -h|--help)
@@ -43,7 +45,7 @@ if ! docker image inspect "$image" >/dev/null 2>&1; then
   echo "Local image '$image' is missing. Run sudo bash tools/deploy.sh first (with the same PP_IMAGE if customized)." >&2
   exit 1
 fi
-exec docker run --pull=never --rm --init --name "$container" \
+pp_run_container --pull=never --rm --init --name "$container" \
   --gpus all --network host --ipc host \
   -e "ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}" \
   -e "RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}" \

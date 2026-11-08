@@ -27,12 +27,25 @@ exec 9>"$engine.lock"
 flock 9
 if [[ ! -s "$engine" ]]; then
   pending="$engine.pending.$$"
-  trap 'rm -f "$pending"' EXIT
+  builder_pid=''
+  cleanup_builder() {
+    if [[ -n $builder_pid ]]; then
+      kill -TERM "$builder_pid" 2>/dev/null || true
+      wait "$builder_pid" 2>/dev/null || true
+    fi
+    rm -f -- "$pending"
+  }
+  trap cleanup_builder EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
   trtexec --onnx="$model" --minShapes=points:1x204800x4,num_points:1 \
     --optShapes=points:1x204800x4,num_points:1 --maxShapes=points:1x204800x4,num_points:1 \
-    --saveEngine="$pending" --device=0 --memPoolSize="workspace:$workspace_mib" --noTF32 --skipInference
+    --saveEngine="$pending" --device=0 --memPoolSize="workspace:$workspace_mib" --noTF32 --skipInference &
+  builder_pid=$!
+  wait "$builder_pid"
+  builder_pid=''
   mv "$pending" "$engine"
-  trap - EXIT
+  trap - EXIT INT TERM
 fi
 flock -u 9
 exec 9>&-
@@ -40,7 +53,7 @@ threshold_args=()
 if [[ -n ${PP_CONFIDENCE_THRESHOLD:-} ]]; then
   threshold_args=(-p "confidence_threshold:=$PP_CONFIDENCE_THRESHOLD")
 fi
-exec ros2 run pp_infer pp_infer --ros-args --params-file /opt/pp_infer/node.yaml \
+exec /workspace/install/pp_infer/lib/pp_infer/pp_infer --ros-args --params-file /opt/pp_infer/node.yaml \
   -p "engine_path:=$engine" -r "__node:=pointpillars" \
   "${threshold_args[@]}" \
   -r "/point_cloud:=${POINT_CLOUD_TOPIC:-/point_cloud}" -r "bbox:=${DETECTIONS_TOPIC:-/bbox}" "$@"

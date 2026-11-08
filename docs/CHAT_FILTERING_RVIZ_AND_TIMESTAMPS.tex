@@ -115,9 +115,9 @@ From the project directory:
 \begin{lstlisting}
 sudo bash tools/deploy.sh
 \end{lstlisting}
-Deployment builds the Docker image, obtains the published project source, downloads and verifies the pretrained ONNX model, and compiles the C++ ROS package. The ONNX file contains the trained network and its weights. This project performs inference; these steps do not train it again.
+Deployment checks the host GPU and Docker, then reuses a matching local image or builds local source with cached dependency/model layers. A fresh build downloads and verifies the pretrained ONNX model and compiles the C++ ROS package. The ONNX file contains the trained network and its weights. This project performs inference; these steps do not train it again.
 
-The normal Docker build obtains source from GitHub, so local unpushed changes are not included.
+The deployment wrapper now uses local source, including unpushed runtime edits. Direct Dockerfile builds retain their remote-source default.
 
 \subsection{Step 2: Convert ONNX into a TensorRT engine}
 At container startup, the script checks whether a matching engine already exists. If it exists, startup reuses it. Otherwise, \texttt{trtexec} converts the ONNX model into an engine for the selected GPU and saves it in the persistent \texttt{pp-engines} volume. The current recipe builds an FP32, batch-one engine with TF32 disabled. Think of ONNX as the network description and the engine as its GPU execution version.
@@ -446,9 +446,10 @@ change the threshold or reset counters.
 
 \subsection{Deployment behavior and stopped state}
 \texttt{tools/deploy.sh} first refuses an existing same-name container; otherwise
-it always invokes \texttt{docker build --pull}. Docker can reuse eligible cached
-layers. The wrapper has no separate update-only check and does not update an
-existing running container. After a successful build it creates a fresh
+it reuses a matching local runtime-input image or invokes a cached build.
+Base-image pulls require \texttt{\detokenize{PP_PULL_BASE=1}}. Optional
+\texttt{\detokenize{PP_BUILD_ONLY=1}} prepares the image without launching.
+Otherwise it creates a fresh
 foreground \texttt{docker run --rm} container. The image and named engine volume
 persist when the container exits; this trial reused the existing cached engine.
 
@@ -482,5 +483,40 @@ KITTI raw drive 0005; Geiger, Lenz, Stiller and Urtasun, KIT/TTI-C,
 CC-BY-NC-SA-3.0. Capture hash and deployment identity:
 \texttt{\detokenize{docs/figures/filter-counters-provenance.json}}.}
 \end{figure}
+
+
+\section*{Current Ouster startup --- 8 November 2026}
+The deployment wrapper uses local runtime source and skips Docker build when the
+saved runtime-input checksum matches. Documentation-only edits do not trigger a
+build. Missing cache or changed dependency recipes can still require downloads.
+Host NVIDIA drivers, Docker and the NVIDIA Container Toolkit must already work.
+\texttt{\detokenize{PP_BUILD_ONLY=1}} is optional: it prepares the image and exits;
+without it, deployment starts the detector only. Stop that detector before
+starting the combined adapter/detector launcher.
+\begin{verbatim}
+sudo env PP_BUILD_ONLY=1 bash tools/deploy.sh
+# Terminal 1: adapter and detector
+sudo bash tools/start_ouster.sh bag
+# Terminal 2: unchanged original recording
+sudo bash tools/start_ouster_bag.sh
+# Terminal 3: graphical desktop, without sudo
+ROS_DOMAIN_ID=99 RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
+  RVIZ_CONFIG="$PWD/rviz/ouster.rviz" \
+  bash tools/visualize.sh -f lidar/os_lidar
+\end{verbatim}
+The bag profile shares Fast DDS, domain 99 and input
+\texttt{/sensing/lidar/points}; output is \texttt{/point\_cloud}, then
+\texttt{/bbox}. It maps reflectivity divided by 255 to intensity. The unchanged
+bag calls its signal channel intensity, so selecting signal is unsupported for
+that recording. Bare \texttt{start\_ouster.sh} retains the live Zenoh/domain 0
+profile and requires a working driver/router. One Ctrl+C stops each launcher;
+allow up to eight seconds. The image and engine volume persist.
+
+Validation passed 91 Python tests and seven C++/ROS tests. Actual GPU replay
+observed 20 raw clouds, 20 adapted clouds and 19 detection arrays with sampled
+error counters zero; each launcher stopped with one SIGINT in under 0.5 seconds.
+These are integration results, not detection-accuracy validation. Full commands
+and evidence are in \texttt{docs/STARTUP\_AND\_REPLAY.md} and
+\texttt{config/launcher\_fix\_validation.json}.
 
 \end{document}

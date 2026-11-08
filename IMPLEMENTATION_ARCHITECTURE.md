@@ -1,5 +1,7 @@
 # pp_infer implementation architecture and recovery plan
 
+> **Current startup — 8 November 2026:** deployment uses local source and reuses matching images; base pulls are explicit. `PP_BUILD_ONLY=1` is optional and prepares the image without starting the detector. For the unchanged MOSEP bag, use `start_ouster.sh bag` with `start_ouster_bag.sh`; both use Fast DDS/domain 99 and the same raw topic. One Ctrl+C stops each launcher. See [current startup, replay, RViz and validation](docs/STARTUP_AND_REPLAY.md). Earlier dated observations and quoted conversations retain their historical context.
+
 > **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](docs/CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
 
 > **Status reviewed 23 October 2026.** The CPU core, ROS adapter, TensorRT 10 runtime and Docker deployment are implemented. The latest-frame worker diagram below is a proposed architecture: the current node still performs synchronous inference with reliable depth 700. Labeled accuracy remains unaccepted; later Ouster/frontal replay results establish integration only. [Current results and evidence](docs/CURRENT_STATUS_AND_RESULTS.md).

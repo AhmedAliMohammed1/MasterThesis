@@ -85,6 +85,9 @@ artifacts need an independent backup if they must be retained.
 
 ## Restart the same visual test
 
+For the current default scripts, see [startup and replay](STARTUP_AND_REPLAY.md).
+The commands below also preserve the original 7 November isolated-image setup;
+the bag helper below explicitly selects the same test image.
 Do not start duplicates while these test processes are running. Terminal 1,
 from the checkout:
 
@@ -99,11 +102,11 @@ PP_IMAGE=pp-infer:ouster-fresh-test PP_CONTAINER_NAME=pointpillars-ouster-fresh 
 Terminal 2 (the helper starts only the unchanged bag player):
 
 ```bash
-bash tools/start_ouster_bag.sh
+PP_IMAGE=pp-infer:ouster-fresh-test bash tools/start_ouster_bag.sh
 ```
 
 It defaults to the dry recording, half-speed loop, Fast DDS, domain 99 and the
-saved `pp-infer:ouster-fresh-test` image. Use `rain30` or `rain100` to select
+saved `pp-infer:jazzy-trt10` image (updated 8 November). Use `rain30` or `rain100` to select
 another downloaded recording. Set `PP_BAG_LOOP=0` for a single pass, and see
 `bash tools/start_ouster_bag.sh --help` for source directory, topic, domain and
 image overrides. An existing player is preserved and reported rather than
