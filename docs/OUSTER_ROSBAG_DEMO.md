@@ -1,10 +1,8 @@
 # Non-KITTI Ouster ROS 2 bag demo
 
-> **Current startup — 8 November 2026:** deployment uses local source and reuses matching images; base pulls are explicit. `PP_BUILD_ONLY=1` is optional and prepares the image without starting the detector. For the unchanged MOSEP bag, use `start_ouster.sh bag` with `start_ouster_bag.sh`; both use Fast DDS/domain 99 and the same raw topic. One Ctrl+C stops each launcher. See [current startup, replay, RViz and validation](STARTUP_AND_REPLAY.md). Earlier dated observations and quoted conversations retain their historical context.
+Reviewed 8 November 2026. This guide covers the **older Koide OS1-32 calibration bags** and `rosbag_ouster.sh`. For the fresh MOSEP bags and live adapter, use [startup and replay](STARTUP_AND_REPLAY.md). For the current channel recommendation, read [the labeled comparison](OUSTER_CHANNEL_DECISION.md): reflectivity/255 is the development baseline, while reliable 3D accuracy remains unachieved.
 
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
-
-> **Status reviewed 23 October 2026.** The raw-signal failures below remain the baseline. Explicit reflectivity_div255 replay later matched all 556 input/output occurrences without recorded detector errors. Camera playback and the original-data detail view are available; raw_signal is still this helper’s default, and accuracy remains unmeasured. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
+These are different helper paths. The historical Koide helper still defaults to `raw_signal` so its original baseline is reproducible. Select `PP_OUSTER_FEATURE=reflectivity_div255` explicitly for normalized replay; the newer `start_ouster.sh` already defaults to reflectivity.
 
 This separate helper uses Kenji Koide's (AIST) **LiDAR-camera calibration dataset, v3**, recorded with an **Ouster OS1-32** and an STC-MCS500POE camera. The source is [Zenodo record 7780490](https://zenodo.org/records/7780490), DOI `10.5281/zenodo.7780490`, licensed CC-BY-4.0. Preserve that attribution with redistributed data.
 
@@ -23,7 +21,7 @@ Default assets are under ignored `.recovery/rosbags/ouster_calibration_v3`. Prep
 
 `inventory.json` lists both sequence folder names, all point fields, frame IDs, cloud counts, min/max scan sizes, timestamp span, intensity range, nonfinite XYZI points, and any clouds exceeding the engine's 204,800-point input capacity. The input audit requires scalar FLOAT32 x/y/z/intensity. Incompatible inputs require a documented adapter rather than a hidden cast or sampling step.
 
-## Switch from KITTI to Ouster
+## Switch from KITTI to these Ouster bags
 
 Keep the detector running. Stop the existing KITTI helper player first, in another terminal:
 
@@ -32,7 +30,7 @@ bash tools/rosbag_demo.sh stop
 bash tools/rosbag_ouster.sh
 ```
 
-The new helper starts a separately named container, `pointpillars-ouster-bag`, loops at half recorded speed, forces reliable cloud delivery, and remaps `/points` to `/point_cloud`. It refuses to start while another labeled project player feeds the same topic/domain. Unlabeled/manual players must be checked separately. It does not start, rebuild, restart, or modify the detector.
+The helper starts a separately named container, `pointpillars-ouster-bag`, loops at half recorded speed, forces reliable cloud delivery, and remaps `/points` to `/point_cloud`. It refuses to start while another labeled project player feeds the same topic/domain. Unlabeled/manual players must be checked separately. It does not start, rebuild, restart, or modify the detector.
 
 To select the other bag, use its exact name from `inventory.json`:
 
@@ -83,7 +81,7 @@ Implementation: `tools/prepare_ouster_demo.py` handles preparation/audit; `tools
 | `rosbag2_2023_03_28-16_25_54` (default) | 291 | 32,768 | 29.014 s | 0–9,059 |
 | `rosbag2_2023_03_28-16_26_51` | 265 | 32,768 | 26.435 s | 0–6,910 |
 
-All 556 clouds had native FLOAT32 XYZI, consistent layout, zero nonfinite XYZI points and no total-point-capacity excess. The source cloud topic is `/points` and frame is `laser_data_frame`. These intensity ranges differ markedly from KITTI: using the existing scale 1.0 preserves source data but does not establish training-compatible normalization. Ouster also supplies a separate UINT16 `reflectivity` field; the current detector uses the FLOAT32 `intensity` field, not reflectivity. No model/input adjustment was made. Archive and extracted assets occupy about 3.8 GiB locally.
+All 556 clouds had native FLOAT32 XYZI, consistent layout, zero nonfinite XYZI points and no total-point-capacity excess. The source cloud topic is `/points` and frame is `laser_data_frame`. These intensity ranges differ markedly from KITTI: using the existing scale 1.0 preserves source data but does not establish training-compatible normalization. Ouster also supplies a separate UINT16 `reflectivity` field; direct playback makes the detector use FLOAT32 `intensity`, not the separate reflectivity field. The live Ouster adapter can instead create a new message from reflectivity. No model/input adjustment was made in this raw-input preparation. Archive and extracted assets occupy about 3.8 GiB locally.
 
 ## Runtime observations and limits
 
@@ -113,3 +111,7 @@ Both camera recordings are now extracted as MP4 previews. Run `bash tools/rosbag
 ## Original scene-detail view
 
 Use `tools/rosbag_ouster_detail.sh` and `rviz/ouster_detail.rviz` to display original `/ouster/raw_points` independently of normalized inference. The brighter, closer profile exposes original signal colors as an optional display. Source scans are preserved in full; many source zero-range entries still overlap at the origin. See [the detail and frontal comparison guide](FRONTAL_COMPARISON_AND_RVIZ_DETAIL.md) for the separate, denser KITTI road recording and commands.
+
+## Using this demo in the thesis
+
+Describe the original data, schema audit and explicit derived-feature replay as reproducibility methods. Keep raw-signal failures visible alongside successful normalized message flow. Koide calibration recordings provide scene context and integration checks, not labeled object-detection accuracy.

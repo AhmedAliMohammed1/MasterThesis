@@ -1,198 +1,133 @@
 # Confidence filtering and detection monitoring
 
-> **Current startup — 8 November 2026:** deployment uses local source and reuses matching images; base pulls are explicit. `PP_BUILD_ONLY=1` is optional and prepares the image without starting the detector. For the unchanged MOSEP bag, use `start_ouster.sh bag` with `start_ouster_bag.sh`; both use Fast DDS/domain 99 and the same raw topic. One Ctrl+C stops each launcher. See [current startup, replay, RViz and validation](STARTUP_AND_REPLAY.md). Earlier dated observations and quoted conversations retain their historical context.
+Reviewed 8 November 2026. The confidence gate keeps detections with `score >= confidence_threshold`. Removed boxes are absent from the published detection array. Accepted boxes retain their fields, order, timestamp and frame ID.
 
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+A score is a model output, not a calibrated probability that an object is correct. Filtering reduces low-score clutter; it cannot fix high-confidence false positives or incorrect box heights. [The current annotated Ouster study](OUSTER_CHANNEL_DECISION.md) found zero qualifying 3D matches for both tested channels, including with this additional gate disabled.
 
-Implemented on 23 October 2026. The publication layer keeps detections whose **score is at least `confidence_threshold`**. Detections below it are absent from `/bbox`: no box, class, position, pose or score for those detections reaches RViz or another subscriber. Kept detections retain their original fields, order, timestamp and frame ID.
+## Where filtering happens
 
-The default is **0.5**, an adjustable starting setting, not an accuracy-calibrated recommendation. The threshold must be a finite ROS double in `[0,1]`. Equality passes. Set `0.0` to disable this additional gate; the model's built-in decode cutoff and existing NMS still apply. Scores are compared at their actual numeric values, rather than rounded score labels.
-
-This is a score filter **after the existing CPU NMS**. It does not change weights, engine generation, the model's decode threshold, NMS IoU/top-N, point selection or coordinates. It can reduce low-score clutter, but cannot guarantee removal of false positives. Incorrect high-confidence boxes remain possible; the earlier raw Ouster experiment had incorrect-looking, saturated scores near 1.0. No new accuracy acceptance is claimed.
-
-## Where the layer fits and where counts come from
-
-Input cloud → CPU validation/packing → GPU PointPillars → CPU validation/NMS → **confidence gate** → accepted `/bbox` detections. `DetectionOutput` counts the post-NMS input boxes and accepted output boxes, then publishes `/bbox/stats` diagnostics and `/bbox/count` RViz text. Count messages contain aggregate values, not individual rejected detections. See [the current architecture diagram](../IMPLEMENTATION_ARCHITECTURE.md#current-implemented-layers-after-confidence-filtering).
-
-To obtain the count in another program, subscribe to `/bbox` and use `len(message.detections)` for that successful scan. For before-filter, removed and cumulative counts, subscribe to `/bbox/stats` and read the string key/value fields in `status[0].values`: `published_count`, `post_nms_count`, `filtered_count`, `published_detections_total`. On a failure, per-frame fields are `unavailable`; do not parse them as zero. Match diagnostic and detection headers to compare the same scan, rather than combining independently received latest messages. No separate numeric count field is added to the standard Detection3DArray schema.
-
-**Local shell setting at this review:** the existing working-tree edit to `tools/deploy.sh` makes its default `PP_CONFIDENCE_THRESHOLD` fallback **0.4**. C++/YAML still default to **0.5**. Explicit environment overrides take precedence at startup; query `confidence_threshold` to know the running setting. The architecture documentation does not modify that shell edit.
-
-## Configure it
-
-With the newly built node running, change the threshold for subsequent scans without restarting:
-
-```bash
-ros2 param get /pointpillars confidence_threshold
-ros2 param set /pointpillars confidence_threshold 0.7
+```mermaid
+flowchart LR
+  A[Validate and pack XYZI] --> B[GPU inference]
+  B --> C[Validate candidate boxes]
+  C --> D[CPU NMS]
+  D --> E[Confidence gate]
+  E --> F[/bbox: accepted boxes]
+  E --> G[/bbox/stats: counters]
+  E --> H[/bbox/count: RViz text]
 ```
 
-The change applies to the next processed scan. It does not republish or re-filter an already published scan. Invalid, nonfinite, out-of-range or incorrectly typed updates are rejected, retaining the committed parameter. Use decimal values such as `0.0` or `1.0`. Existing allocation/model/input parameters remain read-only.
+NMS removes overlapping candidates before this gate. A threshold of `0.0` disables only this extra publication gate; the model's decode cutoff and NMS still apply. Equality passes. Valid parameter values are finite ROS doubles in [0,1].
 
-For a node in Docker, using the same domain as that node:
+## Set or read the threshold
+
+The supplied shell launchers default to **0.4**. Native C++ and `docker/node.yaml` default to **0.5**. Direct entrypoint startup without an override uses the YAML value. Query the actual running node:
 
 ```bash
+sudo docker exec pointpillars /entrypoint.sh \
+  ros2 param get /pointpillars confidence_threshold
 sudo docker exec pointpillars /entrypoint.sh \
   ros2 param set /pointpillars confidence_threshold 0.7
 ```
 
-Choose the initial setting through the deployment wrapper:
+Use decimal values such as `0.0`, rather than an integer parameter. A valid change applies to subsequent processed scans without rebuilding/restarting the engine; previously published scans are not re-filtered. Invalid updates are rejected and retain the committed value.
+
+Choose an initial value through any detector/Ouster launcher:
 
 ```bash
-sudo env PP_CONFIDENCE_THRESHOLD=0.7 bash tools/deploy.sh
+sudo env PP_CONFIDENCE_THRESHOLD=0.7 bash tools/start_ouster.sh bag
 ```
 
-For direct `docker run`, pass `-e PP_CONFIDENCE_THRESHOLD=0.7` before the image name. An unset/empty environment variable uses `docker/node.yaml` (default 0.5). An explicit environment value overrides that YAML. Native startup accepts the normal ROS parameter override:
+For native startup, add `-p confidence_threshold:=0.7` to the configured `ros2 run` command. The native node name defaults to `/minimal_publisher` unless remapped. Most other processing/adapter configuration remains read-only.
+
+## Read counters in the terminal
+
+From the project root, with inference already running:
 
 ```bash
-ros2 run pp_infer pp_infer --ros-args \
-  --params-file /absolute/path/to/node.yaml \
-  -p confidence_threshold:=0.7 -r __node:=pointpillars
+sudo env PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh once
+sudo env PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh threshold
+sudo env PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh
 ```
 
-The native YAML must also provide a valid engine path and existing required model settings. The historical native launch file still has old engine/topic settings; this feature does not modernize that launch interface.
+`once` reads a retained snapshot, `threshold` queries the live parameter, and the last command streams counters until Ctrl+C. The helper starts neither inference nor playback. The default `auto` backend uses host ROS Jazzy when available, otherwise Docker. The explicit Docker backend is useful for a bag pipeline on domain 99 because it inherits the container's domain unless overridden. A host backend needs matching domain/middleware itself.
 
-**Use a newly built executable/image.** An already-running old container does not acquire local source changes. `tools/deploy.sh` now includes local runtime edits by default. Direct remote-source builds still require the feature in the selected published revision. Local native colcon builds use the current working tree. No commit/push, deployment replacement, Docker rebuild or running-container modification was performed while implementing this feature.
+A snapshot or parameter query has a bounded default wait of ten seconds. No response produces an explanation rather than a zero count. A retained snapshot may be old; inspect its stamp. The snapshot threshold belongs to its processed scan, while a parameter query reports the current setting.
 
-## Monitor the latest scan in RViz
+| Setting | Purpose |
+| --- | --- |
+| `PP_MONITOR_BACKEND` | `auto`, `host` or `docker` |
+| `PP_CONTAINER_NAME` | Target container, default `pointpillars` |
+| `DETECTIONS_TOPIC` | Base topic, default `/bbox` |
+| `PP_NODE_NAME` | Parameter target, default `/pointpillars` |
+| `PP_MONITOR_TIMEOUT` | Positive wait in seconds |
+| `ROS_DOMAIN_ID` | Explicit domain when required |
+| `RVIZ_CONFIG` | Viewer profile for `rviz` mode |
 
-The shell helper's `rviz` mode delegates to `tools/visualize.sh` and opens a **new RViz process/window** with the selected saved configuration. It does not configure an already-open window or start inference/playback. For an existing window, choose **File → Open Config** and select `rviz/kitti_front.rviz` (this loads the complete profile), or add only the MarkerArray display described below.
+Run `bash tools/monitor_detections.sh --help` for all modes. For a custom detection topic, statistics/count topics derive from that resolved base name, and RViz needs a matching profile.
 
-The last verified trial used:
+## Understand the values
 
-```bash
-RVIZ_CONFIG="$PWD/rviz/kitti_front.rviz" bash tools/monitor_detections.sh rviz
-# Keep the Ouster camera/detail view if that is your selected input:
-RVIZ_CONFIG="$PWD/rviz/ouster_detail.rviz" bash tools/monitor_detections.sh rviz
-```
-
-Expand **Detection count (latest scan)** in RViz's Displays panel if needed. For an already-open/custom RViz view, add a **MarkerArray** display on `/bbox/count`, with **Reliable** reliability and **Transient Local** durability, using the cloud's fixed frame. Labeled KITTI uses `/kitti/predictions/count`. The standard MarkerArray display requires no additional count-display plugin.
-
-The saved RViz profiles now contain **Detection count (latest scan)**, a standard MarkerArray display, and enable detection score labels. With inference and one player/sensor running, launch the appropriate viewer as before:
-
-```bash
-bash tools/visualize.sh
-# Or an Ouster profile:
-RVIZ_CONFIG="$PWD/rviz/ouster.rviz" bash tools/visualize.sh
-```
-
-The label appears at `(8,0,5)` metres in the incoming cloud frame and reports, for example:
-
-```text
-Latest scan: 12 boxes / 47 before score filter
-score >= 0.7 | removed 35
-Total published: 120 | total removed: 350
-Processed frames: 10 | dropped input/inference: 0/0
-```
-
-The numerator is the number actually published in the detection array. The denominator is the count **after NMS but before the new score gate**, not the raw network candidate count. Adjust the viewing direction or move closer if the text is outside the current view. The cloud, detections and label share the original frame; no world transform is invented.
-
-This is the last processed scan, not a tracked count of unique objects. The retained label is not a heartbeat and remains until the next frame/status update. Check its header stamp or topic rate to distinguish a paused stream from fresh data. On a rejected frame the label becomes a warning with **detection count unavailable**, rather than claiming that zero objects were detected. No detection array is emitted for that rejected frame, preserving the existing frame-drop policy; consumers may still show their previous successful scan.
-
-## Monitor the statistics topic
-
-Use [tools/monitor_detections.sh](../tools/monitor_detections.sh) from the project folder:
-
-```bash
-bash tools/monitor_detections.sh              # Continuously stream all counters.
-bash tools/monitor_detections.sh once         # One retained snapshot; bounded wait.
-bash tools/monitor_detections.sh threshold    # Read the currently configured threshold.
-bash tools/monitor_detections.sh --help
-```
-
-The default `auto` backend sources host ROS Jazzy when installed, otherwise reads through the existing Docker container. To explicitly read inside the inference container:
-
-```bash
-PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh once
-```
-
-Use Docker permissions appropriate to your installation, such as `sudo env PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh once`. The Docker backend inherits the container's ROS domain unless you explicitly supply `ROS_DOMAIN_ID`; the host backend defaults to domain 0. The helper does not build/start inference or playback, change settings, or reset counters. If the snapshot/parameter request receives no response within 10 seconds, it exits with an explanation rather than claiming zero detections. `watch` runs until Ctrl+C. A retained snapshot can be old; inspect the header timestamp. The `threshold` mode queries the live parameter, while the statistics/marker threshold belongs to the last processed frame.
-
-For a different topic/domain or native node name:
-
-```bash
-ROS_DOMAIN_ID=42 DETECTIONS_TOPIC=/kitti/predictions \
-  bash tools/monitor_detections.sh once
-PP_NODE_NAME=/minimal_publisher bash tools/monitor_detections.sh threshold
-```
-
-You can manually edit the defaults in the script: `backend`, `topic`, `node`, `container`, and `wait_seconds`. Environment settings `PP_MONITOR_BACKEND`, `DETECTIONS_TOPIC`, `PP_NODE_NAME`, `PP_CONTAINER_NAME` and `PP_MONITOR_TIMEOUT` override them. Use a positive `PP_MONITOR_TIMEOUT`, for example 20 seconds for slow discovery. For custom detection topics, supply a matching `RVIZ_CONFIG`; the helper selects the standard KITTI validation profile automatically for `/kitti/predictions`.
-
-The existing standard `vision_msgs/msg/Detection3DArray` schema is unchanged. Its `detections` array length is the published box count. Richer counters are published separately as `diagnostic_msgs/msg/DiagnosticArray`:
-
-| Default topic | Type | Contents |
+| Topic | Message type | Meaning |
 | --- | --- | --- |
-| `/bbox` | `vision_msgs/msg/Detection3DArray` | Only accepted boxes, with full usual information |
-| `/bbox/stats` | `diagnostic_msgs/msg/DiagnosticArray` | Latest frame counts, threshold, cumulative detection events and dropped-frame counts |
-| `/bbox/count` | `visualization_msgs/msg/MarkerArray` | RViz text label for the latest scan/status |
+| `/bbox` | `vision_msgs/msg/Detection3DArray` | Accepted boxes for a successful scan |
+| `/bbox/stats` | `diagnostic_msgs/msg/DiagnosticArray` | Latest status, per-scan and cumulative counts |
+| `/bbox/count` | `visualization_msgs/msg/MarkerArray` | The same aggregate information as RViz text |
 
-Monitor from a host ROS terminal with matching transport/domain:
+For a successful scan, let `N` be the valid post-NMS count and `K` the accepted count. Then **removed = N − K**, and `len(message.detections) = K`. This is a count after NMS, not all raw network candidates.
 
-```bash
-ros2 topic echo /bbox/stats
-ros2 topic echo /bbox/stats --qos-durability transient_local --once
-ros2 topic hz /bbox
-```
-
-Or inspect from the running inference container:
-
-```bash
-sudo docker exec pointpillars /entrypoint.sh ros2 topic echo /bbox/stats --once
-```
-
-For a valid frame, `status[0].values` contains:
+Read diagnostic string values from `status[0].values`:
 
 | Key | Meaning |
 | --- | --- |
-| `frame_status` | `ok`; failure states are `invalid_cloud` or `inference_error` |
-| `confidence_threshold` | Exact threshold used for this frame |
-| `post_nms_count` | Boxes returned by existing inference/NMS, before the publication gate |
-| `filtered_count` | Boxes removed by this gate |
-| `published_count` | Boxes actually emitted; equals `len(detections)` |
-| `processed_frames_total` | Successfully published frames, including valid empty/all-filtered frames |
-| `published_detections_total` | Sum of published boxes since node startup |
-| `filtered_detections_total` | Sum of removed boxes since node startup |
-| `invalid_cloud_frames_total` | Input frames rejected before inference |
-| `inference_error_frames_total` | Frames rejected during inference/output validation |
+| `frame_status` | `ok`, `invalid_cloud` or `inference_error` |
+| `confidence_threshold` | Gate used for this status |
+| `post_nms_count` | N, before confidence filtering |
+| `filtered_count` | N − K |
+| `published_count` | K |
+| `processed_frames_total` | Successful scans, including valid empty outputs |
+| `published_detections_total` | Sum of accepted boxes since restart |
+| `filtered_detections_total` | Sum of removed boxes since restart |
+| `invalid_cloud_frames_total` | Frames rejected before inference |
+| `inference_error_frames_total` | Frames rejected during inference/output checks |
 
-For successful frames, `post_nms_count = filtered_count + published_count`. A valid all-filtered/empty frame publishes an empty detection array, with a zero count and normal status. On a dropped frame, the three per-frame counts are the string `unavailable`, diagnostics level is WARN, and successful-frame/detection totals do not increase. Aggregate counts are the only information retained about filtered detections; individual rejected box information is not published on another topic.
+With the 23 November local repair, a reported failed frame publishes an empty detection array carrying the failed input header to request clearing previous boxes. Its warning diagnostics retain **`unavailable`** per-scan counts, and successful-frame/detection totals do not increase. A valid empty/all-filtered scan also publishes an empty array, but has successful status and zero accepted boxes. Match headers and status when combining independently received arrays/statistics; `/bbox` alone cannot distinguish these cases. This change does not address upstream adapter rejection, sensor silence, lost messages, queued old scans or invalid TF. Actual viewer rendering requires separate verification. See the [solution protocol](POINTPILLARS_SOLUTION_PROTOCOL_20261123.md).
 
-Cumulative totals reset when the node restarts. The same physical object detected in ten scans contributes ten detection events; there is no tracker or unique-object ID added here. Statistics and markers use reliable, depth-one, transient-local publication so a late monitoring subscriber can receive the last status. Detection delivery retains its existing reliable QoS/history.
+Cumulative values count detection events, not unique objects: one object seen in ten scans can contribute ten detections. Totals reset on node restart; there is no tracker here. Statistics and marker publishers are reliable, depth one, transient local so late subscribers can receive the last status. Retention is not a heartbeat.
 
-Monitoring follows the **resolved detection topic**. If detections are remapped to `/kitti/predictions`, monitoring becomes `/kitti/predictions/stats` and `/kitti/predictions/count`. Standard KITTI profiles use that count topic. Custom detection remappings require the matching topic in a custom RViz configuration. Native node naming defaults to `/minimal_publisher` unless remapped; use the actual node name for parameter commands.
+For a direct ROS read inside the container:
 
-## Preserve accuracy comparisons
+```bash
+sudo docker exec pointpillars /entrypoint.sh \
+  ros2 topic echo /bbox/stats --qos-durability transient_local --once
+```
 
-Existing saved reports, predictions, model/engine artifacts and inventory hashes remain untouched. Their numbers describe the earlier unfiltered publication policy.
+## Monitor the latest scan in RViz
 
-For **new** KITTI baseline collection, `tools/kitti_accuracy.sh` explicitly requests threshold `0.0` on new images, verifies the live parameter, and records it in the new runtime identity. The exporter matches per-frame statistics by the cloud header and refuses a nonzero/changed gate or inconsistent counts, including a change made midway through collection. Older images without this parameter retain their old identity shape. A changed exporter/image/runtime identity requires a **new `PP_KITTI_OUTPUT` directory**; do not overwrite the frozen baseline. `report` continues to score existing frozen outputs without new collection.
+With the bag-profile pipeline running, open the viewer as your desktop user:
 
-To investigate accuracy at other thresholds, design a separate tuning/evaluation run and record the threshold; the baseline helper deliberately refuses that filtered policy. A lower box count alone is not evidence of fewer false positives or higher precision.
+```bash
+ROS_DOMAIN_ID=99 RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
+  RVIZ_CONFIG="$PWD/rviz/ouster.rviz" \
+  bash tools/visualize.sh -f lidar/os_lidar
+```
 
-## Implementation and checks
+Expand **Detection count (latest scan)**. For a custom RViz configuration, add MarkerArray on `/bbox/count`, select Reliable / Transient Local, and use the cloud's frame. The text is located at (8,0,5) metres in that frame, so adjust the view if needed. No world-frame transform is invented.
 
-`src/detection_output.cpp` and `include/pp_infer/detection_output.hpp` own the dynamic parameter, detection publication and monitoring. `make_detections` in `src/pointcloud_adapter.cpp` validates candidates before gating and constructs only accepted messages. The GPU node calls this shared output path for successful/empty frames and reports input/inference failures. ROS diagnostic/visualization message dependencies are declared in CMake, package metadata and Docker stages.
+`bash tools/monitor_detections.sh rviz` delegates to the viewer and opens a new window. To modify an existing window, select **File → Open Config** or add the display manually. A new profile replaces the whole view.
 
-The TensorRT-enabled executable built successfully against the existing local SDK. All **five C++/ROS tests** and **67 Python tests** passed; the latest stricter baseline check also passed the focused three-test rerun. The GPU-free ROS integration test exercises the same output class used by production: score boundaries, preserved full fields/headers/order, malformed outputs, live and rejected atomic parameter updates, real remapped detection/statistics/marker delivery, cumulative/zero/error counts and late subscribers. Python controls protect the baseline exporter against changed filtering. Shell/embedded-Python syntax and all seven RViz configurations were checked.
+![Historical verified RViz display with accepted and removed counts](figures/rviz-filter-counters-2026-10-23.png)
 
-At the initial implementation check, new GPU replay and desktop rendering were unverified: `nvidia-smi` could not communicate with the host driver in this session. No existing container/image was replaced. Exact logs and scope are recorded in [the progress entry](../recovery/PROGRESS.md).
+This 23 October capture shows three accepted boxes from 94 post-NMS candidates, with 91 removed at threshold 0.5. It demonstrates rendering and arithmetic, not accuracy or a currently running session. [Identity and attribution](figures/filter-counters-provenance.json).
 
-The shell helper subsequently passed six isolated routing/error/timeout tests and actual host ROS `once`/`threshold` reads from a temporary controlled fixture on domain 116. The TensorRT-enabled package was rebuilt and all five C++/ROS tests passed again, including cumulative totals and dropped-frame values in the actual MarkerArray text. These message-level checks do not establish desktop rendering or GPU accuracy. All fixture processes were stopped after the checks.
+## Preserve comparable accuracy experiments
 
-## Published GPU and RViz verification — 23 October 2026
+Record the threshold with every new result. The KITTI baseline helper explicitly requests `0.0` on current images and verifies matching per-frame statistics; it refuses a changed/nonzero gate during collection. Keep a new output directory whenever runtime/exporter identity changes, and do not overwrite frozen baselines.
 
-Source `8a87a73` is now pushed to `main` and deployed through `tools/deploy.sh`. Host execution successfully accessed the RTX 4060 Laptop GPU (driver 595.99.02), superseding the restricted-context driver limitation above. Startup reused the existing cached engine in `pp-engines`; the deployed source revision was checked inside the container.
+The Ouster channel decision reports a frozen primary gate of 0.4 plus a separate unfiltered evaluation. Both features used identical geometry within each experiment. Do not choose a winner from fewer boxes, higher scores or a cleaner screenshot. Precision, recall and geometric matching against independent annotations answer that question.
 
-The complete Python suite passed **73 tests**; the Docker build passed **five C++/ROS tests**. A native GPU smoke check passed. Native and deployed KITTI replay each verified **60 matched frames**, 20 at each threshold 0.0, 0.5 and 0.95. Checks matched input headers, detection scores, actual published lengths, diagnostic arithmetic and marker text/totals. Different thresholds sampled different scans, so their counts are not an accuracy comparison. The final live threshold is **0.5**.
+## Implementation and validation
 
-The real RViz window was visually inspected: original points, accepted boxes and scores, latest-scan counts, cumulative published/removed totals and processed/dropped frames were visible. The trial used domain 0. The detector, KITTI front-drive player and RViz were subsequently stopped at the user's request at 19:47 UTC; the final configured threshold was 0.5. After restarting inference and one player, to watch the container's counters, use `PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh`; append `threshold` to read its current setting.
+`src/detection_output.cpp` owns the dynamic parameter and aggregate publication; `src/pointcloud_adapter.cpp` validates candidate messages. The shared output path reports successful/empty scans and rejected inputs/inference failures. Tests exercise score boundaries, preserved headers/fields, rejected updates, remapped topics, cumulative/error counts and late subscribers.
 
-Exact local logs, frame reports, deployment/engine identities and the captured `rviz-live.png` are under `.recovery/verification/published-deployment/` (ignored local evidence). Broader W07 timing/worker/QoS acceptance and detection accuracy remain open.
-
-![Verified live RViz filtering and counters](figures/rviz-filter-counters-2026-10-23.png)
-
-This captured scan shows **3 published boxes from 94 post-NMS boxes**, with **91 removed** at threshold **0.5**. The cumulative published count is after filtration and counts repeated detections across scans, not unique objects. The screenshot predates shutdown; it is not a current live view. [Capture identity and attribution](figures/filter-counters-provenance.json).
-
-## Deployment and shutdown behavior
-
-`tools/deploy.sh` checks the host GPU/Docker and preserves existing same-name containers. Matching local runtime inputs reuse the image without building; changes use cached dependency layers, and base pulls require `PP_PULL_BASE=1`. Optional `PP_BUILD_ONLY=1` exits after preparing the image; otherwise it starts a foreground detector container. Stopping that container removes it; the tagged image and `pp-engines` volume persist. See [restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+The 23 October filtering trial verified 60 native and 60 deployed GPU frames plus actual RViz rendering. Later deployment/shutdown checks passed seven C++/ROS tests. The latest recorded Python suite has 119 tests; the 1,120-inference channel study assesses feature results separately from ROS delivery. [Current evidence and open work](CURRENT_STATUS_AND_RESULTS.md).

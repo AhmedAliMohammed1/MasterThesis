@@ -1,10 +1,10 @@
 # Historical Foxy / TensorRT 8 README
 
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+**Historical reference only.** These instructions describe the original Ubuntu 20.04 / ROS 2 Foxy / TensorRT 8 project. They are retained to explain the migration, not as a current installation route. Current setup uses Ubuntu 24.04, Jazzy and TensorRT 10: start with the [project README](../README.md) and [startup guide](STARTUP_AND_REPLAY.md).
 
-> **Status reviewed 23 October 2026.** Archived Foxy instructions below are historical. Current deployment uses Jazzy/TensorRT 10, and direct RViz Detection3DArray display is available through vision_msgs_rviz_plugins. The old visualization limitation and installation commands do not describe the current implementation. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
+Reviewed 8 November 2026. The current pipeline includes an Ouster adapter, direct RViz Detection3DArray support, filtering and counters. The [latest labeled Ouster study](OUSTER_CHANNEL_DECISION.md) recommends reflectivity/255 for further development while accepting neither channel as accurate 3D detection. Those results do not make the old commands below applicable to the new stack.
 
-This preserves the original deployment instructions for reference. They do not describe the current Jazzy / TensorRT 10 build. Use the current README and PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex instead. Do not copy the plugin overwrite commands into the current installation.
+The remainder preserves the original procedure and its historical limitations. In particular, do not apply its plugin-library overwrite commands to the current installation. Its statement that RViz cannot display Detection3DArray is historical: today the project uses `vision_msgs_rviz_plugins`.
 
 This is a ROS2 node for 3D object detection in point clouds using [TAO-PointPillars](https://catalog.ngc.nvidia.com/orgs/nvidia/teams/tao/models/pointpillarnet) for inference with TensorRT.
 
@@ -106,7 +106,6 @@ The resulting bounding box coordinates follow the coordinate system below with o
 <img src="../images/coordinate_system.PNG"  height="50%" width="50%">
 </p>
 
-
 ## Modifying parameters in the launch file
 Parameters such as the engine path and detection threshold can be specified in the launch file `pp_infer_launch.py` under the `launch` folder. Below is a description of each parameter:
 - nms_iou_thresh: NMS IOU threshold.
@@ -125,9 +124,8 @@ Change the second argument to the topic name of your choice and it will be remap
 
 After specifying your parameters, build and source the package again before launching the node as per step 7 above.
 
-
 <p align="center">
- <img src="/images/car_detection.PNG" alt="results_img" height="75%" width="75%"/>
+ <img src="../images/car_detection.PNG" alt="results_img" height="75%" width="75%"/>
     <br>
     <em>Top left is an image from the zvision camera's point of view; at the bottom is a point cloud from the zvision lidar; and top right is the detection results using TAO-PointPillars.</em>
 </p>
@@ -141,15 +139,3 @@ After specifying your parameters, build and source the package again before laun
 
 ## Support
 Please reach out regarding issues and suggestions [here](https://github.com/NVIDIA-AI-IOT/ros2_tao_pointpillars/issues).
-
-
-## Current-status addendum: labeled KITTI measurement on 3 October 2026
-
-After the user requested accuracy measurement and live RViz during implementation, the 32 fixed labeled KITTI frames were passed through the existing published node. The 16-frame test split had zero moderate 3D matches; moderate BEV AP_R40 was 5.75% Car, 0% Pedestrian and0.0258% Cyclist. Vehicle-to-Car compatibility mapping, visibility filtering, official devkit routines and sparse-sample limits are explicit. Known metric controls passed and 41 Python tests passed. Calibrated green ground truth, points and predictions were rendered in RViz on isolated domain 42. Median vertical error for 12 BEV-matched test cars was about 1.53m upward. A separate trtexec probe also emitted elevated centers, but full independent inference parity and numerical repeatability remain unfinished. No guessed coordinate shift or accuracy pass was applied.
-
-Read [the current results and commands](KITTI_ACCURACY_RESULTS.md) and [accuracy inventory](../config/kitti_accuracy_inventory.json). This dated addendum updates status without rewriting historical conversation, legacy commands or earlier observations.
-
-
-## Independent reference update: 3 October 2026
-
-A separate TensorRT8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately1.53m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and12 frames exceed the export's10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly99.6–100%; no production adaptation was installed. Two actual CUDA12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.

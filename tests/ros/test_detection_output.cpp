@@ -140,20 +140,53 @@ int main(int argc, char** argv) {
     require(marker->markers[0].text.find("Total published: 6 | total removed: 6") != std::string::npos &&
             marker->markers[0].text.find("Processed frames: 5") != std::string::npos,
             "RViz cumulative totals do not match actual publications");
-    for (auto failure : {pp_infer::FrameFailure::invalid_cloud, pp_infer::FrameFailure::inference_error}) {
+    std::size_t invalid_frames = 0, inference_frames = 0;
+    auto fail = [&](pp_infer::FrameFailure failure) {
+      const auto previous = fields(*stats);
       received.reset(); stats.reset(); marker.reset(); ++header.stamp.nanosec;
       output.report_failure(header, failure);
-      wait_until(executor, [&] { return stats && marker && stats->header == header; });
+      wait_until(executor, [&] {
+        return received && stats && marker && received->header == header && stats->header == header &&
+               marker->markers.size() == 1 && marker->markers[0].header == header;
+      });
       values = fields(*stats);
-      require(!received && values["published_count"] == "unavailable" && values["processed_frames_total"] == "5" &&
-              values["published_detections_total"] == "6", "Failed frame reported a successful empty detection");
+      require(received->detections.empty(), "Failed frame retained previous detections");
+      for (const auto* key : {"post_nms_count", "filtered_count", "published_count"})
+        require(values[key] == "unavailable", "Failed frame reported a valid count");
+      for (const auto* key : {"processed_frames_total", "published_detections_total", "filtered_detections_total"})
+        require(values[key] == previous.at(key), "Failure changed successful processing totals");
+      const bool invalid_cloud = failure == pp_infer::FrameFailure::invalid_cloud;
+      if (invalid_cloud) ++invalid_frames;
+      else ++inference_frames;
+      require(values["frame_status"] == (invalid_cloud ? "invalid_cloud" : "inference_error"),
+              "Failure status incorrect");
+      require(values["invalid_cloud_frames_total"] == std::to_string(invalid_frames) &&
+              values["inference_error_frames_total"] == std::to_string(inference_frames),
+              "Frame failure counters incorrect");
       require(stats->status[0].level == diagnostic_msgs::msg::DiagnosticStatus::WARN &&
-              marker->markers[0].text.find("unavailable") != std::string::npos, "Failure indicator missing");
-    }
-    require(values["invalid_cloud_frames_total"] == "1" && values["inference_error_frames_total"] == "1",
-            "Frame failure counters incorrect");
-    require(marker->markers[0].text.find("dropped input/inference: 1/1") != std::string::npos,
-            "RViz dropped-frame counters incorrect");
+              marker->markers[0].text.find("unavailable") != std::string::npos,
+              "Failure indicator missing");
+      require(marker->markers[0].text.find("dropped input/inference: " + std::to_string(invalid_frames) +
+              "/" + std::to_string(inference_frames)) != std::string::npos,
+              "RViz dropped-frame counters incorrect");
+    };
+    // Each failure kind must clear a nonempty result; repeated failures must also
+    // publish their current headers and recovery must resume successful totals.
+    fail(pp_infer::FrameFailure::invalid_cloud);
+    publish(boxes());
+    require(received->detections.size() == 3, "Recovery before inference failure did not publish boxes");
+    fail(pp_infer::FrameFailure::inference_error);
+    fail(pp_infer::FrameFailure::invalid_cloud);
+    fail(pp_infer::FrameFailure::inference_error);
+    publish(boxes());
+    values = fields(*stats);
+    require(received->detections.size() == 3 && values["frame_status"] == "ok" &&
+            stats->status[0].level == diagnostic_msgs::msg::DiagnosticStatus::OK &&
+            values["processed_frames_total"] == "7" && values["published_detections_total"] == "12" &&
+            values["filtered_detections_total"] == "6" && values["invalid_cloud_frames_total"] == "2" &&
+            values["inference_error_frames_total"] == "2", "Recovery counts/status incorrect");
+    require(marker->markers[0].text.find("Latest scan: 3 boxes / 3") != std::string::npos,
+            "Recovery marker retained failure state");
     diagnostic_msgs::msg::DiagnosticArray::SharedPtr late_stats;
     auto late_sub = node->create_subscription<diagnostic_msgs::msg::DiagnosticArray>(
       "/filter_test/boxes/stats", qos,

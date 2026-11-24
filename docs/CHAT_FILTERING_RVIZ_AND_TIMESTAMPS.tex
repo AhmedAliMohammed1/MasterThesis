@@ -1,522 +1,376 @@
 \documentclass[11pt,a4paper]{article}
-\usepackage[T1]{fontenc}
-\usepackage{graphicx}
-\usepackage[utf8]{inputenc}
-\usepackage[margin=23mm]{geometry}
-\usepackage{parskip}
-\usepackage{amsmath}
-\usepackage{longtable,array}
-\usepackage{xcolor}
-\usepackage{listings}
-\usepackage{tikz}
+% XeTeX can load installed OpenType files directly, without fontspec.
+% On another OS, adapt these paths; absent files retain the class defaults.
+\newcommand{\projectnativefamily}[5]{%
+  \DeclareFontFamily{TU}{#1}{}%
+  \DeclareFontShape{TU}{#1}{m}{n}{<-> "[#2]"}{}%
+  \DeclareFontShape{TU}{#1}{m}{it}{<-> "[#3]"}{}%
+  \DeclareFontShape{TU}{#1}{m}{sl}{<-> "[#3]"}{}%
+  \DeclareFontShape{TU}{#1}{b}{n}{<-> "[#4]"}{}%
+  \DeclareFontShape{TU}{#1}{bx}{n}{<-> "[#4]"}{}%
+  \DeclareFontShape{TU}{#1}{b}{it}{<-> "[#5]"}{}%
+  \DeclareFontShape{TU}{#1}{bx}{it}{<-> "[#5]"}{}%
+  \DeclareFontShape{TU}{#1}{b}{sl}{<-> "[#5]"}{}%
+  \DeclareFontShape{TU}{#1}{bx}{sl}{<-> "[#5]"}{}%
+}
+\IfFileExists{/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf}{%
+  \ifcsname T@TU\endcsname\else
+    \DeclareFontEncoding{TU}{}{}
+  \fi
+  \projectnativefamily{projectserif}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSerif-BoldItalic.ttf}
+  \projectnativefamily{projectsans}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf}
+  \projectnativefamily{projectmono}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Oblique.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSansMono-BoldOblique.ttf}
+  \renewcommand{\encodingdefault}{TU}
+  \renewcommand{\rmdefault}{projectserif}
+  \renewcommand{\sfdefault}{projectsans}
+  \renewcommand{\ttdefault}{projectmono}
+  \DeclareFontSubstitution{TU}{projectserif}{m}{n}
+}{\PackageWarningNoLine{project}{DejaVu font files absent; using class font defaults}}
+\usepackage{graphicx,booktabs,array,tabularx,tikz}
 \usetikzlibrary{arrows.meta,positioning}
-\usepackage[hidelinks]{hyperref}
-\lstset{basicstyle=\ttfamily\small,breaklines=true,columns=fullflexible,keepspaces=true,frame=single}
-\tikzset{box/.style={draw,rounded corners,align=center,text width=65mm,minimum height=9mm,font=\small},arr/.style={-{Stealth},thick}}
-\title{PointPillars Project: Filtering, Deployment, RViz and LiDAR Timestamps\\Complete Discussion Record}
-\author{MasterThesis project}
-\date{23 October 2026}
-
-% Locate illustration assets from docs/ or the repository root. The built-in
-% standalone compiler may not receive other project files; warn visibly then.
+\definecolor{ink}{HTML}{16324F}
+\definecolor{accent}{HTML}{087F8C}
+\definecolor{muted}{HTML}{597081}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+% A standalone editor may receive only this source, without project images.
+% Keep the PDF readable and explicitly identify any missing illustration.
 \newcommand{\projectshot}[2]{%
-  \IfFileExists{figures/#1}{\includegraphics[width=#2]{figures/#1}}{%
-    \IfFileExists{docs/figures/#1}{\includegraphics[width=#2]{docs/figures/#1}}{%
-      \PackageWarningNoLine{project}{Screenshot #1 unavailable; illustrated output incomplete}%
-      \fbox{\parbox{.85\linewidth}{\centering\small Screenshot asset unavailable.\par
-      Keep \texttt{\detokenize{#1}} in the project's figures folder.\par
-      See docs/figures/README.md for the original image and provenance.}}}}}
-
+  \IfFileExists{figures/#1}{\includegraphics[width=#2,height=.72\textheight,keepaspectratio]{figures/#1}}{%
+    \IfFileExists{docs/figures/#1}{\includegraphics[width=#2,height=.72\textheight,keepaspectratio]{docs/figures/#1}}{%
+      \PackageWarningNoLine{project}{Illustration #1 unavailable}%
+      \fbox{\parbox{.85\linewidth}{\centering\small Illustration unavailable in this compiler.\par
+      Source asset: \code{#1}.\par See docs/figures/README.md for provenance.}}}}}
+\usepackage[margin=23mm]{geometry}
+\usepackage{longtable}
+\usepackage[hidelinks]{hyperref}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\setlength{\emergencystretch}{3em}
+\renewcommand{\arraystretch}{1.15}
+\title{Understanding the PointPillars Pipeline\\
+\large Filtering, timestamps, visualization and the Ouster channel decision}
+\author{MasterThesis project}
+\date{8 November 2026}
 \begin{document}
 \maketitle
-The original discussion was recorded on 13 October 2026. A dated results continuation was added on 23 October; it is a documentation summary, not a verbatim extension of the transcript. The original record follows.
-
-This standalone document records every substantive question, explanation, command, code excerpt, qualification and figure in the current chat up to the request to create this document. Chat interface metadata and raw tool output are not part of the discussion transcript. Diagrams originally written as Mermaid or text are reproduced below as editable TikZ figures or verbatim diagrams. The explanations describe the repository state inspected during the chat; they do not claim new runtime tests.
+\begin{abstract}
+This document explains the reasoning behind the project's current implementation
+and experimental decision. It develops the earlier filtering and timestamp
+discussion into a concise technical narrative that can support a thesis methods
+and limitations chapter. It is an edited explanation, not a verbatim chat
+transcript. The latest evidence favors reflectivity/255 over signal/65,535 for
+vehicle bird's-eye-view detection in the tested configuration, while both fail
+the declared 3D matching criterion. Software integration and scientific accuracy
+are therefore reported separately.
+\end{abstract}
 \tableofcontents
 \newpage
 
-\section{How the filtering algorithm currently works and what to do next}
-\textbf{User:} ``How the filtering algorithm currently work and what is the suggested to do in the current state''
+\section{What happens when a scan arrives?}
+A driver assembles the LiDAR returns into a ROS PointCloud2 message. For the
+Ouster workflow, an adapter checks the selected fields and creates x, y, z and
+intensity values for the detector. The detector validates that message, packs
+its points and copies them to the GPU. PointPillars groups the points into
+vertical pillars, extracts features and predicts candidate object boxes.
+The CPU checks the candidates, removes overlapping predictions with NMS,
+applies a confidence threshold and publishes the accepted boxes.
 
-\textbf{Inspection update:} The project filtering code and notes were checked to explain the implementation and the suggested next steps.
-
-The current filtering uses \textbf{Non-Maximum Suppression (NMS)} to remove overlapping detections. The recommendation is to investigate voxel capacity and the model's input conventions first, before tuning NMS.
-
-The pipeline works as follows:
-\begin{enumerate}
-\item Validate the point cloud: reject malformed or oversized input, remove points containing NaN or infinite values, and divide intensity by \texttt{intensity\_scale}, whose default is 1.0.
-\item Run the model. Its decoder has a confidence threshold of approximately 0.1.
-\item Sort candidate boxes by confidence. Consider at most the highest-scoring 4096 candidates.
-\item Keep the highest-scoring remaining box, then remove other boxes whose rotated bird's-eye-view IoU with it is at least 0.01. Repeat until all candidates are considered.
-\item Publish the surviving boxes.
-\end{enumerate}
-The overlap calculation uses the boxes' rotated ground footprints. Height and vertical position do not affect suppression. Production filtering is class-agnostic: overlapping boxes can suppress each other even if their predicted classes differ.
-
-For two ground footprints $A$ and $B$,
-\[
-\mathrm{IoU}(A,B)=\frac{\mathrm{area}(A\cap B)}{\mathrm{area}(A)+\mathrm{area}(B)-\mathrm{area}(A\cap B)}.
-\]
-The formula is explanatory notation for the overlap described in the chat. Implementation reference: \texttt{src/postprocess.cpp}, starting at line 120 in the inspected version.
-
+The conversion is explicit:
 \begin{center}
-\begin{tabular}{p{.35\linewidth}p{.55\linewidth}}
-\hline
-Change & Expected effect\\\hline
-Increase confidence threshold & Remove more low-confidence candidates.\\
-Increase NMS IoU threshold & Keep more overlapping boxes, potentially including duplicates.\\\hline
+\begin{tabular}{ll}
+Reflectivity recipe & intensity = reflectivity / 255 \\
+Signal recipe & intensity = signal / 65,535
 \end{tabular}
 \end{center}
-Neither change guarantees better accuracy. NMS cannot correct misplaced boxes.
+Each value comes from the selected field in that point's recorded schema.
+These are fixed experimental encodings, not proof of physical reflectance
+calibration or the model's ideal training distribution. A generic field called
+intensity must not be assumed to contain the required signal measurement without
+checking the sensor metadata.
 
-The evidence suggests this order of work:
-\begin{enumerate}
-\item \textbf{Verify bounded voxelization and repeatability.} Twelve of the 32 evaluated clouds exceeded the export's 10,000-voxel limit. Two diagnostic controls limiting inputs to 10,000 voxels and 32 points per voxel improved repeat matching to approximately 99.6--100\%. This supports investigating capacity and point selection; it does not yet prove an accuracy improvement.
-\item \textbf{Establish the original training/input contract.} Check sensor height, coordinate conventions, intensity normalization, voxel features, and decoded box-center semantics. Matched cars showed approximately 1.53 m upward error, already present before ROS publication.
-\item \textbf{Validate any justified correction on untouched data.} If accuracy remains poor after those checks, evaluate a model trained or fine-tuned for the intended sensor/domain.
-\item \textbf{Then tune confidence, NMS IoU, and possibly class-aware suppression} using tuning data.
-\end{enumerate}
-Our NMS and NVIDIA's original NMS selected identical boxes across 192 saved observations. Filtering is therefore a lower-priority explanation for the broad accuracy failure. The recorded evaluation still had zero moderate-difficulty 3D matches on the small diagnostic split; the root cause is not fully established. Evidence: \texttt{docs/MODEL\_REFERENCE\_COMPARISON.md}.
+The current adapter selects a literal signal or reflectivity field. MOSEP and
+Dur360 name signal intensity; the research preparation handles that known schema.
+A production signal-field alias is proposed but not implemented. The launcher
+does not automatically detect the best feature, fuse channels or bypass the
+adapter when XYZI is already present. A verified compatible XYZI source can
+instead feed the detector directly.
 
-\section{Project flow from zero to publication and RViz}
-\textbf{User:} ``I would like to understand the project flow from 0 to pulish to riviz''
+\section{Why are there two filtering steps?}
+\subsection{Non-Maximum Suppression removes overlapping proposals}
+Several candidate boxes can describe the same surface or object. NMS ranks
+candidates by score, considers at most 4096 and repeatedly keeps the highest
+remaining score while suppressing boxes that overlap it. The current call is
+class-agnostic and uses rotated ground-footprint IoU with threshold 0.01.
+\begin{quote}
+BEV IoU = area of the intersection / area of the union.
+\end{quote}
+The union area is the sum of the two footprint areas minus their intersection.
+Height is absent from this overlap calculation. Increasing the NMS threshold
+usually permits more overlapping proposals. It does not move boxes or repair
+vertical position. On 192 earlier identical-candidate observations, the project
+and pinned NVIDIA NMS selected identical boxes. Broad localization errors should
+therefore be investigated before tuning suppression.
 
-\textbf{Inspection update:} The startup, point-cloud input, inference, detection publication and RViz display paths were traced.
+\subsection{The publication threshold controls what consumers receive}
+After NMS, the node keeps boxes with a score at or above the selected threshold. The node/YAML default is 0.5;
+current deployment launchers use 0.4 unless overridden. Query the live parameter
+when recording an experiment. This extra gate can be changed without rebuilding
+the engine. Disabling it with 0.0 does not disable the decoder's own model-level
+candidate threshold.
 
-The project takes one LiDAR scan, runs the PointPillars model on the GPU, filters predicted boxes on the CPU, and publishes them through ROS 2. RViz subscribes to both the scan and the boxes to display them together. There are two parts: preparing the system once, then processing every incoming scan.
-
-\begin{figure}[htbp]
-\centering
-\begin{tikzpicture}[node distance=6mm]
-\node[box] (onnx) {Pretrained ONNX model};
-\node[box,below=of onnx] (engine) {TensorRT builds GPU engine};
-\node[box,below=of engine] (load) {ROS node loads engine once};
-\node[box,below=of load] (gpu) {GPU: voxelization and\\PointPillars inference};
-\node[box,below=of gpu] (check) {CPU: validate predicted boxes};
-\node[box,below=of check] (nms) {CPU: NMS filtering};
-\node[box,below=of nms] (msg) {Create Detection3DArray};
-\node[box,below=of msg] (rviz) {RViz displays boxes};
-\node[box,text width=40mm,left=12mm of gpu] (pack) {Validate and pack XYZI points};
-\node[box,text width=40mm,above=of pack] (source) {LiDAR driver or rosbag};
-\node[box,text width=40mm,below=of pack] (points) {RViz displays points};
-\draw[arr] (onnx)--(engine);\draw[arr] (engine)--(load);\draw[arr] (load)--(gpu);
-\draw[arr] (source)--node[left,font=\scriptsize]{/point\_cloud}(pack);
-\draw[arr] (pack)--(gpu);\draw[arr] (gpu)--(check);\draw[arr] (check)--(nms);
-\draw[arr] (nms)--(msg);\draw[arr] (msg)--node[right,font=\scriptsize]{/bbox}(rviz);
-\draw[arr] (source.west) -- ++(-6mm,0) |- node[pos=.7,left,font=\scriptsize]{/point\_cloud}(points.west);
+\begin{center}
+\begin{tikzpicture}[node distance=7mm,font=\small,
+ box/.style={draw=accent,align=center,text width=10cm,minimum height=10mm},
+ arr/.style={->,>=Stealth,accent}]
+\node[box] (nms) {Valid post-NMS proposals: N};
+\node[box,below=of nms] (gate) {Publication gate: retain scores at or above threshold};
+\node[box,below=of gate] (pub) {Publish K boxes; report N minus K removed};
+\draw[arr] (nms)--(gate);\draw[arr] (gate)--(pub);
 \end{tikzpicture}
-\caption{Complete project flow. This reproduces the Mermaid figure from the chat.}
-\end{figure}
-
-\subsection{Step 0: Prepare the computer}
-The inference computer needs an NVIDIA GPU, a working NVIDIA driver, Docker, and NVIDIA Container Toolkit. The current deployment runs ROS 2 Jazzy, CUDA, TensorRT and the compiled project inside Docker. RViz runs separately on the desktop and needs host ROS Jazzy plus the \texttt{vision\_msgs} RViz plugin.
-
-\subsection{Step 1: Build the application and obtain the model}
-From the project directory:
-\begin{lstlisting}
-sudo bash tools/deploy.sh
-\end{lstlisting}
-Deployment checks the host GPU and Docker, then reuses a matching local image or builds local source with cached dependency/model layers. A fresh build downloads and verifies the pretrained ONNX model and compiles the C++ ROS package. The ONNX file contains the trained network and its weights. This project performs inference; these steps do not train it again.
-
-The deployment wrapper now uses local source, including unpushed runtime edits. Direct Dockerfile builds retain their remote-source default.
-
-\subsection{Step 2: Convert ONNX into a TensorRT engine}
-At container startup, the script checks whether a matching engine already exists. If it exists, startup reuses it. Otherwise, \texttt{trtexec} converts the ONNX model into an engine for the selected GPU and saves it in the persistent \texttt{pp-engines} volume. The current recipe builds an FP32, batch-one engine with TF32 disabled. Think of ONNX as the network description and the engine as its GPU execution version.
-
-\subsection{Step 3: Start the ROS inference node}
-The container starts the node as \texttt{/pointpillars}. It loads the engine once and creates the TensorRT execution context, CUDA stream and reusable GPU buffers. It then waits for point clouds.
-\begin{center}
-\begin{tabular}{lll}
-\hline
-Topic & Message type & Purpose\\\hline
-\texttt{/point\_cloud} & \texttt{sensor\_msgs/msg/PointCloud2} & Incoming scans\\
-\texttt{/bbox} & \texttt{vision\_msgs/msg/Detection3DArray} & Predicted boxes\\\hline
-\end{tabular}
 \end{center}
-This connection is implemented in \texttt{src/pp\_inference\_node.cpp}.
+The before-filter count means after NMS. Cumulative published totals sum accepted
+detection events over scans; the same car can contribute repeatedly. No tracker
+turns these totals into unique objects. A valid empty frame can report zero;
+a failed frame has unavailable output counts. Counts and confidence are useful
+for debugging but cannot establish ground-truth accuracy.
 
-\subsection{Step 4: A LiDAR driver or rosbag publishes a scan}
-The detector needs a source of points: a live LiDAR driver or recorded bag playback. Each PointCloud2 message contains point data including x, y, z and intensity; a timestamp identifying when the scan was recorded; and a frame ID identifying its coordinate system, such as \texttt{velodyne}.
+\section{How do timestamps and coordinate frames work?}
+The timestamp is a measurement reference supplied by the driver. It does not
+command the sensor to begin scanning. A scan contains returns acquired over a
+finite interval; a driver's cloud timestamp may refer to the start, end or
+another documented reference. Individual point times, when available, describe
+additional timing detail.
 
-For the provided KITTI demo, start playback in another terminal:
-\begin{lstlisting}
-bash tools/rosbag_demo.sh
-\end{lstlisting}
+The detector copies the source timestamp and frame to its output. For example,
+a scan referenced at 10:00:00.100 might finish processing at 10:00:00.150 while
+its detection header remains 10:00:00.100. That associates boxes with the source
+measurement. It does not measure inference latency by itself.
 
-\subsection{Step 5: The CPU validates and prepares points}
-For each incoming message, the callback checks the message layout, required fields, byte size and point capacity; converts the cloud into PCL XYZI points; removes points containing NaN or infinite values; divides intensity by the configured intensity scale; and packs remaining points into a continuous array:
-\begin{lstlisting}
-[x0, y0, z0, intensity0,
- x1, y1, z1, intensity1,
- ...]
-\end{lstlisting}
-Malformed input is dropped. A valid cloud with no remaining points produces an empty detection message. Implementation: \texttt{src/pointcloud\_adapter.cpp}.
+\begin{tabularx}{\linewidth}{@{}lY@{}}
+\toprule Concept & Meaning \\ \midrule
+Acquisition reference & When the driver says the scan belongs on its sensor clock. \\
+Bag record time & When a recorder stored the message; playback can schedule by this time. \\
+Processing completion & When inference finished; distinct from source header time. \\
+Coordinate frame & Axes in which points and boxes are expressed. \\
+TF transform & Relationship between coordinate frames, possibly time-dependent. \\
+\bottomrule
+\end{tabularx}
+Preserved headers do not prove that LiDAR and camera clocks agree. The older
+Ouster camera experiment found different header clocks. Coordinated playback
+uses recorded arrival timing but does not establish acquisition synchronization.
+The project does not currently implement hardware synchronization, point-wise
+motion compensation or calibrated camera-box overlays.
 
-\subsection{Step 6: The GPU executes PointPillars}
-The application clears unused input padding, copies packed points and their count to the GPU, and executes the loaded engine. Conceptually:
-\begin{lstlisting}
-Points
-  -> Group points into vertical pillars
-  -> Extract features for each pillar
-  -> Arrange features into a bird's-eye-view feature map
-  -> Run the detection network
-  -> Decode candidate object boxes
-\end{lstlisting}
-A candidate contains:
-\begin{lstlisting}
-x, y, z, length, width, height, yaw, class_id, score
-\end{lstlisting}
-The export class order is:
-\begin{lstlisting}
-0 = Vehicle
-1 = Pedestrian
-2 = Cyclist
-\end{lstlisting}
-These are intermediate predictions; filtering still follows. Implementation: \texttt{src/pointpillar.cpp}.
+The live sensor must be powered, connected, configured and served by a compatible
+driver. This project subscribes to its messages; it does not issue hardware
+scan-start commands. The correct driver command depends on the actual sensor
+installation.
 
-\subsection{Step 7: The CPU checks and filters candidate boxes}
-The application copies results back from the GPU and validates output count, geometry, class IDs and scores. CPU NMS sorts boxes by descending confidence, considers up to 4096 candidates, keeps the highest-scoring remaining box, suppresses other boxes with rotated ground-footprint IoU at least 0.01, and repeats. The current production call uses class-agnostic suppression. NMS selects boxes; it does not move or resize them.
+\section{Why can RViz draw boxes now?}
+The node publishes standard Detection3DArray messages. The official
+\code{vision_msgs_rviz_plugins/Detection3DArray} display reads those messages
+and draws boxes directly. The launcher makes the plugin available and loads a
+saved profile. MarkerArray is used separately for count text, not as a required
+conversion of every detection.
 
-\subsection{Step 8: Create and publish the ROS detection message}
-Surviving boxes become a Detection3DArray. For each box, the application writes center, dimensions, class ID and score, and converts yaw into a quaternion for orientation. It preserves the original scan's timestamp and frame ID, then publishes on \texttt{/bbox}. Preservation lets consumers associate detections with their source scan and interpret coordinates correctly. If inference fails, the frame is dropped and the node logs the error.
+RViz needs matching middleware/domain, compatible QoS and a valid fixed frame.
+For the original MOSEP bag, use domain 99, Fast DDS and
+\code{lidar/os_lidar}; the KITTI profile instead uses velodyne. The viewer
+launcher defaults Fast DDS transport to UDPv4 because shared-memory delivery
+failed in the earlier host/container setup. Large-cloud UDP delivery later
+limited the attempted live ROS A/B test; changing transport does not guarantee
+all deployment arrangements will work.
 
-\subsection{Step 9: RViz receives and draws results}
-With inference and the source running, open another terminal:
-\begin{lstlisting}
-bash tools/visualize.sh
-\end{lstlisting}
-The saved configuration subscribes to \texttt{/point\_cloud} to draw points and \texttt{/bbox} to draw predicted boxes using the vision\_msgs display plugin. Its fixed frame is \texttt{velodyne} for the tested KITTI bag. Another sensor frame requires a matching fixed frame or valid TF transform. RViz, inference and playback need the same \texttt{ROS\_DOMAIN\_ID}.
+\begin{figure}[htbp]\centering
+\projectshot{rviz-filter-counters-2026-10-23.png}{.96\linewidth}
+\caption{Historical KITTI RViz capture: points, predicted boxes and count text.
+The frame reports three accepted boxes from 94 post-NMS candidates at 0.5.
+Rendering verifies the display path, not those boxes' correctness. The camera is
+a separate panel, not a calibrated overlay. KITTI, Geiger et al., CC-BY-NC-SA-3.0;
+identity: filter-counters-provenance.json in the figures directory.}
+\end{figure}
+To keep a current window, use File / Open Config. Running
+\code{tools/visualize.sh} starts another RViz process. It starts neither the
+driver nor inference.
 
-RViz performs visualization: the model and NMS have already finished before boxes reach it.
-
-The ordinary startup sequence is:
-\begin{lstlisting}
-Terminal 1: sudo bash tools/deploy.sh
-Terminal 2: bash tools/rosbag_demo.sh
-Terminal 3: bash tools/visualize.sh
-\end{lstlisting}
-The complete message flow has been verified with actual bag playback and RViz rendering. Detection accuracy remains unresolved. The current node processes inference directly in its callback with queue depth 700. A bounded latest-frame worker is still pending, so overloaded processing can accumulate delayed scans.
-
-\section{How direct RViz display was solved}
-\textbf{User:} ``In the past this project wasn't able to display directly to riviz how you solved this ?''
-
-\textbf{Inspection update:} Migration notes were checked to identify the changes that enabled direct display.
-
-The project already published detection messages, but RViz needed a plugin to understand them, a configured view and working communication with Docker. These parts were solved together.
+\section{What does stable mean in this project?}
+Three distinct questions require different evidence:
 \begin{enumerate}
-\item \textbf{Added the detection display plugin.} The node publishes \texttt{/bbox} as Detection3DArray. Host RViz was installed, but \texttt{vision\_msgs\_rviz\_plugins} was missing. Adding the official plugin allowed RViz to draw messages directly as 3D boxes.
-\item \textbf{Added a saved RViz configuration.} \texttt{rviz/pointpillars.rviz} configures a point-cloud display on \texttt{/point\_cloud}, a detection display on \texttt{/bbox}, reliable QoS for both displays, fixed frame \texttt{velodyne} matching tested KITTI data, and colors for the three numeric class IDs.
-\item \textbf{Fixed Docker-to-desktop communication.} Initially the host subscriber did not receive container messages through Fast DDS's default shared-memory transport. The root container and desktop user had an ownership-related transport problem. Using the following allowed messages to reach the host:
-\begin{lstlisting}
-export FASTDDS_BUILTIN_TRANSPORTS=UDPv4
-\end{lstlisting}
-The viewer launcher now applies this default and uses the selected ROS domain ID.
-\item \textbf{Updated message construction for ROS Jazzy.} Migration updated class/score fields to the current vision\_msgs schema, preserved scan timestamp and frame ID, and populated box orientation and hypothesis pose.
-\item \textbf{Wrapped setup in one launcher.} \texttt{tools/visualize.sh} finds the plugin, or prepares a local copy when possible, sets the transport environment and opens the saved view:
-\begin{lstlisting}
-bash tools/visualize.sh
-\end{lstlisting}
+\item \textbf{Numerical validity:} Does inference finish with finite, valid boxes?
+\item \textbf{Repeatability:} Do repeated executions of the same input agree?
+\item \textbf{Accuracy:} Do predictions match independently supplied object labels?
 \end{enumerate}
-The resulting connection is:
-\begin{lstlisting}
-Inference node -> /bbox (Detection3DArray)
-               -> RViz detection plugin -> visible 3D boxes
+A detector that consistently returns no boxes can be numerically successful and
+repeatable while missing every object. Empty outputs must be reported separately,
+not counted as ideal object agreement. Likewise, high confidence is a learned
+score, not a calibrated probability that a box is correct.
 
-LiDAR / rosbag -> /point_cloud
-               -> RViz point-cloud display -> visible points
-\end{lstlisting}
-No MarkerArray conversion was added: the plugin reads detection messages directly. Actual bag playback verified host message reception and live rendering of points and boxes. Inference and playback must already be running; visualize.sh starts only the viewer.
+The October study found raw signal failures in 15 of 48 observations; normalized
+variants had no recorded failures. That motivated normalization but could not
+rank accuracy because those recordings lacked object labels. The 8 November
+study adds independent annotations and separates these questions explicitly.
 
-\section{Where the plugin integration is in the code}
-\textbf{User annotation:} Selected ``Adding the official plugin allowed RViz to draw these messages directly as 3D boxes.'' Asked: ``in which part of the code you did this''
+\section{How was the latest comparison controlled?}
+\subsection{Inputs and repetitions}
+The comparison uses 48 MOSEP scans across dry, 30 and 100 mm/h rain conditions,
+and 32 Dur360BEV-Extended scans: 16 from each published split. Two channel
+variants and five repeats give 480 MOSEP and 320 primary labeled inferences.
+Another 320 labeled observations test a separate bounded-pillar policy. In total,
+1,120 measured GPU inferences were recorded; 18 warmups were discarded.
 
-This was added in the RViz launcher and configuration, rather than the inference code:
+Both variants retain identical XYZ bits, point order and count within an
+experiment. Only the fourth feature changes. Order is shuffled with seed
+20261108. The unchanged production C++ inference/NMS runs with the existing FP32
+engine, NMS 0.01 and top-N 4096; all post-NMS rows are saved before the additional
+publication gate. The direct runner isolates inference from ROS delivery loss.
+It does not replace separate adapter or live integration tests.
+
+MOSEP primary inputs retain original zero returns. Dur360's original 262,144
+points exceed the engine's 204,800 limit. Identical model-region filtering and
+all-zero-XYZ removal reduce both variants to 65,238--175,559 points. This is
+explicit research preparation, not unchanged full-cloud deployment.
+
+\subsection{Ground truth and evaluation}
+The Dur360 paper describes model-assisted labels reviewed and supplemented by
+experienced annotators. The Extended release supplies compatible labels but does
+not separately detail its annotation procedure. These labels are independent of
+our predictions; they should not be described as purely manual metrology.
+Published train/test indices are disjoint within one collection, with no verified
+independent-drive separation.
+
+Matching is class-aware, confidence-ranked and one-to-one, using rotated BEV or
+3D IoU. Vehicle needs IoU at least 0.7; Pedestrian needs at least 0.5. The declared
+region has x/y in [−50,50) m and z in [−1.4,4.4) m, applied to centers of both
+annotations and predictions. Of 70 original test cars and seven pedestrians,
+60 vehicles and six pedestrians are included. Two cars fall outside XY; eight
+more cars and one pedestrian fall outside z. There are no cyclist annotations
+in the selected scans. Exclusions are reported rather than silently counted as
+successful detections.
+\begin{quote}
+Precision = TP / (TP + FP).\\
+Recall = TP / (TP + FN).
+\end{quote}
+Here TP counts matched predictions, FP counts unmatched predictions and FN counts
+missed annotations.
+Repeated runs use the same scenes. Report mean run ratios and repeat ranges;
+do not multiply the effective scene sample size by five. Diagnostic continuous
+AP differs from KITTI AP\_R40 and is not an official Dur360 score.
+
+\section{What did the ground-truth comparison show?}
+\begin{table}[htbp]\centering
+\begin{tabular}{@{}lrr@{}}
+\toprule Vehicle test result at 0.4 & Signal/65,535 & Reflectivity/255 \\ \midrule
+BEV true positives, per run & 0 & 4 \\
+BEV false positives, mean & 6.4 & 10.4 \\
+BEV false negatives, per run & 60 & 56 \\
+BEV precision, mean run ratio & 0\% & 27.81\% \\
+BEV recall & 0\% & 6.67\% \\
+Qualifying 3D matches & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\caption{Same 16 test scans and 60 in-region vehicle annotations, repeated five times.}
+\end{table}
+Both channels also have zero qualifying pedestrian BEV/3D matches among the six
+included test pedestrians. The vehicle advantage cannot be generalized to other
+classes. Disabling the publication gate still leaves zero qualifying 3D matches.
+Reflectivity's unfiltered vehicle BEV recall rises to 22.67\%, with precision
+5.84\%; signal still has zero vehicle test BEV matches.
+
+\begin{figure}[htbp]\centering
+\projectshot{ouster-channel-results-summary.png}{.96\linewidth}
+\caption{Summary drawn from the frozen evidence: mean vehicle BEV precision/recall
+and first-repeat 3D overlaps of the four reflectivity BEV matches. The overlap
+criterion is 0.7. These are four matched boxes, not unique tracked vehicles.
+No new inference is performed to draw this chart.}
+\end{figure}
+The first-repeat reflectivity matches have BEV IoU 0.762--0.822 but vertical
+center error 0.60--1.14 m upward. Their 3D IoUs are 0.141--0.381. Thus, nonzero
+physical overlap exists, but none meets the declared 3D acceptance criterion.
+This observation does not identify the root cause or justify a fixed z shift.
+
+\begin{figure}[htbp]\centering
+\projectshot{ouster-channel-ground-truth-2026-11-08.png}{.97\linewidth}
+\caption{Frozen middle test frame with publisher labels and actual predictions.
+The XZ projection makes vertical displacement visible. This frame was selected
+by position in the frozen list, not for favorable output. Dur360BEV-Extended,
+CC-BY-4.0; exact attribution and frame identity are retained in the figure provenance.}
+\end{figure}
+
+Both channels finish all 560 measured inferences each without recorded failures.
+No general stability winner is established: median nonempty repeat agreement is
+100\% for both in these runs, but empty/nonempty changes and sparse common
+nonempty scenes limit that statistic. A frame bootstrap favors reflectivity for
+vehicle BEV accuracy on this sample; temporal dependence and a single collection
+limit its generalization.
+
+\section{What does the capacity control tell us?}
+Twenty of 32 primary labeled scans exceed 10,000 occupied pillars; every scan
+also contains pillars with more than 32 points. A separate geometry-only control
+keeps the first 10,000 encountered pillars and first 32 points per pillar in
+original order, identically for both channels. This mechanical selection does not
+reproduce CUDA thread encounter order.
+
+The control removes empty/nonempty changes between repeats in this sample.
+It still yields four versus zero vehicle BEV matches and zero qualifying 3D
+matches at 0.4. Reflectivity mean BEV precision falls to 21.99\%. Capacity handling
+therefore affects repeatability but does not solve accuracy or improve every
+metric. This control has not been installed in production preprocessing.
+
+\section{A defensible next step and thesis interpretation}
+Keep reflectivity/255 as the experimental baseline for this configuration.
+The proven scope is a measured vehicle BEV advantage over this fixed signal
+encoding on a small diagnostic subset. Neither universal channel superiority nor
+acceptable 3D detection has been demonstrated.
+
+Next, declare a valid-return and capacity policy; investigate sensor origin,
+training coordinates, anchor/decoder conventions and reference-model behavior.
+Any change must have an independent rationale rather than being fitted to the
+inspected test labels. If the fixed model remains unsuitable, select an
+Ouster-compatible model or fine-tune using a separate training set.
+
+Freeze the resulting recipe and evaluate a new recording-disjoint annotated
+sample. Include negative scenes, varied distances/weather and enough supported
+class examples. Report localization errors, per-class BEV/3D precision, recall,
+AP, failures and latency. A pilot target of at least 80\% precision and recall
+at the declared 3D IoU is proposed for discussion; it is not an agreed requirement
+or a universal safety standard.
+
+For thesis writing, separate three contributions: the software migration,
+the explicit sensor adapter and the controlled channel investigation. A negative
+3D result is a valid research finding when the method, exclusions and limitations
+are disclosed. Do not present an RViz screenshot, box count or successful test
+suite as an accuracy result.
+
+\section{Sources and reproducibility}
 \begin{itemize}
-\item \texttt{tools/visualize.sh}, line 22 in the inspected version, checks whether vision\_msgs\_rviz\_plugins is installed. If missing, it downloads and extracts the official package locally, then adds its paths to \texttt{AMENT\_PREFIX\_PATH} and \texttt{LD\_LIBRARY\_PATH} so RViz can discover and load it.
-\item \texttt{rviz/pointpillars.rviz} activates the plugin and connects it to published detections:
+\item \path{docs/OUSTER_CHANNEL_DECISION.md}: full method, proposal and exact commands.
+\item \path{config/ouster_channel_decision.json}: runtime identities, results and hashes.
+\item \path{docs/STARTUP_AND_REPLAY.md}: current operating instructions.
+\item \path{docs/MODEL_REFERENCE_COMPARISON.md}: earlier KITTI/TRT8/NMS evidence.
+\item \path{docs/THESIS_DRAFT.tex}: editable scientific draft using the same evidence.
 \end{itemize}
-\begin{lstlisting}
-- Class: vision_msgs_rviz_plugins/Detection3DArray
-  Name: Detections
-  Enabled: true
-  Topic:
-    Value: /bbox
-\end{lstlisting}
-The plugin's drawing implementation comes from the official ROS package. Our code makes that plugin available and configures it to read \texttt{/bbox}.
+The comparison release records 119 passing Python tests, analytic metric controls,
+320 label-convention checks and agreement with compiled geometry on 5,084 pairs.
+Large datasets and observations remain local under ignored \path{.recovery};
+Git contains summaries, tools and provenance, not a backup of the originals.
+This document revision introduces no new inference result.
 
-\section{LiDAR timestamps and how scanning starts}
-\textbf{User annotation:} Selected ``A timestamp identifying when the scan was recorded.''
-
-\textbf{User:} ``I would like to uderstand this , How the lidar works with this timestamp ? how i make the lidar start it's scan''
-
-The timestamp is a time label attached to a scan. It tells software when measurements were acquired; it does not tell the LiDAR to start scanning.
-
-The usual sequence is:
-\begin{lstlisting}
-LiDAR measures distances
-    -> Driver collects measurements into a point cloud
-    -> Driver attaches a timestamp and coordinate frame
-    -> Driver publishes the cloud
-    -> Our detector processes it
-\end{lstlisting}
-A LiDAR emits laser pulses and measures their returns to estimate distances. Depending on the sensor, it rotates or steers its beams to measure different directions. A cloud contains many measurements collected over a short interval, rather than all at exactly one instant.
-
-In ROS 2 the cloud has a header such as:
-\begin{lstlisting}
-header:
-  stamp:
-    sec: 123
-    nanosec: 500000000
-  frame_id: velodyne
-\end{lstlisting}
-Here stamp represents 123.5 seconds on the clock used by the publisher. Depending on the driver, it may represent the beginning or end of the scan, or another acquisition reference. Some drivers also provide individual point timestamps.
-
-Our project reads that header and copies it to the detection message. For example:
-\begin{lstlisting}
-Scan acquired:       10:00:00.100
-Processing finishes: 10:00:00.150
-Detection timestamp: 10:00:00.100
-\end{lstlisting}
-This means ``these boxes belong to the scan acquired at .100.'' Preserving acquisition time helps other software align detections with camera images, vehicle motion and coordinate transforms.
-
-To start a real LiDAR, generally:
-\begin{enumerate}
-\item Power it and connect its network or USB interface.
-\item Configure the connection and sensor settings.
-\item Start its manufacturer-compatible ROS driver.
-\item Enable scanning if that sensor requires a separate command.
-\item Publish or remap the driver's point-cloud topic to \texttt{/point\_cloud}.
-\end{enumerate}
-The exact startup command depends on the LiDAR model. This project does not control LiDAR hardware; it subscribes to clouds supplied by its driver.
-
-For the recorded KITTI demo, this supplies scans:
-\begin{lstlisting}
-bash tools/rosbag_demo.sh
-\end{lstlisting}
-It plays previously recorded clouds with recorded timestamps; it does not activate a physical sensor.
-
-\textbf{Follow-up question asked in the chat:} ``Which LiDAR model are you using, or are you currently working only with the KITTI bag?'' No sensor model was provided before the document request, so a hardware-specific startup command remains unspecified.
-
-\section{Document request and repository references}
-\textbf{User:} ``Create a latex code contain everything in this chat even the figures , don't miss anything''
-
-\textbf{Preparation update:} A standalone LaTeX document was requested containing all explanations, commands, code excerpts, follow-up questions and diagrams, to be opened in the built-in editor and checked for compilation.
-
-All repository file references in the discussion are relative to:
-\begin{lstlisting}
-/media/ae/New Volume/MasterThesis
-\end{lstlisting}
-\begin{itemize}
-\item \texttt{src/postprocess.cpp}: CPU rotated overlap and NMS.
-\item \texttt{src/pp\_inference\_node.cpp}: subscription, callback and publication.
-\item \texttt{src/pointcloud\_adapter.cpp}: XYZI preparation and ROS detection construction.
-\item \texttt{src/pointpillar.cpp}: TensorRT engine loading and GPU inference.
-\item \texttt{tools/deploy.sh}: deployment entry point.
-\item \texttt{tools/rosbag\_demo.sh}: recorded KITTI input.
-\item \texttt{tools/visualize.sh}: RViz launcher and optional plugin preparation.
-\item \texttt{rviz/pointpillars.rviz}: saved point-cloud and detection display configuration.
-\item \texttt{docs/MODEL\_REFERENCE\_COMPARISON.md}: independent comparison evidence and limitations.
-\end{itemize}
-
-\clearpage
-\section{Results continuation: reviewed 23 October 2026}
-The current local source baseline is \texttt{ee6b36c}. Numerical results retain
-their original 3--14 October dates; the supplied screencast filenames are dated
-20 October. This continuation updates project status without changing the
-original questions and answers above.
-\begin{longtable}{p{.29\linewidth}p{.62\linewidth}}
-\hline Evidence & Result and interpretation \\ \hline
-Labeled KITTI, 16 test frames, moderate &
-Zero 3D matches for Car, Pedestrian and Cyclist. BEV AP R40 is
-5.7516\%, 0\% and 0.02577\%. Vehicle is mapped to Car compatibility.
-The 12 BEV-matched cars have median upward center error 1.529 m. \\
-Independent reference &
-TRT8 also reproduces poor accuracy/elevated centers. NVIDIA and project NMS
-select identical boxes on 192/192 identical-candidate observations;
-exact inference/training parity is still unaccepted. \\
-Voxel-capacity controls &
-12/32 original clouds exceed 10,000 pillars. Two tuning-only capped-input
-controls improve repeat matching to about 99.6--100\%, without an accuracy
-claim or installed production change. \\
-Ouster feature experiment &
-Raw signal rejects 15/48 observations with 33 nonfinite-length rows.
-The three normalized encodings reject 0/144 observations. Only the fourth
-feature changes. Accuracy/training calibration are not established. \\
-Complete normalized Ouster replay &
-Reflectivity/255 matches all 291+265 input/output occurrences without recorded
-detector errors. Source duplicate headers are counted as occurrences. \\
-Ouster camera and original-data view &
-111 images, 111 CameraInfo messages and 556 normalized clouds are preserved.
-Five raw/normalized cloud pairs pass non-intensity byte comparisons.
-Camera/LiDAR header clocks remain different; no calibrated image overlay. \\
-Frontal KITTI raw drive 0005 &
-154 matched clouds/detections/images/CameraInfo messages; original XYZI and camera
-pixels preserved. Full scans contain 98,532--124,122 points; no front-only crop.
-This is an integration clip, not the labeled accuracy set. \\
-\hline
-\end{longtable}
-
-\subsection{What the later sensor results change}
-Unscaled Ouster signal is now a demonstrated contributor to numerical failures
-on those recordings. Normalized features reduce excessive saturated predictions,
-but do not resolve KITTI's vertical error or certify object correctness.
-The ordinary Ouster helper still defaults to raw signal; select the diagnostic
-encoding explicitly. Keep detector intensity scale 1.0 for already converted inputs.
-\begin{lstlisting}
-PP_OUSTER_FEATURE=reflectivity_div255 bash tools/rosbag_ouster.sh
-# Separate viewer terminal:
-RVIZ_CONFIG="$PWD/rviz/ouster.rviz" bash tools/visualize.sh
-# Alternative player for original geometry plus normalized input and camera:
-bash tools/rosbag_ouster_detail.sh
-# Alternative frontal KITTI player:
-bash tools/rosbag_kitti_front.sh
-\end{lstlisting}
-Select one player at a time, after stopping conflicting playback, and use the
-corresponding saved RViz profile and matching domain. These alternatives do not
-start inference. Camera playback coordinates bag-record arrival times; retaining
-headers does not prove sensor-clock synchronization. The detector still has no
-hardware scan-start control, configurable sensor QoS or bounded worker.
-
-\subsection{Figures extracted from the user's videos}
-The local sources are the two WebM files in
-\path{/media/ae/New Volume/datasets/vedios}, with filenames
-\texttt{Screencast from 2026-10-20 14-09-09.webm} and
-\texttt{Screencast from 2026-10-20 14-13-14.webm}.
-\begin{figure}[htbp]
-\centering\projectshot{rviz-screencast-1.png}{.93\linewidth}
-\caption{First recording, 32.035 s. RViz displays points, candidate boxes and
-scores. No reviewed ground truth is shown.}
-\end{figure}
-\begin{figure}[htbp]
-\centering\projectshot{rviz-screencast-2.png}{.93\linewidth}
-\caption{Second recording, 16.023 s. Wider scene detail. Bag, engine and feature
-identity cannot be established from the screenshot alone.}
-\end{figure}
-Full frames are retained losslessly without crop, resize or annotation.
-\path{docs/figures/provenance.json} records source/image hashes and timestamps.
-The figures demonstrate visible rendering in the supplied recordings; they do
-not demonstrate detection accuracy, latency or calibrated camera projection.
-
-\subsection{Verification, attribution and next work}
-The documentation review passed 64 existing Python tests and rehashed the selected
-saved result JSON evidence against inventories. No new GPU run, model adaptation,
-threshold tuning or image rebuild was performed. Two earlier allocation memchecks
-reported zero errors but do not complete internal tensor-bounds/race validation.
-The runtime remains synchronous with reliable depth 700; worker/QoS/metrics,
-original-training parity, larger untouched accuracy evaluation and CI remain open.
-
-Ouster source attribution: Kenji Koide, AIST, DOI
-\texttt{10.5281/zenodo.7780490}, CC-BY-4.0. KITTI attribution: Geiger, Lenz,
-Stiller and Urtasun, KIT/TTI-C, CC-BY-NC-SA-3.0. Screenshot experiment identity
-is not independently established. Preserve the relevant source terms with data.
-See \path{docs/CURRENT_STATUS_AND_RESULTS.md} for the consolidated tables and
-\path{recovery/PROGRESS.md} for final link/asset/compiler verification.
-
-
-\section{Published filtering trial and shutdown: 23 October 2026}
-Feature source \texttt{8a87a73} was pushed to main, rebuilt through the Docker
-wrapper and verified on the RTX 4060 Laptop GPU. All 73 Python tests and five
-Docker-build C++/ROS tests passed. Native GPU smoke passed. Native and deployed
-KITTI replay each verified 60 matched frames: 20 at each threshold 0.0, 0.5 and
-0.95. Published scores, headers, detection lengths, diagnostic arithmetic and
-actual marker totals agreed. Different thresholds sampled different scans;
-these checks do not establish detection accuracy.
-
-The publication gate keeps scores greater than or equal to
-\texttt{confidence\_threshold}, a finite double in $[0,1]$, default 0.5.
-Below-threshold boxes publish no individual detection information. The unchanged
-Detection3DArray contains accepted boxes; \texttt{/bbox/stats} reports per-frame
-and cumulative counters and \texttt{/bbox/count} carries RViz text.
-Published totals are after filtering and count repeated detection events across
-scans, not unique tracked objects. The before-filter count is after NMS.
-
-\subsection{Which shell file opens RViz?}
-The last trial used the following command from the project root:
-\begin{lstlisting}
-RVIZ_CONFIG="$PWD/rviz/kitti_front.rviz" bash tools/monitor_detections.sh rviz
-\end{lstlisting}
-The monitor's \texttt{rviz} mode calls \texttt{tools/visualize.sh} and opens a
-\textbf{new RViz process/window}. It does not reconfigure an existing window or
-start inference/playback. In an existing RViz window, choose
-\textbf{File / Open Config} and select \texttt{rviz/kitti\_front.rviz} to load the
-complete profile. To preserve your layout, add only a MarkerArray display on
-\texttt{/bbox/count}, using Reliable and Transient Local QoS and the cloud frame.
-The monitor's other modes stream statistics (default), read one snapshot
-(\texttt{once}), or query the live threshold (\texttt{threshold}); they do not
-change the threshold or reset counters.
-
-\subsection{Deployment behavior and stopped state}
-\texttt{tools/deploy.sh} first refuses an existing same-name container; otherwise
-it reuses a matching local runtime-input image or invokes a cached build.
-Base-image pulls require \texttt{\detokenize{PP_PULL_BASE=1}}. Optional
-\texttt{\detokenize{PP_BUILD_ONLY=1}} prepares the image without launching.
-Otherwise it creates a fresh
-foreground \texttt{docker run --rm} container. The image and named engine volume
-persist when the container exits; this trial reused the existing cached engine.
-
-At the user's request, the recorded detector and KITTI front-drive player
-containers were stopped and the exact trial RViz process was closed at
-\textbf{19:47 UTC / 21:47 Europe/Berlin on 23 October 2026}. Follow-up inspection
-confirmed their exit. The last live threshold was \textbf{0.5}; no live parameter
-is available while inference is stopped. The image, engine volume, datasets and
-frozen reports were preserved. Restart in three separate terminals:
-\begin{lstlisting}
-# Terminal 1: inference, including the normal build check
-PP_CONFIDENCE_THRESHOLD=0.5 bash tools/deploy.sh
-# Terminal 2: prepared KITTI front-drive replay
-bash tools/rosbag_kitti_front.sh
-# Terminal 3: a new RViz window
-RVIZ_CONFIG="$PWD/rviz/kitti_front.rviz" bash tools/monitor_detections.sh rviz
-\end{lstlisting}
-Use Docker permissions appropriate to the host and one cloud player per domain/topic.
-Local test/deployment/shutdown logs remain under
-\texttt{\detokenize{.recovery/verification/published-deployment/}}.
-W07 remains in progress for worker, launch, QoS, timing and operational acceptance;
-the frozen accuracy baseline and unresolved input/training contract are unchanged.
-
-\begin{figure}[htbp]
-\centering
-\projectshot{rviz-filter-counters-2026-10-23.png}{.97\linewidth}
-\caption{Actual RViz capture before shutdown: 3 published boxes from 94 post-NMS
-boxes, with 91 removed at threshold 0.5. Cumulative counts are detection events.
-The front camera is a separate panel, not a calibrated detection projection.
-KITTI raw drive 0005; Geiger, Lenz, Stiller and Urtasun, KIT/TTI-C,
-CC-BY-NC-SA-3.0. Capture hash and deployment identity:
-\texttt{\detokenize{docs/figures/filter-counters-provenance.json}}.}
-\end{figure}
-
-
-\section*{Current Ouster startup --- 8 November 2026}
-The deployment wrapper uses local runtime source and skips Docker build when the
-saved runtime-input checksum matches. Documentation-only edits do not trigger a
-build. Missing cache or changed dependency recipes can still require downloads.
-Host NVIDIA drivers, Docker and the NVIDIA Container Toolkit must already work.
-\texttt{\detokenize{PP_BUILD_ONLY=1}} is optional: it prepares the image and exits;
-without it, deployment starts the detector only. Stop that detector before
-starting the combined adapter/detector launcher.
-\begin{verbatim}
-sudo env PP_BUILD_ONLY=1 bash tools/deploy.sh
-# Terminal 1: adapter and detector
-sudo bash tools/start_ouster.sh bag
-# Terminal 2: unchanged original recording
-sudo bash tools/start_ouster_bag.sh
-# Terminal 3: graphical desktop, without sudo
-ROS_DOMAIN_ID=99 RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
-  RVIZ_CONFIG="$PWD/rviz/ouster.rviz" \
-  bash tools/visualize.sh -f lidar/os_lidar
-\end{verbatim}
-The bag profile shares Fast DDS, domain 99 and input
-\texttt{/sensing/lidar/points}; output is \texttt{/point\_cloud}, then
-\texttt{/bbox}. It maps reflectivity divided by 255 to intensity. The unchanged
-bag calls its signal channel intensity, so selecting signal is unsupported for
-that recording. Bare \texttt{start\_ouster.sh} retains the live Zenoh/domain 0
-profile and requires a working driver/router. One Ctrl+C stops each launcher;
-allow up to eight seconds. The image and engine volume persist.
-
-Validation passed 91 Python tests and seven C++/ROS tests. Actual GPU replay
-observed 20 raw clouds, 20 adapted clouds and 19 detection arrays with sampled
-error counters zero; each launcher stopped with one SIGINT in under 0.5 seconds.
-These are integration results, not detection-accuracy validation. Full commands
-and evidence are in \texttt{docs/STARTUP\_AND\_REPLAY.md} and
-\texttt{config/launcher\_fix\_validation.json}.
-
+Primary references are the
+\href{https://arxiv.org/html/2503.00675v2}{Dur360BEV paper},
+\href{https://huggingface.co/datasets/TomEeee/Dur360BEV-Extended}{Dur360BEV-Extended release}
+and \href{https://zenodo.org/records/19353314}{MOSEP release}.
+Preserve source attribution and applicable license terms with figures and data.
 \end{document}

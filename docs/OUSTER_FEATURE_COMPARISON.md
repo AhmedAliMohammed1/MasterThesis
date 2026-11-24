@@ -1,12 +1,6 @@
 # Ouster input-feature comparison
 
-> **New measured channel decision — 8 November 2026:** 1,120 current-production GPU observations now include independent Ouster object annotations. Reflectivity/255 has stronger vehicle BEV evidence than signal/65535 on the frozen subset; neither has qualifying 3D accuracy. Both complete the tested numerical runs. See [results, limitations and proposal](OUSTER_CHANNEL_DECISION.md). Older unlabeled Ouster observations below retain their original scope.
-
-> **Current startup — 8 November 2026:** deployment uses local source and reuses matching images; base pulls are explicit. `PP_BUILD_ONLY=1` is optional and prepares the image without starting the detector. For the unchanged MOSEP bag, use `start_ouster.sh bag` with `start_ouster_bag.sh`; both use Fast DDS/domain 99 and the same raw topic. One Ctrl+C stops each launcher. See [current startup, replay, RViz and validation](STARTUP_AND_REPLAY.md). Earlier dated observations and quoted conversations retain their historical context.
-
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
-
-> **Status reviewed 23 October 2026.** The recorded comparison remains 192 observations, including 15/48 raw-signal rejections and 0/144 rejections across normalized variants. Full reflectivity_div255 replay matched 556/556 occurrences. These results demonstrate numerical/message-flow improvement, not calibrated features or detection accuracy. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
+Reviewed 8 November 2026. This page explains the **13 October same-scan numerical experiment** on unlabeled Koide bags. It showed why raw signal was unsuitable for this input recipe. The later [ground-truth channel study](OUSTER_CHANNEL_DECISION.md) is the basis for today’s reflectivity/255 recommendation. Keep the two studies separate: this older table measures numerical behavior, not object accuracy.
 
 Measured on 13 October 2026. **The unscaled Ouster signal is a demonstrated contributor to numerical failures in this model.** Changing only the fourth input feature removed infinite box lengths in all tested normalized observations and sharply reduced the excessive predictions. This establishes a numerical/input improvement on these recordings, not detection accuracy or an accepted sensor calibration.
 
@@ -25,7 +19,7 @@ Four conversions were compared:
 | `reflectivity_div255` | Reflectivity code / 255 | Bounded 8-bit encoding; **not a physical linear reflectance fraction**, because the source mapping is nonlinear |
 | `reflectivity_fraction` | min(reflectivity / 100, 1) | Diffuse-target fraction with retroreflectors clipped; neither that clipping nor exact training-feature equivalence is established |
 
-No conversion uses the maximum observed value or a per-scan normalization. None has been selected by labeled accuracy. A small output count is not a reason to declare one variant correct.
+No conversion uses the maximum observed value or a per-scan normalization. At the time of this experiment, none had been selected by labeled accuracy. The later study compared signal/65,535 and reflectivity/255 against independent labels. A small output count alone is still not a reason to declare a variant correct.
 
 ## Controlled experiment
 
@@ -72,7 +66,7 @@ RVIZ_CONFIG="$PWD/rviz/ouster.rviz" bash tools/visualize.sh
 
 Stop any existing player on the same input topic/domain first. The helper creates a cloud-only derived bag under `.recovery/rosbags/ouster_calibration_v3/derived/reflectivity_div255/`. It verifies that every byte outside the FLOAT32 intensity slots, all metadata, and recorded timestamps are preserved. Source bags remain untouched. Its manifest records conversion/source hashes and states that training calibration and accuracy are unvalidated.
 
-`PP_OUSTER_FEATURE=raw_signal` remains the baseline default. Other tested variants can be selected explicitly using the names in the table. The playback launcher gives subscribers two seconds to discover publishers before playback (`PP_BAG_DELAY`). The normalized detector should retain intensity scale **1.0**, avoiding a second division of already converted values. Confidence and NMS thresholds remain unchanged.
+`PP_OUSTER_FEATURE=raw_signal` remains the default of this older replay helper, preserving its historical baseline. The current live adapter launcher defaults to reflectivity; these defaults belong to different paths. Other tested variants can be selected explicitly using the names in the table. The playback launcher gives subscribers two seconds to discover publishers before playback (`PP_BAG_DELAY`). The normalized detector should retain intensity scale **1.0**, avoiding a second division of already converted values. Confidence and NMS thresholds remain unchanged.
 
 An initial full-bag verifier counted unique headers and incorrectly treated duplicate source timestamps as missing messages. The source contains 291 messages with 289 unique headers in the first bag and 265 messages with 264 unique headers in the second. The corrected verifier counts message occurrences separately and preserves source timestamps; the initial verifier outputs remain saved for the audit trail.
 
@@ -88,3 +82,7 @@ The explicit `reflectivity_div255` candidate was replayed through the unchanged 
 **All 556 occurrences matched; no invalid message fields, feature-conversion discrepancies or detector log errors were recorded.** The verifier checked actual published intensity against FLOAT32 reflectivity/255 and counted repeated headers separately. This confirms numerical/message-flow improvement across both complete recordings; it does not certify object correctness, training parity, synchronized external clocks, or real-time acceptance. Test playback and the temporary detector were stopped, and the original detector was retained.
 
 Nine focused input/archive/feature controls passed, including preservation of negative-zero XYZ bits, point order/count, header, row padding and all non-intensity bytes. Python compilation, Bash syntax and source-diff whitespace checks passed. Exact hashes, the 192 raw observations, complete native replay records, original failed unique-header verifier records, engine/image identity and summary are indexed by `config/ouster_feature_inventory.json`. Original raw-bag measurements remain in `config/ouster_demo_inventory.json`.
+
+## Using the older study in the thesis
+
+Use this as the controlled numerical-stability experiment: geometry is held fixed and only the fourth feature changes. Cite the later labeled comparison separately when recommending reflectivity/255. Box counts, score saturation and same-scan agreement are not accuracy metrics.

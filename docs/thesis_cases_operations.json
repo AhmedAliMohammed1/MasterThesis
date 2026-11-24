@@ -1,0 +1,526 @@
+[
+  {
+    "id": "J19",
+    "title": "Build an engine for the selected GPU, then reuse it",
+    "symptom": "A saved engine could be missing, built for another GPU, or left incomplete after an interrupted build.",
+    "explanation": "A TensorRT engine is tied to its deployment conditions. The image contains the trained ONNX; startup builds a matching execution plan and keeps it in persistent storage.",
+    "steps": [
+      "Check the selected GPU and retain the ONNX checksum.",
+      "Calculate the cache identity from model, GPU, driver/CUDA and build settings.",
+      "Acquire the engine-file lock before checking or building that entry.",
+      "Build into a pending file, and promote it only after trtexec succeeds.",
+      "On interruption, stop the builder and remove its pending file.",
+      "Reuse the matching completed engine on the next startup."
+    ],
+    "verification": "Historical startup/restart logs record one engine generation across two successful starts. The present audit rereads the cache and cleanup implementation; it does not rebuild an engine.",
+    "remaining_limit": "A nonempty corrupted engine is not automatically regenerated. Cross-GPU portability and exhaustive interruption/failure paths remain unaccepted.",
+    "evidence_paths": [
+      "config/docker_inventory.json",
+      "docker/entrypoint.sh",
+      "recovery/PROGRESS.md"
+    ],
+    "reproduction": {
+      "kind": "preserved_historical_evidence",
+      "command": "No physical fault recreated; original evidence reviewed read-only.",
+      "log_path": "config/docker_inventory.json",
+      "status": "historical evidence retained; no fresh runtime reproduction"
+    },
+    "visual_suggestion": "Show the actual preserved engine-cache restart log beside a small ONNX \u2192 pending engine \u2192 cached engine diagram.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "A matching engine was absent at the first recorded startup.",
+    "visual_after": "The engine was generated once and reused after restart. Interrupted pending files are removed; corrupted completed-cache recovery remains open.",
+    "visual_log_source": "config/docker_inventory.json"
+  },
+  {
+    "id": "J20",
+    "title": "Stop rebuilding unchanged application inputs",
+    "symptom": "The user saw repeated dependency downloads after edits, and local edits could be absent from a remote-source image.",
+    "explanation": "Image preparation, dependency layers and target-GPU engine generation use different caches. Local runtime source is now the default; a matching runtime-input hash skips Docker build.",
+    "steps": [
+      "Check host GPU access and Docker before attempting the build.",
+      "Hash only the declared runtime source, build settings and configuration.",
+      "Compare the hash with the label on the saved image.",
+      "Skip the build when the hashes match; documentation edits do not change it.",
+      "When source changes, reuse independent dependency/model layers.",
+      "Refresh base images only when PP_PULL_BASE=1 is requested."
+    ],
+    "verification": "Fresh isolated launcher tests passed reuse after documentation edits, rebuild after runtime edits, explicit pulls/remote source and custom-build-option cache separation. Docker and nvidia-smi are mocks in this rerun.",
+    "remaining_limit": "First builds, removed caches or changed dependency recipes still require downloads. This fixture is not a new clean-machine Docker build.",
+    "evidence_paths": [
+      "tools/deploy.sh",
+      "Dockerfile",
+      "tests/test_deploy_launcher.py",
+      "config/launcher_fix_validation.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/deploy_launcher.stderr.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-01.json"
+    ],
+    "reproduction": {
+      "kind": "controlled_fixture_observation",
+      "command": "python3 -B .recovery/verification/thesis-evidence-2026-11-09/operations/scenario-capture.py",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-01.json",
+      "status": "passed; all recorded fixture assertions true"
+    },
+    "visual_suggestion": "Capture the actual new passing launcher-test log; use a separate diagram to distinguish image, dependency and engine caches.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "The first fixture invocation requests an image build.",
+    "visual_after": "Unchanged inputs and a documentation-only edit skip the build; the recorded Docker calls show no rebuild.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-01.json"
+  },
+  {
+    "id": "J21",
+    "title": "Make one Ctrl+C stop the owned pipeline",
+    "symptom": "Several Ctrl+C presses were needed, and stopping by container name could target a later unrelated container.",
+    "explanation": "The launcher waits interruptibly, records its exact created container ID in a private directory and stops that ID. The Ouster supervisor owns both child process groups.",
+    "steps": [
+      "Create a private temporary directory for Docker to write the new container ID.",
+      "Start Docker without automatic signal forwarding and wait with Bash.",
+      "On Ctrl+C, read and validate the owned ID.",
+      "Ask Docker to stop that ID with an eight-second cleanup bound.",
+      "Stop both adapter/detector process groups when either exits.",
+      "Remove the temporary ID file while retaining the image and good engine cache."
+    ],
+    "verification": "The fresh single-SIGINT fixture passed with a fake Docker client that deliberately ignores SIGINT. Fresh supervisor tests also passed peer failure, descendant cleanup and unexpected clean exit. Historical actual GPU launch shutdown took under 0.5 s per launcher.",
+    "remaining_limit": "The fresh rerun uses isolated processes and mocked Docker; it is not proof for every hung host or application.",
+    "evidence_paths": [
+      "tools/docker_foreground.sh",
+      "docker/ouster_stack.sh",
+      "tests/test_docker_foreground.py",
+      "tests/test_start_ouster.py",
+      "config/launcher_fix_validation.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/docker_foreground.stderr.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/start_ouster.stderr.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-05.json"
+    ],
+    "reproduction": {
+      "kind": "controlled_fixture_observation",
+      "command": "python3 -B .recovery/verification/thesis-evidence-2026-11-09/operations/scenario-capture.py",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-05.json",
+      "status": "passed; all recorded fixture assertions true"
+    },
+    "visual_suggestion": "Use the genuine new SIGINT test output and a process tree marked launcher \u2192 owned CID \u2192 adapter/detector.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "A private fake Docker run client deliberately ignores SIGINT.",
+    "visual_after": "One injected SIGINT returns 130 and requests stop for the exact owned ID. Its private CID directory is removed.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-05.json"
+  },
+  {
+    "id": "J22",
+    "title": "Recognize a running detector that has no input",
+    "symptom": "The terminal became quiet after GPU information and appeared stalled.",
+    "explanation": "A cached engine and initialized node can wait normally until a driver or player publishes. Package/executable names and the ROS node name describe different things.",
+    "steps": [
+      "Inspect the detector log and ROS node information.",
+      "Confirm that the expected point-cloud topic has an active publisher.",
+      "Start exactly one intended driver or bag player.",
+      "Check adapter reception and detector processed/error counters.",
+      "Open RViz separately using the matching source settings."
+    ],
+    "verification": "Historical synthetic and real-bag checks established a running node and later message round trips. Fresh monitor fixtures passed the distinction between a stopped container, a timed-out read and actual counter output.",
+    "remaining_limit": "A quiet terminal alone cannot diagnose a stall; the fresh fixture does not start a real sensor or detector.",
+    "evidence_paths": [
+      "docs/STARTUP_AND_REPLAY.md",
+      "tools/monitor_detections.sh",
+      "tests/test_monitor_helper.py",
+      "recovery/PROGRESS.md",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/monitor_helper.stderr.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-02.json"
+    ],
+    "reproduction": {
+      "kind": "controlled_fixture_observation",
+      "command": "python3 -B .recovery/verification/thesis-evidence-2026-11-09/operations/scenario-capture.py",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-02.json",
+      "status": "passed; all recorded fixture assertions true"
+    },
+    "visual_suggestion": "Show historical node/topic inspection or capture the genuine timeout fixture result; label it fixture output.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "A stopped container and an unanswered monitor read provide no usable count.",
+    "visual_after": "The helper reports refusal or bounded timeout. A separate successful fixture reply is read; it is not scene data.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-02.json"
+  },
+  {
+    "id": "J23",
+    "title": "Match delivery policy as well as topic names",
+    "symptom": "A host viewer received no clouds although container playback was active; best-effort sensor data also conflicted with reliable detector input.",
+    "explanation": "The recorded host/container shared-memory path did not deliver in that setup. UDPv4 restored delivery. A best-effort-only publisher generally cannot satisfy a reliable subscriber under DDS.",
+    "steps": [
+      "Inspect the publisher and subscriber QoS and their actual topic names.",
+      "For the recorded Fast DDS host/viewer setup, use the tested UDPv4 transport fallback.",
+      "Receive raw Ouster data with sensor-data best-effort QoS in the adapter.",
+      "Republish adapted XYZI reliably for the existing detector.",
+      "Verify received messages and increasing processing counters, rather than discovery alone."
+    ],
+    "verification": "Historical observer checks matched 25 frames inside the container and 25 through the host after UDPv4 selection. The actual adapter source declares the two QoS policies. No fresh physical SHM fault was recreated.",
+    "remaining_limit": "Transport behavior depends on the host/RMW setup. Detector-wide configurable sensor QoS and sustained overload delivery remain open.",
+    "evidence_paths": [
+      "config/visualization_inventory.json",
+      "src/ouster_adapter_node.cpp",
+      "src/pp_inference_node.cpp",
+      "tools/visualize.sh"
+    ],
+    "reproduction": {
+      "kind": "preserved_historical_evidence",
+      "command": "No physical fault recreated; original evidence reviewed read-only.",
+      "log_path": "config/visualization_inventory.json",
+      "status": "historical evidence retained; no fresh runtime reproduction"
+    },
+    "visual_suggestion": "Use the genuine saved RViz screenshot .recovery/verification/rviz-current.png with its historical transport report, not a fabricated error dialog.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "The recorded default host transport received no clouds within eight seconds.",
+    "visual_after": "UDPv4 restored host delivery; 25 input/output frames matched. The adapter separately bridges best-effort input to reliable output.",
+    "visual_log_source": "config/visualization_inventory.json"
+  },
+  {
+    "id": "J24",
+    "title": "Keep the bag and live Ouster profiles separate",
+    "symptom": "The live stack listened on a different raw topic, domain and middleware from the original-bag player; Zenoh had no reachable router.",
+    "explanation": "The mismatch combined /ouster1/points + domain 0 + Zenoh with /sensing/lidar/points + domain 99 + Fast DDS. Waiting longer could not align these settings.",
+    "steps": [
+      "Choose live mode only for a working driver using matching settings.",
+      "For the original MOSEP recording, start tools/start_ouster.sh bag.",
+      "Start tools/start_ouster_bag.sh in another terminal.",
+      "Keep topic, ROS_DOMAIN_ID and RMW_IMPLEMENTATION identical across participants.",
+      "Pass custom settings through sudo env when sudo would discard exports."
+    ],
+    "verification": "Fresh isolated launcher/player tests passed shared Fast DDS/domain99/raw-topic defaults, custom routing and preservation of existing containers. Historical actual GPU replay also confirmed the corrected profile.",
+    "remaining_limit": "The scripts do not start or repair a live driver or Zenoh router. Fixture success is separate from a current network test.",
+    "evidence_paths": [
+      "tools/ouster_profile.sh",
+      "tools/start_ouster.sh",
+      "tools/start_ouster_bag.sh",
+      "tests/test_start_ouster.py",
+      "tests/test_start_ouster_bag.py",
+      "config/launcher_fix_validation.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/start_ouster.stderr.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/start_ouster_bag.stderr.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-03.json"
+    ],
+    "reproduction": {
+      "kind": "controlled_fixture_observation",
+      "command": "python3 -B .recovery/verification/thesis-evidence-2026-11-09/operations/scenario-capture.py",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-03.json",
+      "status": "passed; all recorded fixture assertions true"
+    },
+    "visual_suggestion": "Show a small real-settings table for live versus bag and the new genuine routing-test output.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "Live-mode invocation requests Zenoh, domain 0 and /ouster1/points.",
+    "visual_after": "Bag mode requests Fast DDS, domain 99 and /sensing/lidar/points, matching the player profile. This captures settings, not fresh discovery.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-03.json"
+  },
+  {
+    "id": "J25",
+    "title": "Treat the MCAP metadata warning according to observed playback",
+    "symptom": "The player warned that rosbag2 metadata lacked serialized_metadata.",
+    "explanation": "The warning appeared while reading the publisher\u2019s original MCAP, but actual playback still published clouds. It was not the established cause of the mismatched-topic failure.",
+    "steps": [
+      "Keep the original MCAP and metadata.yaml unchanged.",
+      "Read the player log to identify the exact warning.",
+      "Check whether raw clouds are actually arriving.",
+      "Check adapted-cloud and detector counters independently.",
+      "Record the warning alongside successful observations instead of suppressing or rewriting it."
+    ],
+    "verification": "The original player log preserves the warning. The fresh visual observer matched 40 raw/adapted pairs and 39 detection headers; a later snapshot showed processing without input/inference errors. This audit does not rerun the player.",
+    "remaining_limit": "That observed warning was nonfatal in the recorded replay; other playback errors still require separate diagnosis.",
+    "evidence_paths": [
+      ".recovery/ouster-fresh-test/player.log",
+      "config/ouster_fresh_visual_validation.json",
+      "docs/FRESH_OUSTER_VISUAL_TEST.md",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/mcap-warning-excerpt.log"
+    ],
+    "reproduction": {
+      "kind": "preserved_historical_evidence",
+      "command": "No physical fault recreated; original evidence reviewed read-only.",
+      "log_path": ".recovery/ouster-fresh-test/player.log",
+      "status": "historical evidence retained; no fresh runtime reproduction"
+    },
+    "visual_suggestion": "Capture the actual warning from the saved player log next to the independent recorded processing counters.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "The original player log reports missing serialized_metadata.",
+    "visual_after": "Independent historical observers still verify conversion and detector processing. The original bag is preserved.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/operations/mcap-warning-excerpt.log",
+    "visual_log_excerpt": "Source: .recovery/ouster-fresh-test/player.log\nRead-only historical excerpt; not a fresh playback.\n[WARN] [1794087615.920750577] [rosbag2_storage_mcap]: Metadata record with name 'rosbag2' did not contain key 'serialized_metadata'.\n[WARN] [1794087644.826164708] [rosbag2_storage_mcap]: Metadata record with name 'rosbag2' did not contain key 'serialized_metadata'.\n[WARN] [1794087673.628272992] [rosbag2_storage_mcap]: Metadata record with name 'rosbag2' did not contain key 'serialized_metadata'."
+  },
+  {
+    "id": "J26",
+    "title": "Open RViz with the right plugin, frame and paths",
+    "symptom": "The Detection3DArray display plugin was missing, sensor-only bags had a TF warning, and moved paths broke generated configuration.",
+    "explanation": "The viewer needs its own desktop dependencies. Matching the real sensor frame is sufficient for shared points/boxes; inventing a world transform would hide missing information.",
+    "steps": [
+      "Install host ROS Jazzy/RViz or use the already prepared desktop.",
+      "Provide the official vision_msgs RViz plugin, through the system package or verified local extraction.",
+      "Run the viewer as the desktop user with matching domain/middleware.",
+      "Choose the actual cloud frame: velodyne for the recorded KITTI demo or lidar/os_lidar for MOSEP.",
+      "Quote paths containing spaces and regenerate native caches after relocation.",
+      "Use File \u2192 Open Config to update an existing RViz window."
+    ],
+    "verification": "Historical actual rendering and isolated plugin bootstrap were verified, including a checkout path with spaces. Genuine RViz captures remain saved. No package installation or current desktop launch was performed for this rerun.",
+    "remaining_limit": "A sensor-only bag may still lack a world TF tree. Rendering does not establish detection accuracy or complete multi-host portability.",
+    "evidence_paths": [
+      "tools/visualize.sh",
+      "config/visualization_inventory.json",
+      "docs/STARTUP_AND_REPLAY.md",
+      ".recovery/verification/rviz-current.png",
+      ".recovery/ouster-fresh-test/rviz-detections.png"
+    ],
+    "reproduction": {
+      "kind": "preserved_historical_evidence",
+      "command": "No physical fault recreated; original evidence reviewed read-only.",
+      "log_path": "tools/visualize.sh",
+      "status": "historical evidence retained; no fresh runtime reproduction"
+    },
+    "visual_suggestion": "Use the actual saved RViz screenshots; annotate their captions with sensor frame and historical date.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "The recorded desktop lacked the required detection-display plugin and had sensor-only frame information.",
+    "visual_after": "The official plugin and actual sensor frame enabled the saved RViz view. No world transform was invented.",
+    "visual_log_source": "config/visualization_inventory.json"
+  },
+  {
+    "id": "J27",
+    "title": "Download only needed camera/data assets and resume safely",
+    "symptom": "The first bag had no camera images, while original camera archives were large and downloads could be interrupted.",
+    "explanation": "Pinned source identities and checked HTTP ranges let the helper retrieve selected files. Complete checked assets are reused; corrupt completed files are preserved and reported.",
+    "steps": [
+      "Identify the original recording that produced the bag.",
+      "Pin the bag checksum and the remote archive object identity.",
+      "Fetch selected ZIP members with validated range responses and CRC checks.",
+      "Resume incomplete downloads and promote only verified pending files.",
+      "Encode and probe the camera video using the separate tool image.",
+      "Reuse verified completed assets instead of downloading them again."
+    ],
+    "verification": "Fresh existing HTTP/range/resume/corruption/timestamp fixture tests passed. Historical actual downloads, MP4 encoding/full decoding and isolated playback remain separate evidence.",
+    "remaining_limit": "These fixture tests use localhost data, not a new public dataset download. The camera video is unannotated scene context.",
+    "evidence_paths": [
+      "tools/prepare_kitti_demo.py",
+      "tools/rosbag_demo.sh",
+      "tests/test_kitti_demo.py",
+      "config/demo_inventory.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/kitti_demo.stderr.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-08.json"
+    ],
+    "reproduction": {
+      "kind": "isolated_existing_fixture",
+      "command": "/usr/bin/python3 -B -m unittest discover -s tests -p test_kitti_demo.py -v",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/operations/kitti_demo.stderr.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "Capture the genuine new range/resume test output and an original camera frame; do not portray the fixture server as the public download.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "A localhost fixture server ignores the requested byte range; the real helper refuses its response.",
+    "visual_after": "A compliant fixture returns only selected archive ranges, and the real helper extracts the correct member with less than one quarter of archive bytes transferred.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-08.json",
+    "visual_log_excerpt": "test_camera_nanoseconds_are_retained (test_kitti_demo.DemoRecoveryTests.test_camera_nanoseconds_are_retained) ... ok\ntest_changed_object_fails_before_range_download (test_kitti_demo.DemoRecoveryTests.test_changed_object_fails_before_range_download) ... ok\ntest_completed_pending_download_is_promoted_without_network (test_kitti_demo.DemoRecoveryTests.test_completed_pending_download_is_promoted_without_network) ... ok\ntest_corrupt_final_archive_is_preserved (test_kitti_demo.DemoRecoveryTests.test_corrupt_final_archive_is_preserved) ... ok\ntest_incomplete_range_is_not_accepted (test_kitti_demo.DemoRecoveryTests.test_incomplete_range_is_not_accepted) ... ok"
+  },
+  {
+    "id": "J28",
+    "title": "Keep camera playback separate from acquisition-time calibration",
+    "symptom": "Camera and LiDAR streams had different counts, offsets or header clocks, so synchronized-looking playback could be misleading.",
+    "explanation": "Bag arrival order is not proof of synchronized acquisition. A 30 fps video can hold the same approximately 2 Hz camera image rather than contain new measurements.",
+    "steps": [
+      "Keep original message headers and bag-record timestamps.",
+      "Measure the first-frame offset and count the original observations.",
+      "Build the preview timeline by holding each original image for its recorded duration.",
+      "Preserve camera payloads and tie ordering in merged playback.",
+      "Display camera context separately unless extrinsic/time calibration is verified.",
+      "State that independent video/player speeds are not automatically synchronized."
+    ],
+    "verification": "Fresh camera-timeline fixtures passed initial offsets, intervals, final hold, rejection of invalid timelines and preservation of SQLite payloads/timestamp ties. Historical records preserve 111 Ouster images/CameraInfo messages; KITTI offsets are reported separately.",
+    "remaining_limit": "No calibrated detection-image overlay or acquisition-clock synchronization was established. Preview frame rate is not sensor measurement rate.",
+    "evidence_paths": [
+      "tools/export_ouster_camera.py",
+      "tools/prepare_ouster_visual.py",
+      "tests/test_ouster_camera.py",
+      "config/ouster_camera_inventory.json",
+      "config/demo_inventory.json",
+      "config/kitti_front_inventory.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/ouster_camera.stderr.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-06.json"
+    ],
+    "reproduction": {
+      "kind": "controlled_fixture_observation",
+      "command": "python3 -B .recovery/verification/thesis-evidence-2026-11-09/operations/scenario-capture.py",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-06.json",
+      "status": "passed; all recorded fixture assertions true"
+    },
+    "visual_suggestion": "Use a real saved original camera frame plus a timestamp table from the preserved inventories; show held intervals as a diagram.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "A synthetic image timestamp outside the selected interval is rejected.",
+    "visual_after": "Valid synthetic timestamps retain the initial gap, source-image interval and final hold. Playback coordination is not acquisition calibration.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-06.json"
+  },
+  {
+    "id": "J29",
+    "title": "Explain sparse Ouster views without creating points",
+    "symptom": "The Ouster scene looked much sparser than the KITTI view after normalization.",
+    "explanation": "The original 32,768-entry scans included 13,206\u201315,775 zero-range/zero-XYZ returns. Orbit distance, point size and feature coloring also changed appearance; normalization had not moved the retained geometry.",
+    "steps": [
+      "Count the source entries and invalid zero returns before changing the display.",
+      "Compare XYZ and other non-intensity bytes between source and adapted streams.",
+      "Publish a separate original-data topic for visual comparison.",
+      "Use a closer orbit and larger flat-color points to inspect geometry.",
+      "Keep zero returns and the original recordings unchanged in this visualization path."
+    ],
+    "verification": "The historical detail audit reports five matching live clouds with every non-intensity byte preserved. Source/input counts and display settings are recorded in the detail inventory. No synthetic denser cloud or new inference input was created.",
+    "remaining_limit": "The raw-view adjustment improves inspection, not scene density or model accuracy. Invalid-return preprocessing remains a separate research change.",
+    "evidence_paths": [
+      "docs/FRONTAL_COMPARISON_AND_RVIZ_DETAIL.md",
+      "config/ouster_detail_inventory.json",
+      "rviz/ouster_detail.rviz",
+      "tools/prepare_ouster_raw_view.py"
+    ],
+    "reproduction": {
+      "kind": "preserved_historical_evidence",
+      "command": "No physical fault recreated; original evidence reviewed read-only.",
+      "log_path": "docs/FRONTAL_COMPARISON_AND_RVIZ_DETAIL.md",
+      "status": "historical evidence retained; no fresh runtime reproduction"
+    },
+    "visual_suggestion": "Use an original Ouster camera frame and the actual source/zero-return counts. If no matching historical detail screenshot is available, use a clearly labeled count diagram rather than invent a before/after RViz capture.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "The original Ouster scans include many zero returns; a distant small-point view looks sparse.",
+    "visual_after": "The raw-data view preserves geometry and uses a closer, brighter display. No denser scene was synthesized.",
+    "visual_log_source": "config/ouster_detail_inventory.json"
+  },
+  {
+    "id": "J39",
+    "title": "Publish accepted boxes and meaningful counts",
+    "symptom": "Cluttered boxes made inspection hard, and a missing frame or cumulative total could be mistaken for zero objects or unique tracked objects.",
+    "explanation": "A CPU score gate follows NMS. It publishes only accepted boxes and separate aggregate diagnostics/markers; failed frames report unavailable counts rather than successful zeros.",
+    "steps": [
+      "Validate candidate boxes before applying the score gate.",
+      "Keep boxes whose score is at least the live threshold.",
+      "Publish the accepted array with the original cloud header.",
+      "Report before-filter, removed and accepted counts together.",
+      "Report input/inference failures separately and mark their per-frame counts unavailable.",
+      "Inspect timestamps because retained counters may be old; totals count detection events, not unique objects."
+    ],
+    "verification": "Historical five C++/ROS output tests, 60 native plus 60 deployed GPU observations and actual RViz rendering verified output semantics. Fresh monitor fixtures passed retained snapshots, bounded waits and stopped-container handling. No new GPU replay was run.",
+    "remaining_limit": "The gate cannot correct wrong box geometry or guarantee removal of false positives. There is no tracker.",
+    "evidence_paths": [
+      "src/detection_output.cpp",
+      "tests/ros/test_detection_output.cpp",
+      "docs/CONFIDENCE_FILTER_AND_MONITORING.md",
+      ".recovery/verification/published-deployment/rviz-live.png",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/monitor_helper.stderr.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-02.json"
+    ],
+    "reproduction": {
+      "kind": "controlled_fixture_observation",
+      "command": "python3 -B .recovery/verification/thesis-evidence-2026-11-09/operations/scenario-capture.py",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-02.json",
+      "status": "passed; all recorded fixture assertions true"
+    },
+    "visual_suggestion": "Use the genuine historical filtering/counter screenshot plus the new actual monitor-test result, with dates and scopes distinguished.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "No response or a stopped container cannot establish zero detections.",
+    "visual_after": "The helper reports unavailable data; a separately controlled reply is read. Historical RViz shows actual accepted/removed event counts.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-02.json"
+  },
+  {
+    "id": "J40",
+    "title": "Record the effective threshold rather than assume one default",
+    "symptom": "The native/YAML default was 0.5 while launchers supplied 0.4, risking inconsistent comparisons.",
+    "explanation": "A shell override changes startup behavior. A live parameter query is the reliable source for the running value; frozen baseline export refuses undocumented filtering.",
+    "steps": [
+      "Read the C++/YAML default and launcher override separately.",
+      "Query confidence_threshold on the running node when performing a live run.",
+      "Set the intended value explicitly in the experiment configuration.",
+      "For baseline export, request 0.0 and validate matching per-frame statistics.",
+      "Refuse changed/nonfinite thresholds or inconsistent counts during collection.",
+      "Use a new output directory when experiment identity changes."
+    ],
+    "verification": "Fresh baseline-gate fixtures accepted unfiltered/empty frames and rejected changed/nonfinite gates, failures, missing fields and mismatched counts. Fresh helper fixtures also confirmed threshold mode only reads the parameter.",
+    "remaining_limit": "0.0 disables the additional publication gate, not the model decode cutoff or NMS. No new threshold-specific accuracy claim is made.",
+    "evidence_paths": [
+      "docker/node.yaml",
+      "tools/start_ouster.sh",
+      "tools/deploy.sh",
+      "tools/kitti_inference.py",
+      "tests/test_detection_monitor.py",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/detection_monitor.stderr.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/monitor_helper.stderr.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-07.json"
+    ],
+    "reproduction": {
+      "kind": "controlled_fixture_observation",
+      "command": "python3 -B .recovery/verification/thesis-evidence-2026-11-09/operations/scenario-capture.py",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-07.json",
+      "status": "passed; all recorded fixture assertions true"
+    },
+    "visual_suggestion": "Show actual source snippets for 0.5/0.4 alongside the genuine passing baseline-protection tests; do not fabricate a live parameter reply.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "Filtered or nonfinite publication thresholds would contaminate the frozen baseline.",
+    "visual_after": "The real validator refuses 0.5 and NaN fixture policies and accepts the declared unfiltered policy 0.0.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-07.json"
+  },
+  {
+    "id": "J41",
+    "title": "Convert the actual Ouster field numerically",
+    "symptom": "The physical driver produced XYZ plus integer signal/reflectivity but no FLOAT32 intensity; 565 observed clouds were rejected.",
+    "explanation": "A sensor-specific adapter must convert the numeric selected channel into a new FLOAT32 intensity field. Changing metadata alone would reinterpret bytes. The production selector still requires literal signal or reflectivity.",
+    "steps": [
+      "Inspect the incoming PointCloud2 fields, datatypes, offsets and dimensions.",
+      "Select an existing signal or reflectivity field and declare its divisor.",
+      "Validate layout, point/byte bounds and divisor before reading data.",
+      "Copy header/XYZ and numerically convert the selected field into compact XYZI.",
+      "Publish reliable adapted output and inspect conversion/rejection counters.",
+      "For unchanged bags naming signal intensity, keep reflectivity selected until a verified alias is separately implemented."
+    ],
+    "verification": "Historical compiled converter/ROS tests and 2,224 offline conversion observations exercised numeric layout/header contracts. The fresh original MOSEP test independently checked conversion. This rerun only executes related Python input-contract fixtures, not the C++ converter.",
+    "remaining_limit": "Alias support for intensity\u2192signal is not deployed. There is no auto-passthrough, channel choice, sensor fusion, ROI crop or production pillar-capacity policy.",
+    "evidence_paths": [
+      "src/ouster_adapter.cpp",
+      "src/ouster_adapter_node.cpp",
+      "tests/ros/test_ouster_adapter.cpp",
+      "config/ouster_adapter_bag_validation.json",
+      "docs/LIVE_OUSTER_ADAPTER.md",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/ouster_demo.stderr.log",
+      ".recovery/ouster-fresh-test/pipeline.log"
+    ],
+    "reproduction": {
+      "kind": "isolated_existing_fixture",
+      "command": "/usr/bin/python3 -B -m unittest discover -s tests -p test_ouster_demo.py -v",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/operations/ouster_demo.stderr.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "Use the actual accepted-schema/adapter log from .recovery/ouster-fresh-test/pipeline.log beside a datatype conversion diagram; explicitly label fresh Python tests as input-contract fixtures.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "The original physical cloud lacked compatible FLOAT32 intensity; 565 observed frames were rejected.",
+    "visual_after": "The separate adapter converts a declared field numerically. The fresh saved pipeline log records reflectivity conversion; literal intensity-to-signal alias support remains open.",
+    "visual_log_source": ".recovery/ouster-fresh-test/pipeline.log",
+    "visual_log_excerpt": "[INFO] [1794087476.401724780] [ouster_adapter]: /sensing/lidar/points -> /ouster_fresh/xyzi; intensity = reflectivity / 255. Input best effort; output reliable.\n[INFO] [1794087616.636714893] [ouster_adapter]: Accepted Ouster schema: 1024x64 point_step=48 x(type=7,offset=0,count=1) y(type=7,offset=4,count=1) z(type=7,offset=8,count=1) intensity(type=7,offset=16,count=1) t(type=6,offset=20,count=1) reflectivity(type=4,offset=24,count=1) ring(type=4,offset=26,count=1) ambient(type=4,offset=28,count=1) range(type=6,offset=32,count=1)"
+  },
+  {
+    "id": "J42",
+    "title": "Test a fresh unchanged recording without replacing the saved production image",
+    "symptom": "The saved detector image lacked the new adapter, and the user required an original bag plus visible output.",
+    "explanation": "A separate derivative image compiled the adapter against existing ROS libraries, preserving detector/model/standard image. The new MOSEP archive was checksum-verified and replayed read-only.",
+    "steps": [
+      "Download and verify the publisher archive identity.",
+      "Preserve original extracted files and record their hashes.",
+      "Build a separate adapter test image when the saved main image lacks it.",
+      "Mount the original bag read-only and select the matching transport/topic profile.",
+      "Compare raw/adapted headers and XYZ bytes against independent conversion.",
+      "Open actual RViz in the source sensor frame and keep sampled counts separate from later snapshots."
+    ],
+    "verification": "The historical observer checked 40 raw/adapted pairs and 39 detection headers; a later loop snapshot counted 103 processed frames and zero input/inference errors. Fresh bag-launcher fixtures passed readonly mounting, unchanged fixture bytes, existing-player refusal and image checks.",
+    "remaining_limit": "The fresh rerun is mocked launcher verification, not another live GPU/RViz run. The original visual test used reflectivity only and did not establish accuracy.",
+    "evidence_paths": [
+      "docs/FRESH_OUSTER_VISUAL_TEST.md",
+      "config/ouster_fresh_visual_validation.json",
+      ".recovery/ouster-fresh-test/rviz-detections.png",
+      "tests/test_start_ouster_bag.py",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/start_ouster_bag.stderr.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-04.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-03.json"
+    ],
+    "reproduction": {
+      "kind": "controlled_fixture_observation",
+      "command": "python3 -B .recovery/verification/thesis-evidence-2026-11-09/operations/scenario-capture.py",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-04.json",
+      "status": "passed; all recorded fixture assertions true"
+    },
+    "visual_suggestion": "Use the genuine .recovery/ouster-fresh-test/rviz-detections.png and the recorded observer report; show the new readonly-launcher fixture separately.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "An image missing the adapter and a private bag missing metadata are refused.",
+    "visual_after": "With complete fixture inputs, the launcher requests a read-only bag mount. The genuine historical MOSEP RViz screenshot is separate live evidence.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-04.json"
+  }
+]

@@ -1,0 +1,553 @@
+{
+  "schema_version": 1,
+  "reviewed_local_date": "2026-11-24",
+  "timezone": "Europe/Berlin",
+  "status": "measured development improvement; primary person case and operational acceptance unresolved",
+  "accuracy_accepted": false,
+  "candidate": {
+    "repository": "https://github.com/zhulf0804/PointPillars",
+    "commit": "620e6b0d07e4cb37b7b0114f26b934e8be92a0ba",
+    "checkpoint_sha256": "482dfcf63b932cc5ccf012b4bbdad52aa51aa33becf87d0a39d61c39b377b5b1",
+    "framework": "PyTorch CPU; substituted deterministic NumPy voxelization and polygon NMS",
+    "full360": "four fixed views with center-sector ownership; seam/native-ROI limits remain"
+  },
+  "experiment": {
+    "kitti_unique_frames": 32,
+    "kitti_inferences": 96,
+    "dur360_unique_frames": 32,
+    "dur360_inferences": 96,
+    "dur360_resumed_missing_inferences": 29,
+    "person1403_inferences": 3,
+    "repeats": 3,
+    "counts_are_independent_scenes": false,
+    "baseline": "frozen current model predictions, paired gate and label policy",
+    "dur360_test_frames": 16,
+    "dur360_test_pedestrian_gt_boxes": 6
+  },
+  "dur360_historical_test_3d": {
+    "0.1": {
+      "baseline_reflectivity_div255": {
+        "Vehicle": {
+          "tp": {
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "fp": {
+            "mean": 235.66666666666666,
+            "min": 232,
+            "max": 238
+          },
+          "fn": {
+            "mean": 60,
+            "min": 60,
+            "max": 60
+          },
+          "precision": {
+            "mean": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "recall": {
+            "mean": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "Pedestrian": {
+          "tp": {
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "fp": {
+            "mean": 188,
+            "min": 186,
+            "max": 191
+          },
+          "fn": {
+            "mean": 6,
+            "min": 6,
+            "max": 6
+          },
+          "precision": {
+            "mean": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "recall": {
+            "mean": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        }
+      },
+      "candidate_four_views": {
+        "Vehicle": {
+          "tp": {
+            "mean": 12,
+            "min": 12,
+            "max": 12
+          },
+          "fp": {
+            "mean": 161,
+            "min": 161,
+            "max": 161
+          },
+          "fn": {
+            "mean": 48,
+            "min": 48,
+            "max": 48
+          },
+          "precision": {
+            "mean": 0.06936416184971098,
+            "min": 0.06936416184971098,
+            "max": 0.06936416184971098
+          },
+          "recall": {
+            "mean": 0.2,
+            "min": 0.2,
+            "max": 0.2
+          }
+        },
+        "Pedestrian": {
+          "tp": {
+            "mean": 3,
+            "min": 3,
+            "max": 3
+          },
+          "fp": {
+            "mean": 60,
+            "min": 60,
+            "max": 60
+          },
+          "fn": {
+            "mean": 3,
+            "min": 3,
+            "max": 3
+          },
+          "precision": {
+            "mean": 0.047619047619047616,
+            "min": 0.047619047619047616,
+            "max": 0.047619047619047616
+          },
+          "recall": {
+            "mean": 0.5,
+            "min": 0.5,
+            "max": 0.5
+          }
+        }
+      }
+    },
+    "0.3": {
+      "baseline_reflectivity_div255": {
+        "Vehicle": {
+          "tp": {
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "fp": {
+            "mean": 35.666666666666664,
+            "min": 35,
+            "max": 36
+          },
+          "fn": {
+            "mean": 60,
+            "min": 60,
+            "max": 60
+          },
+          "precision": {
+            "mean": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "recall": {
+            "mean": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "Pedestrian": {
+          "tp": {
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "fp": {
+            "mean": 12.666666666666666,
+            "min": 12,
+            "max": 13
+          },
+          "fn": {
+            "mean": 6,
+            "min": 6,
+            "max": 6
+          },
+          "precision": {
+            "mean": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "recall": {
+            "mean": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        }
+      },
+      "candidate_four_views": {
+        "Vehicle": {
+          "tp": {
+            "mean": 11,
+            "min": 11,
+            "max": 11
+          },
+          "fp": {
+            "mean": 78,
+            "min": 78,
+            "max": 78
+          },
+          "fn": {
+            "mean": 49,
+            "min": 49,
+            "max": 49
+          },
+          "precision": {
+            "mean": 0.12359550561797752,
+            "min": 0.12359550561797752,
+            "max": 0.12359550561797752
+          },
+          "recall": {
+            "mean": 0.18333333333333332,
+            "min": 0.18333333333333332,
+            "max": 0.18333333333333332
+          }
+        },
+        "Pedestrian": {
+          "tp": {
+            "mean": 3,
+            "min": 3,
+            "max": 3
+          },
+          "fp": {
+            "mean": 11,
+            "min": 11,
+            "max": 11
+          },
+          "fn": {
+            "mean": 3,
+            "min": 3,
+            "max": 3
+          },
+          "precision": {
+            "mean": 0.21428571428571427,
+            "min": 0.21428571428571427,
+            "max": 0.21428571428571427
+          },
+          "recall": {
+            "mean": 0.5,
+            "min": 0.5,
+            "max": 0.5
+          }
+        }
+      }
+    },
+    "0.4": {
+      "baseline_reflectivity_div255": {
+        "Vehicle": {
+          "tp": {
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "fp": {
+            "mean": 14.666666666666666,
+            "min": 14,
+            "max": 15
+          },
+          "fn": {
+            "mean": 60,
+            "min": 60,
+            "max": 60
+          },
+          "precision": {
+            "mean": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "recall": {
+            "mean": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "Pedestrian": {
+          "tp": {
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "fp": {
+            "mean": 3,
+            "min": 3,
+            "max": 3
+          },
+          "fn": {
+            "mean": 6,
+            "min": 6,
+            "max": 6
+          },
+          "precision": {
+            "mean": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "recall": {
+            "mean": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        }
+      },
+      "candidate_four_views": {
+        "Vehicle": {
+          "tp": {
+            "mean": 10,
+            "min": 10,
+            "max": 10
+          },
+          "fp": {
+            "mean": 45,
+            "min": 45,
+            "max": 45
+          },
+          "fn": {
+            "mean": 50,
+            "min": 50,
+            "max": 50
+          },
+          "precision": {
+            "mean": 0.18181818181818182,
+            "min": 0.18181818181818182,
+            "max": 0.18181818181818182
+          },
+          "recall": {
+            "mean": 0.16666666666666666,
+            "min": 0.16666666666666666,
+            "max": 0.16666666666666666
+          }
+        },
+        "Pedestrian": {
+          "tp": {
+            "mean": 2,
+            "min": 2,
+            "max": 2
+          },
+          "fp": {
+            "mean": 5,
+            "min": 5,
+            "max": 5
+          },
+          "fn": {
+            "mean": 4,
+            "min": 4,
+            "max": 4
+          },
+          "precision": {
+            "mean": 0.2857142857142857,
+            "min": 0.2857142857142857,
+            "max": 0.2857142857142857
+          },
+          "recall": {
+            "mean": 0.3333333333333333,
+            "min": 0.3333333333333333,
+            "max": 0.3333333333333333
+          }
+        }
+      }
+    },
+    "0.5": {
+      "baseline_reflectivity_div255": {
+        "Vehicle": {
+          "tp": {
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "fp": {
+            "mean": 6,
+            "min": 6,
+            "max": 6
+          },
+          "fn": {
+            "mean": 60,
+            "min": 60,
+            "max": 60
+          },
+          "precision": {
+            "mean": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "recall": {
+            "mean": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "Pedestrian": {
+          "tp": {
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "fp": {
+            "mean": 2.6666666666666665,
+            "min": 2,
+            "max": 3
+          },
+          "fn": {
+            "mean": 6,
+            "min": 6,
+            "max": 6
+          },
+          "precision": {
+            "mean": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "recall": {
+            "mean": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        }
+      },
+      "candidate_four_views": {
+        "Vehicle": {
+          "tp": {
+            "mean": 10,
+            "min": 10,
+            "max": 10
+          },
+          "fp": {
+            "mean": 27,
+            "min": 27,
+            "max": 27
+          },
+          "fn": {
+            "mean": 50,
+            "min": 50,
+            "max": 50
+          },
+          "precision": {
+            "mean": 0.2702702702702703,
+            "min": 0.2702702702702703,
+            "max": 0.2702702702702703
+          },
+          "recall": {
+            "mean": 0.16666666666666666,
+            "min": 0.16666666666666666,
+            "max": 0.16666666666666666
+          }
+        },
+        "Pedestrian": {
+          "tp": {
+            "mean": 2,
+            "min": 2,
+            "max": 2
+          },
+          "fp": {
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "fn": {
+            "mean": 4,
+            "min": 4,
+            "max": 4
+          },
+          "precision": {
+            "mean": 1.0,
+            "min": 1.0,
+            "max": 1.0
+          },
+          "recall": {
+            "mean": 0.3333333333333333,
+            "min": 0.3333333333333333,
+            "max": 0.3333333333333333
+          }
+        }
+      }
+    }
+  },
+  "independent_review": {
+    "metric_groups_recomputed": 192,
+    "all_matched": true,
+    "original_67_preserved": true,
+    "input_repeat_box_sets_identical": true
+  },
+  "limitations": [
+    "Full primary-bag person boxes and measured calibration absent from reviewed project",
+    "Exact person1403: no predicted pedestrian box contains both landmarks in all3 repeats",
+    "KITTI supplied upstream split lists contain14train and18val selected frames; exact checkpoint membership not proven",
+    "Dur360 historical frames previously inspected; no fresh recording holdout",
+    "Vehicle false positives increase at gates .3 .4 .5",
+    "Only6 test pedestrian annotations; observed2TP0FP not a population100percent precision guarantee",
+    "No TensorRT parity, real-time acceptance, live replacement or deployment"
+  ],
+  "evidence": {
+    ".recovery/verification/candidate-resume-20261124/complete.json": {
+      "sha256": "5ab2069b91f8323a6a1332cccadc6ce1edbe5d4fbf01080745c05f31be8ff346"
+    },
+    ".recovery/verification/candidate-resume-20261124/validation.json": {
+      "sha256": "01a04975b6a4b7996ffb5290893c15cf492611773f9f42370f97146e2b54a980"
+    },
+    ".recovery/verification/candidate-eval-20261124/evaluation-report.md": {
+      "sha256": "17e4a1586040db90070eb19e0c239eca8ebf5865fcbe9ed0f56b646b4e628a6e"
+    },
+    ".recovery/verification/candidate-eval-20261124/independent-adapter-audit.json": {
+      "sha256": "785d630344f73ab9aaeac892ac5ba2907ac7a7874515015dae1db9a911c23706"
+    },
+    ".recovery/verification/candidate-eval-20261124/pretraining-split-audit.json": {
+      "sha256": "ef72da020ee2b3a8963ab0e748136a09b306b5906d9e20718939bb65a1e886ef"
+    },
+    ".recovery/verification/candidate-eval-20261124/adapter-review.md": {
+      "sha256": "50111bc3c46cd81261d5c84658543db65767c18d3a1426604048ddc057df3cd6"
+    },
+    ".recovery/verification/candidate-eval-20261124/person-runner-parity-final-result.json": {
+      "sha256": "59bf3117476f508885baac0baaadadaacec30fe22ec5fe6e55f5c0f7d5c3a52b"
+    }
+  },
+  "documentation": "docs/CANDIDATE_MODEL_COMPARISON_20261124.md",
+  "experimental_tool": "tools/experimental_pointpillars.py",
+  "tool_verification": {
+    "status": "pass for experimental offline scope",
+    "independent_tests_passed": 10,
+    "system_python_optional_dependency_behavior": "clean skip when NumPy/PyTorch absent",
+    "actual_person_replay": "7 predicted boxes exactly equal to archived outputs on frozen input",
+    "source_sha256": {
+      "tools/experimental_pointpillars.py": "dff94ce16d81c69d427f4abcd0cab898e6c9d6d47df2c92158423c6bfc52b057",
+      "tests/test_experimental_pointpillars.py": "292f58af8f5e7e843dacfc8c2a2b00bd1e187a6b9de0e0058dc5508127e8af6d",
+      "tools/ouster_gt_evaluation.py": "ca302459724030b54ca7be13588ba28139196027299b3feb58d60973488ab961",
+      "tests/test_ouster_gt_evaluation.py": "df588bc318683fa6d8ce9d96e462fa0135159e4d11454bdbf7d527444f184b23"
+    },
+    "parity_report": ".recovery/verification/candidate-eval-20261124/person-runner-parity-final-result.json",
+    "scope_limits": [
+      "CPU only",
+      "No original compiled-extension parity",
+      "No TensorRT export or live ROS integration",
+      "Exact person case still missed"
+    ]
+  },
+  "verification_full_suite": {
+    "tests_run": 126,
+    "skipped": 1,
+    "result": "OK",
+    "skip_reason": "optional NumPy/PyTorch runner dependencies absent from system Python; 10 runner tests independently passed in experiment venv",
+    "log": ".recovery/verification/candidate-eval-20261124/all-python-tests-unrestricted.log",
+    "sha256": "f8503c3fd5bd9d6668b1670277f37a00d55f9905e11584e8d66359336b021b6e",
+    "sandbox_attempt": "Retained separately; six fixture-server tests failed due to denied localhost sockets; approved unrestricted rerun passed."
+  }
+}

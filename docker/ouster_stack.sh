@@ -31,7 +31,8 @@ setsid "$adapter" --ros-args \
   -p "input_topic:=${OUSTER_POINT_CLOUD_TOPIC:-/ouster1/points}" \
   -p "output_topic:=${POINT_CLOUD_TOPIC:-/point_cloud}" \
   -p "intensity_source:=${PP_OUSTER_INTENSITY_SOURCE:-reflectivity}" \
-  -p "intensity_divisor:=${PP_OUSTER_INTENSITY_DIVISOR:-255.0}" &
+  -p "intensity_divisor:=${PP_OUSTER_INTENSITY_DIVISOR:-255.0}" \
+  -p "intensity_clip_max:=${PP_OUSTER_INTENSITY_CLIP_MAX:-0.0}" &
 children+=("$!")
 setsid "$entrypoint" run &
 children+=("$!")

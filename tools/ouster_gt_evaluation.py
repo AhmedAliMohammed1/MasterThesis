@@ -100,14 +100,23 @@ def paired_accuracy(report, seed=20261108, samples=10000):
     if samples < 1:
         raise ValueError('Bootstrap samples must be positive')
     runs = report['runs']
+    if not runs:
+        raise ValueError('Accuracy evaluation requires at least one observation')
     results = []
     for split in sorted({r['split'] for r in runs}):
         variants = sorted({r['variant'] for r in runs if r['split'] == split})
+        repeats_by_variant = {variant: {r['repeat'] for r in runs
+                                       if r['split'] == split and r['variant'] == variant}
+                              for variant in variants}
+        if any(repeats != repeats_by_variant[variants[0]]
+               for repeats in repeats_by_variant.values()):
+            raise ValueError('Paired accuracy requires identical repeat sets across variants '
+                             f'in split {split!r}; represent missing predictions with an explicit failure status')
         for i, left in enumerate(variants):
             for right in variants[i + 1:]:
                 a = [r for r in runs if r['split'] == split and r['variant'] == left]
                 b = [r for r in runs if r['split'] == split and r['variant'] == right]
-                repeat_ids = sorted({r['repeat'] for r in a} & {r['repeat'] for r in b})
+                repeat_ids = sorted(repeats_by_variant[left])
                 ar = {r['repeat']: r for r in a}
                 br = {r['repeat']: r for r in b}
                 classes = sorted(set(a[0]['classes']) & set(b[0]['classes']))

@@ -38,7 +38,7 @@ if args[0] not in ('info', 'run'):
             for key in ('PP_IMAGE', 'PP_CONTAINER_NAME', 'PP_ENGINE_VOLUME', 'ROS_DOMAIN_ID',
                         'RMW_IMPLEMENTATION', 'POINT_CLOUD_TOPIC', 'DETECTIONS_TOPIC',
                         'OUSTER_POINT_CLOUD_TOPIC', 'PP_OUSTER_INTENSITY_SOURCE',
-                        'PP_OUSTER_INTENSITY_DIVISOR', 'PP_CONFIDENCE_THRESHOLD',
+                        'PP_OUSTER_INTENSITY_DIVISOR', 'PP_OUSTER_INTENSITY_CLIP_MAX', 'PP_CONFIDENCE_THRESHOLD',
                         'PP_GPU_INDEX', 'PP_WORKSPACE_MIB'):
                 env.pop(key, None)
             env.update(PATH=str(directory) + ':' + env['PATH'], TEST_DOCKER_CALLS=str(capture), **settings)
@@ -80,6 +80,14 @@ if args[0] not in ('info', 'run'):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('PP_OUSTER_INTENSITY_DIVISOR=1.0', calls[-1])
 
+    def test_clipped_reflectivity_preview(self):
+        result, calls = self.launch(('bag',), PP_OUSTER_INTENSITY_DIVISOR='100',
+                                    PP_OUSTER_INTENSITY_CLIP_MAX='1', PP_CONFIDENCE_THRESHOLD='0.3')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for value in ('PP_OUSTER_INTENSITY_DIVISOR=100.0', 'PP_OUSTER_INTENSITY_CLIP_MAX=1.0',
+                      'PP_CONFIDENCE_THRESHOLD=0.3'):
+            self.assertIn(value, calls[-1])
+
     def test_conflicts_and_old_image_do_not_start_stack(self):
         for setting in ('TEST_EXISTING', 'TEST_MISSING_IMAGE', 'TEST_MISSING_ADAPTER'):
             result, calls = self.launch(**{setting: '1'})
@@ -95,7 +103,7 @@ if args[0] not in ('info', 'run'):
         player_result, player_calls = FreshBagLauncherTests().launch()
         self.assertEqual(player_result.returncode, 0, player_result.stderr)
         for value in ('ROS_DOMAIN_ID=99', 'RMW_IMPLEMENTATION=rmw_fastrtps_cpp',
-                      'OUSTER_POINT_CLOUD_TOPIC=/sensing/lidar/points'):
+                      'OUSTER_POINT_CLOUD_TOPIC=/ouster1/points'):
             self.assertIn(value, calls[-1])
             if not value.startswith('OUSTER_'):
                 self.assertIn(value, player_calls[-1])
@@ -104,7 +112,8 @@ if args[0] not in ('info', 'run'):
 
     def test_invalid_settings_fail_before_docker(self):
         for settings in ({'PP_OUSTER_INTENSITY_SOURCE': 'auto'}, {'PP_OUSTER_INTENSITY_DIVISOR': '0'},
-                         {'PP_OUSTER_INTENSITY_DIVISOR': 'nan'}, {'PP_OUSTER_INTENSITY_DIVISOR': '-1'},
+                         {'PP_OUSTER_INTENSITY_DIVISOR': 'nan'}, {'PP_OUSTER_INTENSITY_CLIP_MAX': '-1'},
+                         {'PP_OUSTER_INTENSITY_CLIP_MAX': 'nan'}, {'PP_OUSTER_INTENSITY_DIVISOR': '-1'},
                          {'OUSTER_POINT_CLOUD_TOPIC': '/point_cloud'}, {'ROS_DOMAIN_ID': '233'},
                          {'POINT_CLOUD_TOPIC': 'relative'}, {'OUSTER_POINT_CLOUD_TOPIC': '/a;touch /tmp/no'}):
             result, calls = self.launch(**settings)

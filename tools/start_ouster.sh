@@ -13,13 +13,15 @@ Starts the Ouster adapter and detector together using the saved image. The Ouste
 driver must already be running. Ctrl+C stops both; the engine cache is retained.
 No build, image pull, package installation, or driver configuration is performed.
 For the downloaded bag: start_ouster.sh bag, then start_ouster_bag.sh.
-Bag mode shares the player's Fast DDS, domain 99 and /sensing/lidar/points.
+Bag mode shares the player's Fast DDS, domain 99 and /ouster1/points.
+Primary recordings: start_ouster_bag.sh raw01 (default) or ouster1.
 
 Defaults:
   OUSTER_POINT_CLOUD_TOPIC     /ouster1/points (raw sensor input)
   POINT_CLOUD_TOPIC            /point_cloud (adapted detector input)
   PP_OUSTER_INTENSITY_SOURCE   reflectivity (overridden by positional choice)
   PP_OUSTER_INTENSITY_DIVISOR  255.0 for reflectivity, 65535.0 for signal
+  PP_OUSTER_INTENSITY_CLIP_MAX 0.0 (disabled); use 1.0 with divisor 100 for clipped reflectivity
   RMW_IMPLEMENTATION          rmw_zenoh_cpp (match your Ouster drivers)
   ROS_DOMAIN_ID               0
   PP_IMAGE                   pp-infer:jazzy-trt10 (must include ouster_adapter)
@@ -57,6 +59,11 @@ divisor=${PP_OUSTER_INTENSITY_DIVISOR:-$default_divisor}
   echo 'PP_OUSTER_INTENSITY_DIVISOR must be a positive decimal number.' >&2; exit 2;
 }
 [[ $divisor == *.* ]] || divisor+=.0
+clip_max=${PP_OUSTER_INTENSITY_CLIP_MAX:-0.0}
+[[ $clip_max =~ ^[0-9]+([.][0-9]+)?$ ]] || {
+  echo 'PP_OUSTER_INTENSITY_CLIP_MAX must be nonnegative (0 disables clipping).' >&2; exit 2;
+}
+[[ $clip_max == *.* ]] || clip_max+=.0
 raw_topic=${OUSTER_POINT_CLOUD_TOPIC:-/ouster1/points}
 adapted_topic=${POINT_CLOUD_TOPIC:-/point_cloud}
 for topic in "$raw_topic" "$adapted_topic" "${DETECTIONS_TOPIC:-/bbox}"; do
@@ -94,6 +101,7 @@ if ! docker run --pull=never --rm --network none --entrypoint /usr/bin/test "$im
 fi
 printf 'Ouster pipeline: %s -> [%s / %s] -> %s -> %s\n' \
   "$raw_topic" "$source_channel" "$divisor" "$adapted_topic" "${DETECTIONS_TOPIC:-/bbox}"
+printf 'Intensity cap: %s (0 disables clipping).\n' "$clip_max"
 echo 'Starting adapter and detector. Ctrl+C stops both. The Ouster driver must already be running.'
 printf 'Profile: %s; domain: %s; middleware: %s\n' "$profile" "$domain" "$RMW_IMPLEMENTATION"
 if [[ $profile == live ]]; then
@@ -108,6 +116,7 @@ pp_run_container --pull=never --rm --init --stop-timeout 10 --name "$container" 
   -e "POINT_CLOUD_TOPIC=$adapted_topic" \
   -e "PP_OUSTER_INTENSITY_SOURCE=$source_channel" \
   -e "PP_OUSTER_INTENSITY_DIVISOR=$divisor" \
+  -e "PP_OUSTER_INTENSITY_CLIP_MAX=$clip_max" \
   -e "DETECTIONS_TOPIC=${DETECTIONS_TOPIC:-/bbox}" \
   -e "PP_CONFIDENCE_THRESHOLD=${PP_CONFIDENCE_THRESHOLD:-0.4}" \
   -e "PP_GPU_INDEX=${PP_GPU_INDEX:-0}" \

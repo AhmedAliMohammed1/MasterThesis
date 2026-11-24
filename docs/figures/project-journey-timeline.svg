@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1450" viewBox="0 0 2400 1450"><rect width="100%" height="100%" fill="white"/>
+<text x="80" y="60" font-family="DejaVu Sans,sans-serif" font-size="58" font-weight="700" fill="#16324F" dominant-baseline="text-before-edge">From migration to a measured Ouster decision</text>
+<text x="80" y="143" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#597081" dominant-baseline="text-before-edge">Engineering records: October–November 2026 | Different stages establish different kinds of evidence</text>
+<rect x="80" y="235" width="700" height="450" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="108" y="257" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="700" fill="#087F8C" dominant-baseline="text-before-edge">1   1–2 October</text>
+<text x="108" y="314" font-family="DejaVu Sans,sans-serif" font-size="35" font-weight="700" fill="#16324F" dominant-baseline="text-before-edge">Make execution inspectable</text>
+<text x="108" y="382" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Separate geometry, ROS and GPU</text>
+<text x="108" y="425" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">responsibilities.</text>
+<text x="108" y="482" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Validate tensors; own and reuse GPU</text>
+<text x="108" y="525" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">resources.</text>
+<text x="108" y="582" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Build with colcon; cache target-GPU</text>
+<text x="108" y="625" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">engines.</text>
+<polyline points="789,460 834,460" fill="none" stroke="#087F8C" stroke-width="5"/>
+<polygon points="834.00,460.00 819.08,468.15 819.08,451.85" fill="#087F8C"/>
+<rect x="850" y="235" width="700" height="450" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="878" y="257" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="700" fill="#087F8C" dominant-baseline="text-before-edge">2   3 October</text>
+<text x="878" y="314" font-family="DejaVu Sans,sans-serif" font-size="35" font-weight="700" fill="#16324F" dominant-baseline="text-before-edge">Ask whether boxes are correct</text>
+<text x="878" y="382" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Freeze a labeled KITTI diagnostic</text>
+<text x="878" y="425" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">sample.</text>
+<text x="878" y="482" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">TRT8 reproduces poor 3D results and</text>
+<text x="878" y="525" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">upward centers.</text>
+<text x="878" y="582" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Same-candidate NMS agrees; capacity</text>
+<text x="878" y="625" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">remains open.</text>
+<polyline points="1559,460 1604,460" fill="none" stroke="#087F8C" stroke-width="5"/>
+<polygon points="1604.00,460.00 1589.08,468.15 1589.08,451.85" fill="#087F8C"/>
+<rect x="1620" y="235" width="700" height="450" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="1648" y="257" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="700" fill="#087F8C" dominant-baseline="text-before-edge">3   13–14 October</text>
+<text x="1648" y="314" font-family="DejaVu Sans,sans-serif" font-size="35" font-weight="700" fill="#16324F" dominant-baseline="text-before-edge">Investigate sensor inputs</text>
+<text x="1648" y="382" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Normalized Ouster features avoid</text>
+<text x="1648" y="425" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">recorded numerical failures.</text>
+<text x="1648" y="482" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Preserve raw detail and camera</text>
+<text x="1648" y="525" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">data.</text>
+<text x="1648" y="582" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Separate timing and rendering from</text>
+<text x="1648" y="625" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">object accuracy.</text>
+<rect x="80" y="745" width="700" height="450" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="108" y="767" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="700" fill="#087F8C" dominant-baseline="text-before-edge">4   23 October</text>
+<text x="108" y="824" font-family="DejaVu Sans,sans-serif" font-size="35" font-weight="700" fill="#16324F" dominant-baseline="text-before-edge">Make output observable</text>
+<text x="108" y="892" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Add a live confidence gate and per-</text>
+<text x="108" y="935" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">frame counters.</text>
+<text x="108" y="992" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Verify native/deployed GPU</text>
+<text x="108" y="1035" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">publication and RViz.</text>
+<text x="108" y="1092" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Counts measure detection events,</text>
+<text x="108" y="1135" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">not unique objects.</text>
+<polyline points="789,970 834,970" fill="none" stroke="#087F8C" stroke-width="5"/>
+<polygon points="834.00,970.00 819.08,978.15 819.08,961.85" fill="#087F8C"/>
+<rect x="850" y="745" width="700" height="450" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="878" y="767" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="700" fill="#087F8C" dominant-baseline="text-before-edge">5   28 October–8 November</text>
+<text x="878" y="824" font-family="DejaVu Sans,sans-serif" font-size="35" font-weight="700" fill="#16324F" dominant-baseline="text-before-edge">Connect and operate Ouster</text>
+<text x="878" y="892" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Diagnose physical-host driver and</text>
+<text x="878" y="935" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">schema issues.</text>
+<text x="878" y="992" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Verify fresh MOSEP adapter → GPU →</text>
+<text x="878" y="1035" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">RViz.</text>
+<text x="878" y="1092" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Align launch profiles, reuse</text>
+<text x="878" y="1135" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">builds, fix shutdown.</text>
+<polyline points="1559,970 1604,970" fill="none" stroke="#087F8C" stroke-width="5"/>
+<polygon points="1604.00,970.00 1589.08,978.15 1589.08,961.85" fill="#087F8C"/>
+<rect x="1620" y="745" width="700" height="450" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="1648" y="767" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="700" fill="#087F8C" dominant-baseline="text-before-edge">6   8 November</text>
+<text x="1648" y="824" font-family="DejaVu Sans,sans-serif" font-size="35" font-weight="700" fill="#16324F" dominant-baseline="text-before-edge">Choose a research baseline</text>
+<text x="1648" y="892" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Run 1,120 measured GPU inferences.</text>
+<text x="1648" y="949" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Four vehicle BEV matches per repeat</text>
+<text x="1648" y="992" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">with reflectivity; zero with</text>
+<text x="1648" y="1035" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">signal.</text>
+<text x="1648" y="1092" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Neither encoding has qualifying 3D</text>
+<text x="1648" y="1135" font-family="DejaVu Sans,sans-serif" font-size="32" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">matches.</text>
+<text x="80" y="1270" font-family="DejaVu Sans,sans-serif" font-size="36" font-weight="700" fill="#9A5D12" dominant-baseline="text-before-edge">Implemented and tested: the software path. Still open: reliable, accurate 3D perception.</text>
+<text x="80" y="1335" font-family="DejaVu Sans,sans-serif" font-size="29" font-weight="400" fill="#597081" dominant-baseline="text-before-edge">Chronology is not a benchmark curve. Tests, integration samples and labeled evaluations retain their original scopes.</text>
+</svg>

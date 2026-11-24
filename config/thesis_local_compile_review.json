@@ -1,0 +1,26 @@
+{
+  "date_local": "2026-11-09",
+  "backend": "Installed TeX Live XeLaTeX and latexmk; same toolchain as project VS Code LaTeX Workshop recipe. Invoked through terminal, not a VS Code UI click.",
+  "command": "latexmk -g -xelatex -cd -synctex=1 -interaction=nonstopmode -file-line-error -halt-on-error docs/THESIS_DRAFT.tex",
+  "exit_code": 0,
+  "article_cls": "/usr/share/texlive/texmf-dist/tex/latex/base/article.cls",
+  "pdf": "docs/THESIS_DRAFT.pdf",
+  "pages": 93,
+  "source_sha256": "f91f8c79192258ad1706a71dba759805da3d61ce8ace665681fc6eaa6691557c",
+  "pdf_sha256": "c095d0d7ba0f5a702b63a6663dd4c2d662a262b47d86d262e4680c3bdc95ec7c",
+  "undefined_reference_warnings": 0,
+  "missing_character_warnings": 0,
+  "overfull_box_warnings": 90,
+  "visual_checks": {
+    "pages": [
+      12,
+      21,
+      34
+    ],
+    "scope": "Chronology table, diagnostic table and one case with a native flowchart inspected; no overlap/clipping seen on these pages.",
+    "complete_document_layout_acceptance": false
+  },
+  "evidence": ".recovery/verification/thesis-local-compile-2026-11-09",
+  "source_edited": false,
+  "note": "Local compilation succeeds independently of the built-in compiler dependency download failure. Existing text-width warnings still require a separate layout pass."
+}

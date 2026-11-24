@@ -1,0 +1,35 @@
+{
+  "date_local": "2026-11-09",
+  "replaced_explanatory_images": [
+    "project-journey-timeline.png",
+    "project-diagnostic-map.png",
+    "ouster-channel-results-summary.png"
+  ],
+  "replacement": "Three native LaTeX tables and one native TikZ diagnostic workflow. Matching Markdown tables replace the same image embeds.",
+  "preserved": "Original RViz/terminal captures and measured ground-truth point-cloud plot. Existing54case tables and10case flows unchanged.",
+  "case_tables": 54,
+  "case_flows": 10,
+  "additional_native_overview_tables": 3,
+  "additional_native_overview_flows": 1,
+  "total_numbered_steps": 260,
+  "source_checks": [],
+  "new_experiment": false,
+  "old_assets_policy": "Keep PNG/SVG files and hashes as archived evidence; remove their embeds from current thesis.",
+  "native_compile": {
+    "kind": "compile-failed",
+    "cause": "DNS failure fetching article.cls from relay.fullyjustified.net; source/PDF validation not reached.",
+    "evidence": ".recovery/verification/thesis-native-overviews-2026-11-09/native-compile.json"
+  },
+  "pdf_layout_verified": false,
+  "source_sha256": {
+    "docs/THESIS_DRAFT.tex": "f91f8c79192258ad1706a71dba759805da3d61ce8ace665681fc6eaa6691557c",
+    "docs/THESIS_DRAFT.md": "1d0ed11f729c1b49e20df957e1d644264ac2470836f72dcfe8cb5118ca7d4098",
+    "docs/ENGINEERING_JOURNEY.md": "ba0e6537a6fe978401e7a22c6ab2795c9a51b06d1e84254e388663088e78e07d"
+  },
+  "local_compilation_followup": {
+    "record": "config/thesis_local_compile_review.json",
+    "exit_code": 0,
+    "pages": 93,
+    "full_layout_verified": false
+  }
+}

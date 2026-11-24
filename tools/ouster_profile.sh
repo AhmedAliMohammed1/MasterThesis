@@ -5,7 +5,7 @@ pp_ouster_profile() {
     bag)
       export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-99}
       export RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}
-      export OUSTER_POINT_CLOUD_TOPIC=${OUSTER_POINT_CLOUD_TOPIC:-/sensing/lidar/points}
+      export OUSTER_POINT_CLOUD_TOPIC=${OUSTER_POINT_CLOUD_TOPIC:-/ouster1/points}
       ;;
     live)
       export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}

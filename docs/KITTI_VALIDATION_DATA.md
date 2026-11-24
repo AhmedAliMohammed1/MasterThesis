@@ -1,8 +1,6 @@
 # Preparing labeled KITTI scenarios
 
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
-
-> **Status reviewed 23 October 2026.** Preparation is complete for 32 frozen labeled frames. Prediction export, evaluator policy and baseline scoring are also implemented; the 16-frame test set has zero moderate 3D matches. The 154-frame frontal raw-data clip is a separate integration example with no detection ground truth in that workflow. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
+Reviewed 8 November 2026. Use this guide to prepare **matched labeled KITTI inputs**. Preparation is complete for the frozen 32-frame diagnostic set, and its [measured accuracy](KITTI_ACCURACY_RESULTS.md) remains poor. The newer [Ouster evaluation](OUSTER_CHANNEL_DECISION.md) is a separate dataset and metric; neither replaces these KITTI source files or this preparation protocol.
 
 This is the first implementation step in the [model validation plan](MODEL_VALIDATION_PLAN.md). It prepares matched point clouds, object annotations, calibration and camera images. It does not run inference or calculate accuracy. The earlier sequence04 bag and camera video remain useful integration examples, but have no object annotations in this project.
 
@@ -60,7 +58,7 @@ The same drive partition applies with the default seed, and selections are deter
 | `manifest.json` | Completed dataset identity, source metadata, file hashes, split membership and summary |
 | `.cache/` | Small pinned archives retained for recovery |
 
-The folder receives its own `.gitignore`, and the default location is outside the source checkout. These assets stay out of Git and source checkpoints. Back up the manifest together with the assets if you want to reproduce a result on another computer. Camera files are retained for a later projected-box review; this patch does not start RViz or play a bag.
+The folder receives its own `.gitignore`, and the default location is outside the source checkout. These assets stay out of Git and source checkpoints. Back up the manifest together with the assets if you want to reproduce a result on another computer. Camera files are retained for review. This preparation command does not start RViz or play a bag.
 
 ## Coordinate conversion
 
@@ -105,12 +103,10 @@ The calibration tests use independently known centers, corners and headings, inc
 
 Prediction export, frozen class/visibility/ignore policy, baseline scoring and a TensorRT compatibility reference are now delivered. Dataset preparation itself does not run inference. Next resolve input/training parity, capacity/repeatability and larger untouched accuracy acceptance; see the measured results below.
 
+## Continue to scoring
 
-## Measurement update: 3 October 2026
+Use [KITTI accuracy results and commands](KITTI_ACCURACY_RESULTS.md) to collect predictions or reproduce the frozen score. Use [the reference comparison](MODEL_REFERENCE_COMPARISON.md) to investigate inference differences. The baseline has zero moderate 3D matches; it is a diagnostic result, not acceptance. The current [validation plan](MODEL_VALIDATION_PLAN.md) explains capacity, training-contract and untouched-data work still required.
 
-The first labeled 32-frame diagnostic baseline is now measured. The 16-frame test split has zero moderate 3D matches; moderate BEV AP_R40 is Car 5.75%, Pedestrian 0%, Cyclist 0.0258%. Vehicle is explicitly mapped to Car compatibility. The evaluator's exact/missing/duplicate controls passed, and 41 total Python tests passed. Green calibrated ground truth and live predictions render together in RViz on domain 42. First-pass detections are frozen; repeated counts vary and full independent original-model parity remains pending. Read [accuracy results and commands](KITTI_ACCURACY_RESULTS.md) and [inventory](../config/kitti_accuracy_inventory.json). Earlier “not measured” statements describe preparation or the initial investigation, not this new baseline. Accuracy acceptance remains unmet.
+## Using this preparation in the thesis
 
-
-## Independent reference update: 3 October 2026
-
-A separate TensorRT 8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately 1.53 m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all 192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and 12 frames exceed the export's 10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly 99.6–100%; no production adaptation was installed. Two actual CUDA 12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.
+Describe the frozen frame-selection algorithm, drive separation, original-file integrity and calibrated annotation conversion as methods. Report model-range coverage as a limitation, not as a detection result. Cite the dataset and preserve its license; use the accuracy guide for performance claims.

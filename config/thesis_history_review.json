@@ -1,0 +1,445 @@
+{
+  "review_date_local": "2026-11-09",
+  "experimental_evidence_through": "2026-11-08",
+  "scope": "Engineering history expanded into existing Markdown and standalone LaTeX thesis drafts, with explanatory figures.",
+  "source_review": {
+    "full_text_historical_records": [
+      {
+        "path": "docs/PROJECT_HISTORY_AND_DECISION_RECORD.md",
+        "sha256": "67569ead3baa4d3760c13e04d9e75e23ad15113982c88479e671d78996943a70",
+        "lines": 932
+      },
+      {
+        "path": "docs/CHAT_DISCUSSION_RECORD.md",
+        "sha256": "3a05ba7c8139a39e967c224f6fbf992e9d289d7a104d2e3bfd21f4860c888c8e",
+        "lines": 1867
+      },
+      {
+        "path": "PROJECT_REVIEW_AND_UPDATE_PLAN.md",
+        "sha256": "c4f33f9ec148100a9f18146778662bccde9e114fe30e0edb80d8b6826f548c3b",
+        "lines": 120
+      },
+      {
+        "path": "recovery/PROGRESS.md",
+        "sha256": "9b3cbf4767fb74290bf4b4e3e8cb3f67eea57737ea2bf15ad9e6d2e9a644c72f",
+        "lines": 349
+      },
+      {
+        "path": "recovery/tasks.json",
+        "sha256": "c0f717b14918f964b942d1a497cd50e37f29b0281d5f1895facd600a60fd81ce",
+        "lines": 770
+      }
+    ],
+    "method": "Collective full-text review by parent and three assisting agents; historical statements reconciled against current source/tests and selected frozen inventory fields. Not a claim that every field of every inventory was reread or that experiments were rerun.",
+    "research_guides_consulted": [
+      "KITTI_VALIDATION_DATA.md",
+      "KITTI_ACCURACY_RESULTS.md",
+      "MODEL_REFERENCE_COMPARISON.md",
+      "OUSTER_ROSBAG_DEMO.md",
+      "OUSTER_FEATURE_COMPARISON.md",
+      "OUSTER_CAMERA_VISUALS.md",
+      "FRONTAL_COMPARISON_AND_RVIZ_DETAIL.md",
+      "FRESH_OUSTER_VISUAL_TEST.md",
+      "OUSTER_CHANNEL_DECISION.md",
+      "LIVE_OUSTER_TROUBLESHOOTING.md",
+      "LIVE_OUSTER_ADAPTER.md",
+      "CONFIDENCE_FILTER_AND_MONITORING.md"
+    ],
+    "scope_limit": "The available chat export and dated summaries do not record every later terminal action. Original-source histories, failed attempts and experiment records are preserved."
+  },
+  "integration": {
+    "narrative": "docs/ENGINEERING_JOURNEY.md",
+    "markdown": "docs/THESIS_DRAFT.md",
+    "latex": "docs/THESIS_DRAFT.tex",
+    "narrative_sections": 21,
+    "problem_entries": 50,
+    "inline_chapter": true,
+    "appendix_register": true,
+    "diagram_provenance": "docs/figures/project-journey-figures-provenance.json",
+    "new_figures": [
+      "docs/figures/project-journey-timeline.png",
+      "docs/figures/project-journey-timeline.svg",
+      "docs/figures/project-diagnostic-map.png",
+      "docs/figures/project-diagnostic-map.svg"
+    ],
+    "chapter_sha256": "d73c20f27cd65a0f434f5cf1ba9f266fbca9c9c31bb5a82d0c4167cb5e0a6032",
+    "markdown_sha256": "7942f2755666d7dda9933066c9c0f141d517236067d75be8294f6fc55c1dd803",
+    "latex_sha256": "b293d9cd476bd2b54105cecfdd7f855457ed63ece391aa0f61d006ec7233c11a"
+  },
+  "review_corrections": [
+    "Distinguish existing child-process supervision from unfinished automatic restart/rollback.",
+    "Narrow fault latching to CUDA/TRT execution and transfer path.",
+    "Separate original-record offline conversions from in-memory aliases and reconstructed integer-layout fixtures.",
+    "State 80 distinct primary scans and reused control scans beside 1120 repeated inferences.",
+    "Place confidence0.4 and VehicleIoU0.7 beside four-of-60 result."
+  ],
+  "runtime_source_changed": false,
+  "new_inference": false,
+  "frozen_experiment_results_changed": false,
+  "publication": "Local edits; no commit or push by this task.",
+  "validation": {
+    "native_latex": {
+      "status": "compile-failed",
+      "saved_source_sha256": "b293d9cd476bd2b54105cecfdd7f855457ed63ece391aa0f61d006ec7233c11a",
+      "cause": "article.cls missing; compiler bundle download fails DNS lookup at relay.fullyjustified.net",
+      "diagnostics": ".recovery/verification/thesis-history-2026-11-09/latex-compilation.json",
+      "source_parse_completed": false,
+      "pdf_layout_verified": false
+    },
+    "pdf_layout_verified": false,
+    "review_date_local": "2026-11-09",
+    "local_links_checked": 508,
+    "active_link_issues": [],
+    "historical_link_limitations": [
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/home/ae/Desktop/MasterThesis/IMPLEMENTATION_ARCHITECTURE.md",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/home/ae/Desktop/MasterThesis/recovery/RESUME.md",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/home/ae/Desktop/MasterThesis/recovery/PROGRESS.md",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/home/ae/Desktop/MasterThesis/CMakeLists.txt",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/home/ae/Desktop/MasterThesis/recovery/PROGRESS.md",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/home/ae/Desktop/MasterThesis/docs/local_runtime.md",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/home/ae/Desktop/MasterThesis/.recovery/run/node.log",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/home/ae/Desktop/MasterThesis/recovery/PROGRESS.md",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/home/ae/Desktop/MasterThesis/Dockerfile",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/home/ae/Desktop/MasterThesis/docker/README.md",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/home/ae/Desktop/MasterThesis/docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/home/ae/Desktop/MasterThesis/README.md",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/home/ae/Desktop/MasterThesis/docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/home/ae/Desktop/MasterThesis/README.md",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/home/ae/Desktop/MasterThesis/.gitignore",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/media/ae/New Volume/MasterThesis/docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/media/ae/New Volume/MasterThesis/README.md",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/media/ae/New Volume/MasterThesis/docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/media/ae/New Volume/MasterThesis/README.md",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/media/ae/New Volume/MasterThesis/docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/CHAT_DISCUSSION_RECORD.md",
+        "target": "/media/ae/New Volume/rosbags/kitti04/kitti04_left_camera.mp4",
+        "issue": "missing target"
+      },
+      {
+        "source": "docs/PROJECT_HISTORY_AND_DECISION_RECORD.md",
+        "target": "../README.md#onnx-engine-creation-and-ros-loading",
+        "issue": "missing anchor"
+      }
+    ],
+    "latex_static_issues": [],
+    "problem_register_entries": 50,
+    "journey_subsections": 21,
+    "markdown_latex_register_ids_agree": true,
+    "preserved_files_equal_head": {
+      "CLA.md": true,
+      "prompt.md": true
+    },
+    "frozen_evidence_equal_head": {
+      "config/demo_inventory.json": true,
+      "config/docker_inventory.json": true,
+      "config/environment_inventory.json": true,
+      "config/kitti_accuracy_inventory.json": true,
+      "config/kitti_front_inventory.json": true,
+      "config/kitti_reference_inventory.json": true,
+      "config/kitti_validation_inventory.json": true,
+      "config/launcher_fix_validation.json": true,
+      "config/model_inventory.json": true,
+      "config/ouster_adapter_bag_validation.json": true,
+      "config/ouster_camera_inventory.json": true,
+      "config/ouster_channel_decision.json": true,
+      "config/ouster_demo_inventory.json": true,
+      "config/ouster_detail_inventory.json": true,
+      "config/ouster_feature_inventory.json": true,
+      "config/ouster_fresh_visual_validation.json": true,
+      "config/runtime_inventory.json": true,
+      "config/visualization_inventory.json": true
+    },
+    "new_figure_hashes": {
+      "project-journey-timeline.svg": true,
+      "project-journey-timeline.png": true,
+      "project-diagnostic-map.svg": true,
+      "project-diagnostic-map.png": true
+    },
+    "svg_xml_valid": true,
+    "new_figures_visually_inspected": true,
+    "runtime_files_changed": [],
+    "git_diff_check_exit": 0,
+    "git_diff_check_output": "",
+    "native_pdf_layout_verified": false,
+    "documents": [
+      {
+        "path": "CLA.md",
+        "role": "preserved",
+        "sha256": "a647c5cfbe027080257cd57bb73bc94e07bf5fea0bdaf5fa8ff9bfa4668474ec"
+      },
+      {
+        "path": "IMPLEMENTATION_ARCHITECTURE.md",
+        "role": "current",
+        "sha256": "5967302d98449a25eee6c6c3dfcbdae19c8605231c8f35c52f34b64e36e9e496"
+      },
+      {
+        "path": "PROJECT_REVIEW_AND_UPDATE_PLAN.md",
+        "role": "archive",
+        "sha256": "c4f33f9ec148100a9f18146778662bccde9e114fe30e0edb80d8b6826f548c3b"
+      },
+      {
+        "path": "README.md",
+        "role": "current",
+        "sha256": "6b41705716fcab9aec8d1af6b8e626f720d85a07f03bd15e81ddaf1d2a795bfe"
+      },
+      {
+        "path": "README_PROJECT_EXPLANATIONS.md",
+        "role": "current",
+        "sha256": "d0f3f6894bd063101a72ec9a4581788abe7e63d0e69ffa8c98bde552de911b13"
+      },
+      {
+        "path": "docker/README.md",
+        "role": "current",
+        "sha256": "58588a9adbfd39a72f4e8f8ca10ebdd558de045aaddf2d219b0fc7194164d572"
+      },
+      {
+        "path": "docs/CHAT_DISCUSSION_RECORD.md",
+        "role": "archive",
+        "sha256": "3a05ba7c8139a39e967c224f6fbf992e9d289d7a104d2e3bfd21f4860c888c8e"
+      },
+      {
+        "path": "docs/CHAT_FILTERING_RVIZ_AND_TIMESTAMPS.tex",
+        "role": "current",
+        "sha256": "d55ca0bdfafa295176d43a54346c9df9387f703c94f06588a2b1e22fa868b70f"
+      },
+      {
+        "path": "docs/CONFIDENCE_FILTER_AND_MONITORING.md",
+        "role": "current",
+        "sha256": "9e47d97fceb0cb9c766e680e98c7299c80f60eec6f9a15e206e141999f0b9a36"
+      },
+      {
+        "path": "docs/CURRENT_STATUS_AND_RESULTS.md",
+        "role": "current",
+        "sha256": "0efd643fdbfd3fba08163982d730aa5174a0614bd5daabf76e7eb6b793458295"
+      },
+      {
+        "path": "docs/ENGINEERING_JOURNEY.md",
+        "role": "current",
+        "sha256": "d73c20f27cd65a0f434f5cf1ba9f266fbca9c9c31bb5a82d0c4167cb5e0a6032"
+      },
+      {
+        "path": "docs/EVIDENCE_AND_TERMINOLOGY.md",
+        "role": "current",
+        "sha256": "0d95c856686cb9b6764f7eff6072a9c44133121c0b16cc967f7b5d60f64ae172"
+      },
+      {
+        "path": "docs/FRESH_OUSTER_VISUAL_TEST.md",
+        "role": "current",
+        "sha256": "024f37c9bc4681ec0a53e690716f68f1fffd779f87d9364f49c5fa9afc3bba02"
+      },
+      {
+        "path": "docs/FRONTAL_COMPARISON_AND_RVIZ_DETAIL.md",
+        "role": "current",
+        "sha256": "457ff49f34f72cb2a1ce4f9f51981fd4014ed20f65c91f77d2c3e884bc53686f"
+      },
+      {
+        "path": "docs/KITTI_ACCURACY_RESULTS.md",
+        "role": "current",
+        "sha256": "70060eb5192b1bed5ed21759c2c0d838bdf3d1c6d27a40ec41a69d6fc84cb353"
+      },
+      {
+        "path": "docs/KITTI_VALIDATION_DATA.md",
+        "role": "current",
+        "sha256": "ff3217ea1cf8e4649ee0c780359911594cbc2f714b9cd38c9557e90a7b721a03"
+      },
+      {
+        "path": "docs/LEGACY_FOXY_README.md",
+        "role": "current",
+        "sha256": "9a081ca1bc9fc92ff1a9470b48132d454e15140ba1f663c8e44170d9076251a5"
+      },
+      {
+        "path": "docs/LIVE_OUSTER_ADAPTER.md",
+        "role": "current",
+        "sha256": "4e9be02a7857ab3bb59901be654c0edc0f1eaaeeedf6feebc7559ba73e474226"
+      },
+      {
+        "path": "docs/LIVE_OUSTER_TROUBLESHOOTING.md",
+        "role": "current",
+        "sha256": "9e1bc1e9375e37d8730306cc6f655b168ed00577c8ae54d1172595be9bf34341"
+      },
+      {
+        "path": "docs/MODEL_REFERENCE_COMPARISON.md",
+        "role": "current",
+        "sha256": "3978cdab69d28f8394c97fff1bb9931fe8c127cc0b09491039939fe6fcb83300"
+      },
+      {
+        "path": "docs/MODEL_VALIDATION_PLAN.md",
+        "role": "current",
+        "sha256": "3bf4a9e52169b6d845e16f1286e98dc168389919582276c3a6eb90684c6a9a49"
+      },
+      {
+        "path": "docs/OUSTER_CAMERA_VISUALS.md",
+        "role": "current",
+        "sha256": "e294d38f0ccaa32331d907aada6f329b4d5ce3048373dda94299d85acc14b704"
+      },
+      {
+        "path": "docs/OUSTER_CHANNEL_DECISION.md",
+        "role": "current",
+        "sha256": "2306e2ee286af318a70add75d84b47be04d19417cb0fcb1e728b96debd1a7554"
+      },
+      {
+        "path": "docs/OUSTER_FEATURE_COMPARISON.md",
+        "role": "current",
+        "sha256": "6ba6eea14ece0ef383abd43dbb70e87ffc43e0fdda626c92144d880caac89c10"
+      },
+      {
+        "path": "docs/OUSTER_ROSBAG_DEMO.md",
+        "role": "current",
+        "sha256": "69372dffcccb08e3cb681bd620c2de99cdf6be9882127b58d3e8bdbedfb9496a"
+      },
+      {
+        "path": "docs/PROJECT_HISTORY_AND_DECISION_RECORD.md",
+        "role": "archive",
+        "sha256": "67569ead3baa4d3760c13e04d9e75e23ad15113982c88479e671d78996943a70"
+      },
+      {
+        "path": "docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex",
+        "role": "current",
+        "sha256": "a1a58537e2485f432ccd084a666ac865f52bdd8f52a37e212962288be70b57a1"
+      },
+      {
+        "path": "docs/PROJECT_MIGRATION_PRESENTATION.tex",
+        "role": "current",
+        "sha256": "c493bc55cfacab3428589f06809ec946336c8d351c4f8bbf8697fd56a67dff64"
+      },
+      {
+        "path": "docs/README.md",
+        "role": "current",
+        "sha256": "267c548c2f4dfe3354d6b6386a256d8856a5b442226d8882a0e050ae58d23193"
+      },
+      {
+        "path": "docs/STARTUP_AND_REPLAY.md",
+        "role": "current",
+        "sha256": "205219195a7868e42bb045f538e76a314a7d9d41a68309ea0d4d7eb07b828c74"
+      },
+      {
+        "path": "docs/THESIS_DRAFT.md",
+        "role": "current",
+        "sha256": "7942f2755666d7dda9933066c9c0f141d517236067d75be8294f6fc55c1dd803"
+      },
+      {
+        "path": "docs/THESIS_DRAFT.tex",
+        "role": "current",
+        "sha256": "b293d9cd476bd2b54105cecfdd7f855457ed63ece391aa0f61d006ec7233c11a"
+      },
+      {
+        "path": "docs/figures/README.md",
+        "role": "current",
+        "sha256": "58d8c5095e21a72b35a125e34f6a32e5410de2e99762bfc5046a14b0ee0fa607"
+      },
+      {
+        "path": "docs/local_runtime.md",
+        "role": "current",
+        "sha256": "3c37899efcd61787bc53d771bed5e97306e4f9b363ca134550a4908442e77e53"
+      },
+      {
+        "path": "prompt.md",
+        "role": "preserved",
+        "sha256": "8533348fdeb015ee80408b1dd9b31c6103d3e59aff4e27f5c9e243a9aa4e491b"
+      },
+      {
+        "path": "recovery/PROGRESS.md",
+        "role": "archive",
+        "sha256": "9b3cbf4767fb74290bf4b4e3e8cb3f67eea57737ea2bf15ad9e6d2e9a644c72f"
+      },
+      {
+        "path": "recovery/RESUME.md",
+        "role": "current",
+        "sha256": "673fd35c05fb0927ba32418bd0d4f07da9520e678836aa7870b52ece8f19620b"
+      }
+    ],
+    "static_report": ".recovery/verification/thesis-history-2026-11-09/static-checks.json"
+  },
+  "illustrated_casebook_followup": {
+    "date_local": "2026-11-09",
+    "record": "config/thesis_casebook_review.json",
+    "new_gpu_demonstrations_in_followup": 6,
+    "note": "Earlier review fields retain their original scope. The follow-up includes new numerical reproductions, author details and expanded illustrated cases."
+  },
+  "native_tables_followup": {
+    "date_local": "2026-11-09",
+    "record": "config/thesis_native_panels_review.json",
+    "note": "Earlier capture counts and hashes describe the former report-image layout. Current thesis uses54 editable comparison tables and native flowcharts."
+  }
+}

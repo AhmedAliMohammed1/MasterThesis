@@ -1,157 +1,93 @@
-# Live Ouster deployment troubleshooting — 28 October 2026
+# Troubleshoot an Ouster pipeline
 
-> **Current startup — 8 November 2026:** deployment uses local source and reuses matching images; base pulls are explicit. `PP_BUILD_ONLY=1` is optional and prepares the image without starting the detector. For the unchanged MOSEP bag, use `start_ouster.sh bag` with `start_ouster_bag.sh`; both use Fast DDS/domain 99 and the same raw topic. One Ctrl+C stops each launcher. See [current startup, replay, RViz and validation](STARTUP_AND_REPLAY.md). Earlier dated observations and quoted conversations retain their historical context.
+Reviewed 8 November 2026. Start with [the current startup guide](STARTUP_AND_REPLAY.md). Work from the source toward the output: **driver → raw cloud → adapter → XYZI → detector → RViz**. A discovered node is not proof of a processed cloud, and a visible box is not proof of accuracy.
 
-**Implementation update — 7 November 2026:** a separate
-[live Ouster adapter](LIVE_OUSTER_ADAPTER.md) now validates incoming PointCloud2
-messages and converts the selected signal/reflectivity field to FLOAT32 intensity.
-The outstanding-conversion section below records the state on 28 October;
-deployment on the physical host and live model accuracy still need verification.
+## First identify the profile
 
-This records user-supplied terminal evidence from physical host alfonso-h017,
-Ubuntu 24.04.4, RTX A4500 Embedded GPU (8 GiB). These are host-session results,
-not GPU checks performed in the CPU-only cloud development environment.
+| Setup | Raw topic | Domain | Middleware |
+| --- | --- | ---: | --- |
+| Recorded live-host default | `/ouster1/points` | 0 | Zenoh (`rmw_zenoh_cpp`) |
+| Downloaded MOSEP bag profile | `/sensing/lidar/points` | 99 | Fast DDS (`rmw_fastrtps_cpp`) |
 
-## Verified progress and remaining work
+For the bag, pair `sudo bash tools/start_ouster.sh bag` with `sudo bash tools/start_ouster_bag.sh`. The earlier failure paired a live-profile detector with a bag-profile player and had no reachable Zenoh router. Both names and transport settings differed. Current scripts share explicit bag defaults; custom overrides must match in both terminals.
 
-The host driver and Docker GPU access were repaired. TensorRT 10.16.1 built
-and deserialized the FP32 engine with a 512 MiB workspace. The node started.
-Matching the detector middleware to the host's Zenoh middleware made both
-Ouster drivers and PointPillars discoverable together. Monitoring messages
-confirmed incoming clouds, but all observed frames were rejected as invalid.
-Successful live inference, detection quality and two-sensor fusion remain unverified.
+## No recent clouds or no discovered publishers
 
-## Host NVIDIA driver
-
-Initially `modprobe nvidia` reported no module for running kernel 7.0.0-38.
-Installed 595 driver modules existed only for kernel 6.17.0-35. GPU PCI
-detection worked and Secure Boot was disabled. Automatic driver installation
-attempted a conflicting 580 package set from mixed Ubuntu/CUDA repositories.
-The working repair retained branch 595:
-
-```bash
-sudo apt-get -s install linux-modules-nvidia-595-open-$(uname -r) nvidia-driver-595-open
-# Inspect the simulation before applying on another host.
-sudo apt-get install linux-modules-nvidia-595-open-$(uname -r) nvidia-driver-595-open
-# Save work before restarting; this interrupts other services.
-sudo reboot
-```
-
-This installed driver 595.99.02 and modules for kernels 7.0.0-38 and 7.0.0-42.
-Do not prescribe these exact branches/kernel packages to every host without
-checking its GPU, available packages and dependency simulation first.
-Validate host and container access with `nvidia-smi` and:
-
-```bash
-sudo docker run --rm --gpus all --entrypoint nvidia-smi pp-infer:jazzy-trt10
-```
-
-The CUDA version printed by nvidia-smi is driver capability, not the installed
-container toolkit version. This host ran the image's CUDA 12.9 runtime.
-
-## Engine creation and GPU faults
-
-A 1024 MiB build attempt reported a failed allocation and an empty engine.
-A 256 MiB attempt failed because VoxelGeneratorPlugin required 270532608 bytes
-of scratch space, exceeding 268435456 available bytes. A 512 MiB attempt
-completed engine creation; this is now the default in both launch paths.
-Workspace is a builder memory-pool limit, not a cap on total GPU memory.
-Changing it changes the engine cache key. A successful --skipInference build
-does not demonstrate successful inference.
-
-The host also recorded Xid 32 and a UVM global fatal error requiring OS reboot
-(Xid 154 recovery action: Node Reboot Required). In that state nvidia-smi still
-worked while CUDA startup failed. Save work and reboot when logs explicitly
-require it; do not kill unidentified processes or reset a display GPU blindly.
-The underlying cause of that GPU fault was not established.
-
-## Ouster ROS library failure
-
-Both sensors configured successfully, but drivers exited with an undefined
-Fast CDR serialize symbol in the Ouster message typesupport library. Installed
-Ouster builds were from September while Fast CDR/Fast RTPS were January builds.
-The supplied GPU-repair apt transactions contained no ROS package changes.
-After simulation, the user updated these seven packages together and reported
-the Ouster launch working:
-
-```bash
-sudo apt-get -s install --only-upgrade \
-  ros-jazzy-ouster-ros ros-jazzy-ouster-sensor-msgs \
-  ros-jazzy-fastcdr ros-jazzy-fastrtps \
-  ros-jazzy-rosidl-typesupport-fastrtps-cpp \
-  ros-jazzy-rmw-fastrtps-cpp ros-jazzy-rmw-fastrtps-shared-cpp
-# If the preview is appropriate, repeat without -s after stopping host ROS nodes.
-```
-
-## Match the ROS middleware
-
-Host networking alone was insufficient: the host used rmw_zenoh_cpp with an
-existing rmw_zenohd router, while the original image used default Fast DDS.
-Domain ID was 0 on both sides. Installing Zenoh in the detector image and
-starting it with RMW_IMPLEMENTATION=rmw_zenoh_cpp restored discovery and cloud
-delivery. Leave the existing LiDAR drivers/router unchanged.
-
-The Dockerfile now includes ros-jazzy-rmw-zenoh-cpp. The deployment wrapper
-passes RMW_IMPLEMENTATION, defaulting to rmw_fastrtps_cpp when unset. Because
-sudo may discard exported variables, pass the choice explicitly:
-
-```bash
-cd ~/MasterThesis
-sudo env RMW_IMPLEMENTATION=rmw_zenoh_cpp ROS_DOMAIN_ID=0 \
-  POINT_CLOUD_TOPIC=/ouster1/points PP_WORKSPACE_MIB=512 bash tools/deploy.sh
-```
-
-This expects the host's existing Zenoh router to be reachable through host
-networking using the default Zenoh configuration. Custom router configurations
-need matching settings; they are not automatically forwarded by the wrapper.
-The Docker build fetches published Git source, so publish changes before
-rebuilding. A previously committed local Zenoh test image does not update this
-Dockerfile automatically. Rebuilding from this Dockerfile makes installation
-reproducible. Stop only the intended old pointpillars container before relaunch.
-The pp-engines named volume preserves engines across container recreation.
-
-CLI discovery caches were misleading. `ros2 daemon stop` stops the CLI daemon,
-not the nodes. Validate with fresh discovery:
+In a ROS terminal using the same domain/middleware as the source:
 
 ```bash
 ros2 node list --no-daemon --spin-time 5
-sudo docker exec pointpillars /entrypoint.sh ros2 node info /pointpillars --no-daemon
+ros2 topic list -t
 ros2 topic info /ouster1/points --verbose
-ros2 topic echo /bbox/stats --once
 ```
 
-Ouster advertised BEST_EFFORT, while the detector advertised RELIABLE with depth
-700. DDS reliability compatibility would prevent this pairing. Nevertheless,
-the observed Zenoh setup delivered frames and emitted invalid-cloud counters.
-Do not mistake endpoint visibility for successful processing or assume all RMWs
-enforce the same matching behavior. Configurable detector sensor QoS remains work.
+Use `/sensing/lidar/points` for the bag. Inside the pipeline container:
 
-## Outstanding input conversion (LiDAR driver unchanged)
+```bash
+sudo docker exec pointpillars /entrypoint.sh ros2 topic list -t
+sudo docker exec pointpillars /entrypoint.sh ros2 topic echo /ouster_adapter/stats --once
+```
 
-The actual cloud is little-endian, 128 by 1024 points, point_step 48. Fields:
+Check that the driver/player is actually publishing, that a Zenoh router is reachable when using Zenoh, and that topic/domain/middleware match. `ros2 daemon stop` only stops the CLI discovery daemon, not application nodes. Restart CLI discovery after changing middleware/domain if cached output is misleading.
 
-| Field | Offset | PointField type |
-| --- | --- | --- |
-| x, y, z | 0, 4, 8 | FLOAT32 |
-| t | 16 | UINT32 |
-| ring | 20 | UINT16 |
-| range | 24 | UINT32 |
-| signal | 28 | UINT16 |
-| near_ir | 30 | UINT16 |
-| reflectivity | 32 | UINT8 |
-| flags | 33 | UINT8 |
+`sudo` may discard shell exports; pass settings with `sudo env RMW_IMPLEMENTATION=... ROS_DOMAIN_ID=...`. Host networking does not make different middleware implementations communicate automatically. Custom Zenoh routing settings are not automatically forwarded by these wrappers.
 
-There is no intensity field. The current adapter requires scalar FLOAT32 XYZI,
-so it reports "Missing or unsupported scalar FLOAT32 XYZI field/offset".
-Monitoring showed 565 invalid clouds, zero processed frames and zero inference
-errors. Middleware connectivity is established; model execution is not.
+## Clouds arrive but the adapter rejects them
 
-Next implement a separate converter or detector adapter accepting these fields,
-preserving header/XYZ and converting a selected channel numerically to FLOAT32
-intensity. Merely renaming a field or changing its datatype metadata is invalid.
-Keep the LiDAR driver unchanged. Reflectivity is a reasonable initial candidate
-because it is range-compensated; raw signal has different semantics. Neither
-channel nor scaling has been validated against this model's training contract.
-Make channel/scaling explicit and compare recorded data before claiming accuracy.
-No converter, sensor calibration, coordinate transformation or fusion of both
-Ouster sensors is implemented by this troubleshooting update.
+Read the diagnostic error and logged schema. The adapter selects a literal `reflectivity` or `signal` field and supports UINT8, UINT16 or FLOAT32 values. XYZ must be scalar FLOAT32. It validates byte layout, row lengths and limits before conversion.
+
+A common case is the bag's signal channel being named **`intensity`**. The current production selector has no alias for that field. Use reflectivity for the unchanged MOSEP bag. The research A/B runner handles the verified alias separately; do not infer equivalent live adapter support.
+
+The default maximum is 204,800 points and 64 MiB. The adapter does not silently subsample oversized scans. A selected channel with negative/nonfinite values or an invalid divisor is also rejected. [Full conversion contract](LIVE_OUSTER_ADAPTER.md#what-the-converter-accepts-and-preserves).
+
+## The detector reports invalid XYZI
+
+Raw Ouster clouds may have `signal` and `reflectivity` but no scalar FLOAT32 `intensity`. Feed them through the Ouster adapter. The generic detector input adapter does not reinterpret these fields automatically.
+
+For already compatible XYZI, a direct detector-only launcher is appropriate. Under DDS its reliable subscription cannot generally match a best-effort-only publisher. The Ouster adapter receives sensor-data best effort and republishes reliable XYZI. Check actual QoS with `ros2 topic info --verbose`.
+
+Use the aggregate counters to separate the stages:
+
+```bash
+sudo env PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh once
+sudo docker logs --tail 100 pointpillars
+```
+
+A failed frame has an unavailable detection count; it is not a successful zero-object scan. Counters can be retained after input stops, so check timestamps.
+
+## The engine does not build or CUDA startup fails
+
+```bash
+nvidia-smi
+sudo docker run --rm --gpus all --entrypoint nvidia-smi pp-infer:jazzy-trt10
+```
+
+Both host and container GPU access must work. The CUDA version shown by `nvidia-smi` is driver capability, not the image's installed toolkit version. The current image uses CUDA 12.9 and TensorRT 10.16.1.11.
+
+Builder workspace defaults to 512 MiB. It is not total GPU memory. The recorded live host could not build with 256 MiB because a plugin needed 270,532,608 bytes of scratch space, and a 1024 MiB attempt also encountered allocation failure. The 512 MiB build succeeded there. Other workloads/GPUs need their own verification; successful engine creation alone does not prove successful inference.
+
+If system logs explicitly require a reboot after a fatal GPU fault, preserve work and follow the recovery action. Do not reset a display GPU or kill unidentified processes as a generic fix. `nvidia-smi` can still work while CUDA initialization fails after a driver fault.
+
+## RViz is empty or shows old results
+
+Match the viewer's domain/middleware and set Fixed Frame to the incoming cloud's `header.frame_id`. The MOSEP bag uses `lidar/os_lidar`; the standard KITTI demo uses `velodyne`. Ensure the point/detection displays subscribe to the intended topics and have compatible QoS.
+
+The count display uses MarkerArray, Reliable / Transient Local. It shows the last processed status, which may be old. The launcher opens a new RViz window; use **File → Open Config** to change an existing one. [Monitoring and count meanings](CONFIDENCE_FILTER_AND_MONITORING.md).
+
+## Playback warns about MCAP metadata
+
+The original MOSEP files can produce `Metadata record with name 'rosbag2' did not contain key 'serialized_metadata'`. In the recorded actual replay, this warning did not prevent cloud publication or processing. Check actual reception counters rather than rewriting the original bag or assuming that the warning explains missing data.
+
+## Boxes appear but look wrong
+
+Keep reflectivity/255 as the experimental baseline, but treat object accuracy as unresolved. On the annotated diagnostic subset, reflectivity found four of 60 vehicles from above per run and signal none; both failed all qualifying 3D matches. The matched reflectivity boxes were 0.60–1.14 m too high. Raising the confidence gate cannot correct that geometry. [Evidence and proposed next work](OUSTER_CHANNEL_DECISION.md).
+
+## Physical-host repair history — 28 October 2026
+
+This section retains the useful diagnosis from user-supplied logs on host `alfonso-h017`, Ubuntu 24.04.4 with RTX A4500 Embedded 8 GiB. It is not a claim that this host has now passed live inference or the later accuracy study, whose measured GPU was an RTX 4060 Laptop.
+
+The original host had NVIDIA modules for a different kernel. A dependency simulation and repair using the matching branch-595 open modules/driver, followed by reboot, restored access. Mixed Ubuntu/CUDA package sources had proposed conflicting branch-580 packages. These are host-specific facts; inspect the current GPU, running kernel, available packages and simulated transaction before repairing another machine. The project does not install host drivers.
+
+The Ouster drivers also reported an undefined Fast CDR serialization symbol. Updating the compatible group of `ouster-ros`, `ouster-sensor-msgs`, `fastcdr`, `fastrtps`, Fast RTPS typesupport and RMW packages restored launch, according to the supplied logs. Updating an arbitrary single library is not a reproducible general remedy; stop affected ROS nodes and inspect package compatibility first.
+
+Once middleware matched, the observed 128×1024 cloud had FLOAT32 XYZ, UINT16 signal at offset 28 and UINT8 reflectivity at offset 32, with no intensity field. The detector consequently rejected 565 observed clouds. That was an input-schema failure, not evidence of a TensorRT failure. The subsequently implemented separate Ouster adapter addresses that conversion contract. Successful inference on that original physical live host, sensor fusion and operational acceptance remain unverified by those logs.

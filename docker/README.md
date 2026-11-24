@@ -1,78 +1,90 @@
-# Automatic Docker build and deployment
+# Docker deployment and engine storage
 
-**8 November 2026:** see [startup/replay fixes](../docs/STARTUP_AND_REPLAY.md)
-for local source builds, cached image reuse, single-interrupt shutdown and matching
-Ouster bag settings. Earlier dated deployment statements describe their original
-versions.
+Reviewed 8 November 2026. Use [startup and replay](../docs/STARTUP_AND_REPLAY.md) for the shortest Ouster workflow. This page explains image construction, persistence and overrides.
 
-> **Historical update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](../docs/CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+## Choose the command
 
-> **Status reviewed 23 October 2026.** Deployment behavior is unchanged. Later normalized Ouster replay matched 556 occurrences and frontal KITTI replay matched 154 frames; these are integration results. The labeled KITTI accuracy baseline remains poor, and the synchronous depth-700 subscriber is still present. [Current results and evidence](../docs/CURRENT_STATUS_AND_RESULTS.md).
+| Command, from the project root | What it starts |
+| --- | --- |
+| `sudo bash tools/deploy.sh` | Check GPU/Docker, reuse or build the local image, then detector only |
+| `sudo env PP_BUILD_ONLY=1 bash tools/deploy.sh` | Prepare/reuse the image and exit; optional build-only mode |
+| `sudo bash tools/start.sh` | Detector from an existing image |
+| `sudo bash tools/start_ouster.sh` | Live Ouster adapter and detector; driver/router already running |
+| `sudo bash tools/start_ouster.sh bag` | Adapter and detector configured for primary raw01/ouster1 replay |
+| `sudo bash tools/start_ouster_bag.sh` | Bag player only; recording must already exist |
 
-On a Linux x86-64 host with a supported NVIDIA GPU, working driver, Docker and NVIDIA Container Toolkit, run from the project folder:
+All foreground launchers stop their own container on one Ctrl+C. Allow up to eight seconds for cleanup. Images and the engine volume persist. Existing container names are preserved; inspect and stop the intended old instance or choose another `PP_CONTAINER_NAME`.
 
-```bash
-sudo bash tools/deploy.sh
-```
+The host must provide a working NVIDIA driver, Docker and NVIDIA Container Toolkit. The scripts check access; they do not install drivers. Host ROS is needed only for native development or desktop RViz.
 
-Use that command for first setup or an intentional rebuild/update. For later runs:
+## What an image build does
 
-```bash
-sudo bash tools/start.sh
-```
+The Dockerfile installs ROS Jazzy, CUDA 12.9 components and matching TensorRT 10.16.1.11 runtime/plugin/parser/tool/header packages. It downloads NVIDIA NGC PointPillarNet `deployable_v1.1` ONNX, verifies SHA-256 `2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1`, then builds/tests the C++ package with colcon.
 
-`deploy.sh` checks the GPU/Docker and reuses an image whose runtime-input checksum
-matches the local checkout. Changed runtime inputs trigger a cached local build;
-base-image pulls require `PP_PULL_BASE=1`. `PP_BUILD_ONLY=1` builds without starting
-a detector. `start.sh` uses only the local
-image with `docker run --pull=never`, without building, downloading updates or
-installing/upgrading packages. Both create a foreground `--rm` container:
-Ctrl+C stops and removes it, while the image and persistent engine volume remain.
-The next launch creates a fresh container from that image and reuses a matching
-engine. Missing engines or changed GPU/driver/build settings still trigger engine
-generation. `start.sh` reports a missing image and asks you to run `deploy.sh`.
-Neither launcher replaces an existing named container; stop/remove the intended
-instance first or select another `PP_CONTAINER_NAME`.
+`deploy.sh` uses **local source** by default, including uncommitted runtime edits. Its runtime-input hash excludes documentation, bags, models and SDK artifacts. A matching saved image skips `docker build`; source/configuration changes run a cached build. Dependency and model stages are separate from source compilation. First builds, missing/pruned caches or changed dependency recipes can require downloads and installation.
 
-Both scripts use the same runtime settings, including `RMW_IMPLEMENTATION`
-(default `rmw_fastrtps_cpp`), confidence threshold **0.4** and workspace **512 MiB**.
-Repeat custom settings on every launch; they are not saved by either wrapper.
-For example, after deployment with Zenoh and the first Ouster sensor:
+| Switch | Effect |
+| --- | --- |
+| `PP_BUILD_ONLY=1` | Exit after image preparation |
+| `PP_FORCE_BUILD=1` | Invoke a build even when the input hash matches; keep layer cache |
+| `PP_PULL_BASE=1` | Refresh base images explicitly |
+| `PP_SOURCE_MODE=remote` | Use published Git source |
+| `PP_GIT_REF`, `PP_GIT_REPO` | Select remote source; imply remote mode unless explicitly overridden |
 
-```bash
-sudo env RMW_IMPLEMENTATION=rmw_zenoh_cpp ROS_DOMAIN_ID=0 \
-  POINT_CLOUD_TOPIC=/ouster1/points bash tools/start.sh
-```
-
-`PP_GIT_REPO` and `PP_GIT_REF` select remote source in `deploy.sh`; extra build arguments apply only to that script.
-Use `bash tools/start.sh --help` for the launch settings.
-
-For live Ouster input, the separate `sudo bash tools/start_ouster.sh` launcher
-starts the adapter and detector together in one foreground container, selecting
-reflectivity / 255 by default or signal / 65535 with the `signal` argument. It
-requires an updated saved image containing `ouster_adapter`; older images are
-refused. Its middleware default is `rmw_zenoh_cpp` for the recorded live Ouster
-host. The sensor driver must already be running. See
-[the live Ouster adapter guide](../docs/LIVE_OUSTER_ADAPTER.md) for settings,
-shutdown behavior and image update requirements.
-
-`docker build` creates an image. It cannot keep a ROS node running after its build container exits. The wrapper runs `docker build` followed by `docker run`; target-GPU engine creation happens at container startup. Host drivers and Docker GPU integration must already work.
-
-The Dockerfile automatically:
-
-1. Uses the local source whitelist with `deploy.sh`; direct Dockerfile builds default to published Git source through BuildKit Git `ADD`.
-2. Installs ROS 2 Jazzy, CUDA 12.9 components, C++/colcon tools and PCL dependencies.
-3. Downloads and installs the exact TensorRT 10.16.1.11 CUDA 12.9 runtime/plugin/parser/tool/header packages from NVIDIA's signed apt repository. All TensorRT dependencies are pinned to the same CUDA variant; large static development packages are omitted.
-4. Downloads NVIDIA NGC PointPillarNet `deployable_v1.1` ONNX and verifies SHA-256 `2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1`.
-5. Builds and tests `pp_infer` with colcon, records the Git commit in `/opt/pp_infer/source-revision.txt`, and packages a runtime image.
-
-No local `.recovery/sdk`, downloaded DEB, ONNX, engine, or build tree is sent to Docker. `.dockerignore` whitelists only runtime source, C++ tests, launch/configuration files and the Dockerfile; models, recordings, SDKs and `.git` remain excluded. You can build from the Dockerfile alone:
+Direct Dockerfile builds retain their **remote-source default**, including builds with only the Dockerfile as context:
 
 ```bash
 sudo docker build -t pp-infer:jazzy-trt10 - < Dockerfile
 ```
 
-To launch the built image directly:
+A local edit is included automatically by `deploy.sh`; a remote build only includes changes published at its selected reference. To pin remote source:
+
+```bash
+sudo env PP_BUILD_ONLY=1 PP_GIT_REF='YOUR_FULL_COMMIT_SHA' bash tools/deploy.sh
+```
+
+Extra deployment arguments are passed to `docker build`. Use BuildKit secrets for private access; never embed credentials in URLs or arguments. CUDA/TensorRT are pinned, but Ubuntu tags and ROS apt versions may evolve. Retain the built image and source/runtime identity for a repeated experiment. A documentation-only commit can legitimately reuse an image recording an earlier Git revision with the same runtime hash.
+
+## Model and engine lifecycle
+
+| Stage | Artifact and location inside the container |
+| --- | --- |
+| Image build | Network/weights at `/opt/models/pointpillars.onnx` |
+| First target-GPU startup | FP32 engine built with `trtexec` into `/var/lib/pp_infer/<key>.engine` |
+| Later matching startup | Existing nonempty engine reused; ONNX still hashed |
+| Node initialization | Engine deserialized once; context and GPU buffers reused |
+
+The default `pp-engines` Docker volume makes engine storage persistent across disposable containers. The cache key includes model hash, selected GPU identity, driver/CUDA information and build settings. Generation is serialized with a lock, uses a temporary file, and promotes it only after success. Ctrl+C during generation removes the partial file. A nonempty corrupted engine is not automatically detected and rebuilt by the shell cache check.
+
+The builder uses FP32, batch one, TF32 disabled and 512 MiB workspace. Workspace is a builder pool limit, not total GPU memory. A changed GPU or recipe can require another engine. Copying an engine to another machine is not a portable deployment strategy; transfer the image and let its startup build a matching engine.
+
+The entrypoint loads ROS and executes the installed C++ detector directly. It passes the cached `engine_path`, topic remappings and optional confidence override. Native `ros2 run` invokes the same binary but does not prepare an engine. Legacy `model_path` and `data_type` do not load ONNX or rebuild an existing engine.
+
+## Runtime settings
+
+| Setting | Detector launcher default |
+| --- | --- |
+| `PP_IMAGE` | `pp-infer:jazzy-trt10` |
+| `PP_CONTAINER_NAME` | `pointpillars` |
+| `PP_ENGINE_VOLUME` | `pp-engines` |
+| `ROS_DOMAIN_ID` | `0` |
+| `RMW_IMPLEMENTATION` | `rmw_fastrtps_cpp` |
+| `POINT_CLOUD_TOPIC` | `/point_cloud` |
+| `DETECTIONS_TOPIC` | `/bbox` |
+| `PP_CONFIDENCE_THRESHOLD` | `0.4` |
+| `PP_GPU_INDEX` | `0` within visible CUDA devices |
+| `PP_WORKSPACE_MIB` | `512` |
+
+Repeat custom settings at each launch; the wrappers do not save them:
+
+```bash
+sudo env POINT_CLOUD_TOPIC=/lidar/xyzi ROS_DOMAIN_ID=7 \
+  PP_CONFIDENCE_THRESHOLD=0.7 bash tools/start.sh
+```
+
+Ouster launchers add a profile and channel settings; see [the adapter guide](../docs/LIVE_OUSTER_ADAPTER.md). The live profile defaults to Zenoh/domain 0/raw `/ouster1/points`; bag mode defaults to Fast DDS/domain 99/raw `/sensing/lidar/points`.
+
+A direct launch is possible:
 
 ```bash
 sudo docker run --rm --init --name pointpillars \
@@ -80,67 +92,17 @@ sudo docker run --rm --init --name pointpillars \
   -v pp-engines:/var/lib/pp_infer pp-infer:jazzy-trt10
 ```
 
-Local uncommitted runtime edits are included by `deploy.sh` by default. Remote mode (`PP_SOURCE_MODE=remote`, `PP_GIT_REF` or `PP_GIT_REPO`) still requires publishing those edits. BuildKit resolves the Git reference and caches by source identity, so unchanged dependencies need not be downloaded again. To pin remote source, set `PP_GIT_REF` for the wrapper, or use `--build-arg SOURCE_MODE=remote --build-arg GIT_REF=<full-commit-sha>` in a direct Docker build.
+Without a confidence environment override, direct entrypoint startup uses the YAML default **0.5**, while wrappers supply **0.4**. Prefer the wrappers for the tested single-interrupt shutdown behavior.
+
+## Check identity and output
 
 ```bash
-sudo env PP_GIT_REF='YOUR_FULL_COMMIT_SHA' bash tools/deploy.sh
+sudo docker exec pointpillars cat /opt/pp_infer/source-revision.txt
+sudo docker logs --tail 80 pointpillars
+sudo docker exec pointpillars /entrypoint.sh ros2 node info /pointpillars
+sudo env PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh once
 ```
 
-For another repository, set `PP_GIT_REPO` in the wrapper or `GIT_REPO` as a build argument. A private repository needs BuildKit Git authentication secrets; do not embed access tokens in URLs, Dockerfile arguments or source. Network access is required for a fresh build. CUDA/SDK versions are pinned; Ubuntu tags and ROS apt versions can still change. Pin the Git commit and retain the built image for repeatable deployments.
+Input must be little-endian scalar FLOAT32 XYZI within the engine's 204,800-point capacity and the default 64 MiB cloud limit. The detector requests reliable depth 700. `/bbox` carries accepted boxes; derived `/bbox/stats` and `/bbox/count` carry aggregate diagnostics and RViz text. A headless detector does not open RViz or create real sensor data.
 
-## Model and engine lifecycle
-
-Documentation reviewed on **23 October 2026**. The GPU and accuracy evidence below retains its original dates; later sensor results are consolidated in the current-status link above.
-
-| Phase | What happens | File location inside the container |
-| --- | --- | --- |
-| Image build | Download and checksum-verify the pretrained ONNX; install TensorRT/CUDA packages and the ROS application. Docker may reuse cached layers. | ONNX: `/opt/models/pointpillars.onnx`; TensorRT libraries: `/opt/tensorrt/lib/`; CUDA libraries: `/opt/cuda/lib/`. |
-| Container startup | Check the GPU, hash ONNX and reuse a matching nonempty engine or generate one with `trtexec`. | `/var/lib/pp_infer/<cache-key>.engine`, normally in persistent volume `pp-engines`. |
-| ROS startup and inference | Pass `engine_path` to `ros2 run`, load the engine once and reuse its execution context and GPU buffers for incoming clouds. | The ROS node reads the `.engine` file, not ONNX. |
-
-At startup, engines are keyed by model hash, GPU model/UUID/capability, driver, CUDA APIs and build recipe. The current recipe builds FP32, batch one, with TF32 disabled. Builds for the same key are serialized; temporary files are promoted only after successful generation. The engine is created locally from the trained network, without retraining. ONNX is model data, not an installer or archive; the engine is a serialized execution plan, not a downloaded model.
-
-The entrypoint prepares the engine **before** executing `ros2 run pp_infer pp_infer --ros-args --params-file /opt/pp_infer/node.yaml -p engine_path:=<saved-engine-path>`, with the node-name and topic remappings. The node initializes plugins, reads the engine bytes, calls `deserializeCudaEngine`, checks its tensor interface and creates the execution context and reusable buffers. It runs the network on the GPU; CPU code handles ROS, input preparation, output checks and NMS.
-
-Normal container startup still needs ONNX for its checksum when reusing a cached engine. Direct `ros2 run` needs an already prepared engine, required libraries and parameters; it does not download ONNX or build an engine. The node's legacy `model_path` is stored but does not load ONNX, and `data_type` does not change the loaded engine's precision. Transfer the image to another supported computer and let startup prepare its matching engine. A nonempty but corrupted cache file is not automatically rebuilt.
-
-For the complete explanation and both diagrams, see the [explanation README](../README_PROJECT_EXPLANATIONS.md#7-downloads-and-engine-generation-in-docker-today). The [latest discussion continuation](../docs/CHAT_DISCUSSION_RECORD.md#explanation-and-presentation-continuation-saved-5-october-2026) records the questions and presentation changes; the [updated presentation source](../docs/PROJECT_MIGRATION_PRESENTATION.tex) gives the short version.
-
-Node `/pointpillars` receives `/point_cloud` (`sensor_msgs/msg/PointCloud2`) and publishes `/bbox` (`vision_msgs/msg/Detection3DArray`). Start a sensor or bag publisher separately; the container does not generate real data. Input needs little-endian scalar FLOAT32 XYZI and a compatible reliable publisher.
-
-Wrapper settings: `PP_IMAGE`, `PP_CONTAINER_NAME`, `PP_ENGINE_VOLUME`, `PP_GIT_REPO`, `PP_GIT_REF`, `PP_GPU_INDEX`, `PP_WORKSPACE_MIB`, `ROS_DOMAIN_ID`, `POINT_CLOUD_TOPIC`, `DETECTIONS_TOPIC`. Extra wrapper arguments are forwarded to `docker build`, including build arguments and secrets. For example:
-
-```bash
-sudo env POINT_CLOUD_TOPIC=/lidar/points ROS_DOMAIN_ID=7 \
-  PP_GPU_INDEX=0 PP_WORKSPACE_MIB=256 bash tools/deploy.sh
-```
-
-The new `PP_CONFIDENCE_THRESHOLD` setting overrides the node YAML's default score gate of 0.5. For example, `sudo env PP_CONFIDENCE_THRESHOLD=0.7 bash tools/deploy.sh`. The launchers use 0.4 when unset/empty; direct entrypoint use without an override retains the YAML default of 0.5. The threshold can also change live through `ros2 param set /pointpillars confidence_threshold 0.7` (use `/entrypoint.sh` through `docker exec` when running inside the container).
-
-New images publish only boxes at or above the threshold. The standard detection array remains on `/bbox`; `/bbox/stats` adds per-frame/cumulative counts as DiagnosticArray, and `/bbox/count` publishes the RViz text marker. Monitoring topics follow detection-topic remapping. The Docker stages now declare diagnostic/visualization message packages and the build includes a fifth, GPU-free ROS output integration test. See [the feature guide](../docs/CONFIDENCE_FILTER_AND_MONITORING.md). Local changes still need publication in the selected Git revision before this remote-source Docker build includes them; no existing image/container is updated automatically.
-
-GPU indexes refer to the visible CUDA set. Workspace limits do not cap total GPU memory. The image is Linux amd64 and follows [TensorRT 10.x hardware support](https://docs.nvidia.com/deeplearning/tensorrt/10.x.x/getting-started/support-matrix.html), with capability 7.5 as a floor. ARM/Jetson requires a separate image. Only the available RTX 4060 has been physically tested.
-
-Exact model class order is verified; numerical input/output reference parity and accuracy acceptance remain unfinished. Defaults remain generic labels and scale 1.0. Synthetic tests do not establish real-data accuracy. Bounded-worker integration, configurable QoS, full CUDA memory/failure validation and operational acceptance remain unfinished.
-
-See the [A-to-Z LaTeX guide](../docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex), [README](../README.md) and [progress record](../recovery/PROGRESS.md) for setup, verification and limits.
-
-## Optional desktop visualization
-
-The inference image stays headless. Keep the node and a LiDAR/bag publisher running, then use `bash tools/visualize.sh` from this checkout on a ROS Jazzy desktop. The saved view displays `/point_cloud` and `/bbox` with the official vision_msgs plugin; no inference rebuild is needed. Host RViz must be installed. See the [viewer setup and limits](../README.md#visualize-points-and-boxes-in-rviz) for packages, fixed frame, domain and transport settings. GPU inference can stay on a separate compatible machine if ROS network discovery is configured.
-
-## Sample bag and camera clip helper
-
-After building the inference image, `bash tools/rosbag_demo.sh` downloads/verifies the tested KITTI bag, prepares a camera reference MP4 from its original drive and loops reliable LiDAR playback. `prepare` downloads assets only; `stop` stops only helper-owned playback. A separate `pp-infer:demo-tools` image supplies Python/FFmpeg without host installation. Matching active playback is reused; different existing containers are preserved. See the [sample instructions](../README.md#download-and-play-the-sample-bag-with-matching-camera-video) for storage, recovery, settings and the independent video's timing/accuracy limits.
-
-
-## Labeled accuracy status (3 October 2026)
-
-The published runtime image was exercised on 32 matched KITTI diagnostic frames. The 16-frame test split produced no moderate 3D matches; moderate BEV AP_R40 was 5.75% Car, 0% Pedestrian and0.0258% Cyclist, with Vehicle explicitly evaluated as Car compatibility. This is a poor diagnostic baseline, not accuracy acceptance. Green ground truth can now be compared with predictions through the host player/viewer on isolated domain 42. See [results and reproduction](../docs/KITTI_ACCURACY_RESULTS.md) and [accuracy inventory](../config/kitti_accuracy_inventory.json). These host validation tools do not replace the image's normal startup, and local edits require publication before a Git-source Docker build includes them.
-
-
-## Independent reference update: 3 October 2026
-
-A separate TensorRT 8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately 1.53 m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all 192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and 12 frames exceed the export's 10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly 99.6–100%; no production adaptation was installed. Two actual CUDA 12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](../docs/MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.
-
-The 23 October trial was stopped after verifying the published feature; the tagged image and `pp-engines` cache remain. [Exact trial results and restart](../docs/CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+The current recipe targets Linux amd64. The main measured GPU is the RTX 4060 Laptop; a separate live-host troubleshooting record describes an RTX A4500 Embedded. ARM/Jetson and Windows/WSL2 need separate work. Operational latency, memory safety and 3D accuracy remain unaccepted. [Current evidence](../docs/CURRENT_STATUS_AND_RESULTS.md) and [channel decision](../docs/OUSTER_CHANNEL_DECISION.md) explain the limits.

@@ -9,7 +9,7 @@ namespace pp_infer {
 // Explicit source selection; no fallback or per-frame normalization.
 sensor_msgs::msg::PointCloud2 ouster_to_xyzi(
     const sensor_msgs::msg::PointCloud2& input, const std::string& source,
-    const InputLimits& limits);
+    const InputLimits& limits, double intensity_clip_max = 0.0);
 rclcpp::Node::SharedPtr make_ouster_adapter(
     const rclcpp::NodeOptions& options = rclcpp::NodeOptions{});
 }  // namespace pp_infer

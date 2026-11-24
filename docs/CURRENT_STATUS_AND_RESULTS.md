@@ -1,170 +1,169 @@
-# Current project status and results
+# Project status and measured results
 
-> **New measured channel decision — 8 November 2026:** 1,120 current-production GPU observations now include independent Ouster object annotations. Reflectivity/255 has stronger vehicle BEV evidence than signal/65535 on the frozen subset; neither has qualifying 3D accuracy. Both complete the tested numerical runs. See [results, limitations and proposal](OUSTER_CHANNEL_DECISION.md). Older unlabeled Ouster observations below retain their original scope.
+## Latest verification — 21 November 2026
 
-> **Current startup — 8 November 2026:** deployment uses local source and reuses matching images; base pulls are explicit. `PP_BUILD_ONLY=1` is optional and prepares the image without starting the detector. For the unchanged MOSEP bag, use `start_ouster.sh bag` with `start_ouster_bag.sh`; both use Fast DDS/domain 99 and the same raw topic. One Ctrl+C stops each launcher. See [current startup, replay, RViz and validation](STARTUP_AND_REPLAY.md). Earlier dated observations and quoted conversations retain their historical context.
+The [latest report](OUSTER_VERIFICATION_AND_PERSON_DIAGNOSIS_20261121.md) records 6,137 audited source clouds, 30 actual C++ adapter checks, eight native tests, twelve evaluator tests and 2,268 successful measured GPU inferences. No tested preprocessing variant recovered a Pedestrian match in the reused 16-scan test subset. At gate 0.3, baseline /255 and clipped /100 both yield five Vehicle BEV matches; /100 adds false pedestrian boxes. Height quantiles with /255 yield seven Vehicle BEV matches and zero Vehicle 3D matches. A training-fitted output-z diagnostic gives two of 60 Vehicle 3D matches, not a universal correction.
 
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+Six separate exact-person inferences on ouster1 frame 1403 (+70.05539416 s) find nearby Pedestrian candidates scoring 0.197–0.222 under /100, about 0.48 m from the observed-point midpoint and vertically displaced. Partial legs prevent full-height or IoU claims. All [images are retained](IMAGE_ARCHIVE.md). Successful runtime checks do not establish accuracy.
 
-Reviewed **23 October 2026** against source commit `ee6b36c95808ee1f6edd90b33976c536d71b1b34`, the working tree, result inventories and saved reports. This is the documentation review date. Numerical experiments below were recorded on **1–14 October**; the supplied screencast filenames are dated **20 October**. That documentation-only review ran no new GPU experiment; the subsequent deployment verification below supersedes that limitation.
+Reviewed 21 November 2026; the dated sections below preserve earlier studies. The project now runs an Ouster-to-PointPillars pipeline, records diagnostic counters and displays results in RViz. **Reflectivity/255 is the better-supported experimental input for the tested model. Accurate 3D detection has not been achieved.**
 
-## Published deployment verification — 23 October 2026
+Use this page to understand the current stage. Use [startup and replay](STARTUP_AND_REPLAY.md) to run the project, and the [channel decision report](OUSTER_CHANNEL_DECISION.md) for the full experiment and proposal. Saved screenshots and past shutdown records describe dated observations; they do not establish which processes are running now.
 
-Feature source `8a87a7378c8c11ad187e7c19bc4ecc6e649948c8` was pushed to `origin/main`, built through `tools/deploy.sh` and verified inside the running `pointpillars` container. The RTX 4060 Laptop GPU is accessible through host execution; the earlier driver failure reflected the restricted execution context. Startup reused the existing `pp-engines` engine cache. KITTI front-drive playback and RViz were started on domain 0, with the final threshold restored to **0.5**. The trial was subsequently stopped as described below.
+## Detection diagnosis — 9 November 2026
 
-All **73 Python tests** and **five Docker-build C++/ROS tests** passed. A native GPU smoke test passed. Real replay verified 20 matching input/detection/statistics/marker frames at each of thresholds 0.0, 0.5 and 0.95, both natively and in the deployed image: **60 native plus 60 deployed frames**. Published scores, message headers, per-frame count arithmetic and marker totals agreed. The live RViz window visibly rendered points, accepted boxes, scores and the four-line counter text. This verifies filtering and monitoring, not detection accuracy; the frozen accuracy results below are unchanged.
+The [new investigation and repair plan](DETECTION_INVESTIGATION_AND_PLAN.md) separates application bugs, packaged-plugin behavior and pretrained sensor compatibility. Actual GPU controls pass the Vehicle decoder's three center-z residual cases and all ten voxel features on a three-point/two-pillar input. Twelve CPU ground-truth tests pass. Eighteen new GPU controls on two unlabeled Koide scans completed: bounded inputs achieved full post-NMS matching to the first repeat at tolerance 0.001; zero-return removal alone was not consistently better. Counts above 0.4 remained 2/0 per scan, and no accuracy was measured. A tuning-only range audit finds that the model retains 83.96% of counted Car-box points; this is a coverage measurement, not a proven cause of height error.
 
-Local evidence: `.recovery/verification/published-deployment/` contains `deployment.json`, `deploy.log`, `python-tests.log`, `native-gpu-smoke.log`, `native-live-output-check.json`, `live-output-check.json`, `latest-stats.txt`, `final-threshold.txt` and `rviz-live.png`. These ignored local artifacts are not included in Git. See [the feature guide](CONFIDENCE_FILTER_AND_MONITORING.md) for monitoring commands. Process identities describe this observation only; inspect actual state before future process management.
+The exact pretrained model and label hashes match the publisher, but the available model-level card does not establish KITTI/Ouster training for this exact export. Capacity-safe offline preprocessing is implemented as an explicit opt-in helper; live defaults and the frozen 1,120-observation accuracy study remain unchanged. No complete accuracy repair is claimed. The plan records the remaining intermediate/reference checks and the need for a new annotated acceptance set.
 
-## Purpose and implementation
+## What works, and what remains open
 
-**Published and GPU-verified implementation on 23 October:** a configurable publication confidence gate (default 0.5), live threshold updates, `/bbox/stats` and an RViz count marker are now implemented. Boxes below the threshold are not published. See [the feature guide](CONFIDENCE_FILTER_AND_MONITORING.md) for the exact behavior, configuration and verification. Numerical experiment tables below remain frozen results from the earlier unfiltered node; they do not measure this new setting. Historical documentation-only verification statements near the end retain their original scope.
+| Area | Verified capability | Practical limit |
+| --- | --- | --- |
+| ROS/GPU pipeline | Validates XYZI, runs the TensorRT engine, publishes boxes and counters | Successful inference does not mean correct objects |
+| Ouster adapter | Creates FLOAT32 XYZI from an explicitly selected channel and divisor | No automatic claim of training-compatible intensity calibration |
+| Deployment | Local-source build by default, matching-image reuse, persistent engine cache | First builds and changed dependencies can require downloads |
+| Original-bag replay | Matching bag profile, topic, middleware and domain; one Ctrl+C stops each launcher | Best-effort input and large-cloud transport can affect delivery |
+| RViz | Points, accepted boxes, scores and count text; optional raw/camera views | Images alone do not establish accuracy or synchronization |
+| Research evidence | Labeled KITTI baseline, reference comparison and labeled Ouster channel study | Both current channels fail the declared 3D matching criteria |
 
-`pp_infer` detects candidate Vehicle, Pedestrian and Cyclist objects in LiDAR scans using NVIDIA's pretrained PointPillars export. It publishes ROS 2 `Detection3DArray` messages for RViz or another consumer. The tested deployment is Ubuntu 24.04, Linux x86-64, ROS Jazzy, TensorRT 10.16.1.11, container CUDA 12.9 and an RTX 4060 Laptop GPU. These are recorded project versions, not a claim about the latest available software.
+The latest recorded test suite has **119 passing Python tests**. The preceding launcher build passed seven C++/ROS tests. Those counts describe their respective verification runs; this documentation refresh does not imply a new GPU experiment.
+
+## How data moves through the project
 
 ```mermaid
 flowchart TD
-    A[LiDAR driver or recorded bag] --> B[PointCloud2 /point_cloud]
-    B --> C[CPU: validate layout and pack finite XYZI]
-    C --> D[GPU: PointPillars engine with reusable buffers]
-    D --> E[CPU: validate candidate boxes and rotated BEV NMS]
-    E --> T[CPU: configurable confidence publication gate]
-    T --> F[Accepted Detection3DArray /bbox with original cloud header]
-    T --> H[Per-frame and cumulative counters]
-    H --> I[DiagnosticArray /bbox/stats: terminal or subscriber]
-    H --> J[MarkerArray /bbox/count: RViz text]
-    J --> G
-    B --> G[Host RViz]
-    F --> G
+    A[Ouster driver or original bag] --> B[Ouster adapter: selected field / divisor]
+    B --> C[PointCloud2 XYZI on /point_cloud]
+    X[Already compatible XYZI source] --> C
+    C --> D[CPU: validate layout and pack finite points]
+    D --> E[GPU: cached PointPillars engine]
+    E --> F[CPU: validate boxes and apply rotated NMS]
+    F --> G[Confidence gate]
+    G --> H[/bbox: accepted Detection3DArray]
+    G --> I[/bbox/stats and /bbox/count]
+    C --> R[RViz]
+    H --> R
+    I --> R
 ```
 
-| Component | Implementation and responsibility |
-| --- | --- |
-| Build and dependencies | `CMakeLists.txt` and `package.xml`: C++17, CPU-only core, optional ROS adapter, CUDA/TensorRT runtime; colcon drives ROS builds. |
-| CPU geometry | `src/postprocess.cpp`, `include/pp_infer/postprocess.h`: rotated overlap, stable score ordering, validated NMS; production suppression is class-agnostic. |
-| Input/output adapter | `src/pointcloud_adapter.cpp`: little-endian scalar FLOAT32 XYZI, checked layout/row padding/byte limits, finite-point filtering, intensity division, numeric class IDs, center/yaw/header mapping. |
-| GPU runtime | `src/pointpillar.cpp`: four named tensors, batch-one contract, `enqueueV3`, owned context/stream/buffers, checked counts and candidate decoding. |
-| Publication/filter and counters | `src/detection_output.cpp`: dynamic score gate, accepted messages, per-frame/cumulative diagnostics and RViz text; validates/maps through `make_detections`. |
-| ROS entry point | `src/pp_inference_node.cpp`: synchronous subscription callback, reliable depth 700, publication on `bbox`; container remaps node name/topics. |
-| Deployment | `Dockerfile`, `tools/deploy.sh`, `docker/entrypoint.sh`, `docker/node.yaml`: local source by default (optional remote Git), checksum-pinned ONNX, target-GPU engine generation/cache, node startup. |
-| Data and results | `tools/prepare_*`, `tools/kitti_*`, `tools/compare_ouster_*`: preparation, frozen predictions, calibration/evaluation and controlled reference/feature experiments. |
-| Visualization | `tools/visualize.sh`, `rviz/`: direct vision_msgs display, sensor-specific frames, optional camera, ground truth and reference overlays. |
-| Evidence/recovery | `config/*_inventory.json` indexes identities and saved evidence; `recovery/` records milestones; ignored `.recovery/` holds local data, engines, reports and logs. |
-| Tests | `tests/core`, `tests/ros`, `tests/runtime` and Python `tests/test_*.py`: geometry/contracts, message handling, preparation, evaluation, matching, preservation and recovery. |
+The detector callback remains synchronous with a reliable queue depth of 700. The Ouster adapter accepts best-effort sensor input and publishes reliable output. The current launcher explicitly starts the adapter; it does not discover arbitrary schemas and automatically switch between passthrough and conversion. An already compatible XYZI source can feed the detector directly.
 
-The image build downloads ONNX and installs the libraries/application. Container startup builds or reuses a matching FP32/no-TF32 engine in `pp-engines`, then passes `engine_path` to ROS. The C++ node reads the engine once; it does not load ONNX or retrain weights. A direct `ros2 run` needs an existing engine and configuration.
+The tested stack is Ubuntu 24.04, ROS 2 Jazzy, TensorRT 10.16.1.11, container CUDA 12.9 and an RTX 4060 Laptop GPU. These are project versions, not claims about the latest available releases. Model classes are Vehicle, Pedestrian and Cyclist; ROS output uses numeric class IDs. The ONNX is downloaded and checksum-verified during image preparation. Startup builds or reuses a target-GPU engine in `pp-engines`; the node loads it once and reuses its buffers.
 
-## Labeled KITTI diagnostic accuracy — 3 October
+## Latest Ouster comparison — 8 November 2026
 
-The frozen dataset contains **16 tuning and 16 test frames**, separated by original recording drive. The table is **test/moderate**, using the declared KITTI-compatible evaluator and camera-visibility policy. Vehicle is mapped explicitly to **Car compatibility**, without merging Van/Truck into Car.
+The study ran unchanged production C++ inference/NMS directly, with the same engine and identical geometry for both features. It made **1,120 measured GPU inferences**, excluding 18 warmups:
 
-| Class | Valid ground truth | 3D TP / FP / FN | 3D AP_R40 | BEV TP / FP / FN | BEV AP_R40 |
-| --- | ---: | --- | ---: | --- | ---: |
-| Car | 54 | 0 / 146 / 54 | 0% | 12 / 128 / 42 | 5.7516% |
-| Pedestrian | 31 | 0 / 53 / 31 | 0% | 0 / 53 / 31 | 0% |
-| Cyclist | 19 | 0 / 206 / 19 | 0% | 2 / 203 / 17 | 0.02577% |
+| Data and purpose | Distinct scans | Repeats × channels | Inferences |
+| --- | ---: | ---: | ---: |
+| MOSEP dry/rain numerical and repeatability check | 48 | 5 × 2 | 480 |
+| Dur360BEV-Extended labeled comparison | 32 | 5 × 2 | 320 |
+| Separate bounded-pillar sensitivity control | Same 32 | 5 × 2 | 320 |
 
-The 12 BEV-matched test cars had a median **1.529 m upward** center error. Of 2,876 predictions across both splits, 862 intersected the labeled camera view; 2,014 were excluded by the frozen visibility rule. RViz displays all predictions. First observations are preserved because repeated inference varies.
+The main labeled test contains 16 scans, with **60 vehicles and six pedestrians inside the declared evaluation region**. At confidence 0.4:
 
-**Accuracy acceptance is not achieved.** This annotation-selected diagnostic sample is neither a population score nor a KITTI leaderboard submission. Both splits have now been inspected; a larger untouched acceptance set and agreed targets remain necessary. Details: [KITTI results](KITTI_ACCURACY_RESULTS.md), [accuracy inventory](../config/kitti_accuracy_inventory.json).
+| Test Vehicle metric | Signal / 65,535 | Reflectivity / 255 |
+| --- | ---: | ---: |
+| BEV matches per run | 0 | 4 in every repeat |
+| Mean BEV precision | 0% | 27.81% |
+| BEV recall | 0% | 6.67% |
+| Qualifying 3D matches | 0 | 0 |
 
-## Independent TensorRT comparison — 3 October
+BEV means the footprint seen from above. A 3D match also needs enough vertical overlap. The four first-repeat reflectivity BEV matches were **0.60–1.14 m too high** and failed the 0.7 Vehicle 3D-IoU criterion. Neither channel matched the six test pedestrians under the declared criteria. No cyclist annotations occur in this selection.
 
-The exact ONNX and identical inputs were run three times per frame in separate TensorRT 8.6 and 10.16 environments: **192 raw observations**. NVIDIA's unchanged NMS and this project's NMS selected the same boxes on **192/192 identical-candidate observations**. That isolates NMS behavior; it does not establish equal inference outputs.
+![Publisher annotations and actual predictions on a fixed test frame](figures/ouster-channel-ground-truth-2026-11-08.png)
 
-The TRT8 compatibility reference also produced zero moderate 3D matches and about 1.53 m upward car error. Strict numerical/training parity remains unmet. Twelve of 32 clouds exceeded the 10,000-pillar limit, reaching 15,180 occupied pillars. Two tuning-only controls capped occupied pillars and points per pillar; repeat matching improved to roughly **99.6–100%** at the diagnostic tolerance. No production point-selection fix was installed.
+Green boxes are publisher annotations; the lower XZ view exposes height differences. The frame is the middle of the frozen test selection. [Image provenance and attribution](figures/ouster-channel-ground-truth-provenance.json).
 
-Two CUDA 12.9 allocation memchecks reported zero errors, but internal tensors may share allocations. They do not clear internal tensor-bounds concerns or complete GPU memory/race validation. The weights alone are not established as the root cause. Details: [reference comparison](MODEL_REFERENCE_COMPARISON.md), [reference inventory](../config/kitti_reference_inventory.json).
+Both normalized channels completed all 560 measured inferences each without recorded inference failures. That supports numerical success in these tests. It does not establish a general repeatability winner: empty outputs and correlated scans limit the stability comparison.
 
-## Ouster feature comparison and complete replay — 13 October
+Twenty of 32 primary labeled scans exceeded the model's 10,000 occupied-pillar limit. A separate geometry-only capacity control preserved the four-versus-zero vehicle BEV result and still produced no qualifying 3D matches. It was **not deployed as preprocessing**. The annotated input required identical model-ROI and zero-return handling for both channels because original scans exceeded the 204,800-point engine capacity.
 
-Sixteen fixed OS1-32 scans, four fourth-feature encodings and three repeats produced **192 raw observations**. XYZ bits, order, point count and zero returns were preserved.
+The publisher's annotations are model-assisted and human-reviewed according to the original paper. They are independent of our predictions. Published train/test indices are disjoint within one collection; recording-disjoint generalization is unverified. Normalization is a numeric encoding, not proven physical reflectance calibration. Full methods, source identities, exclusions and reproduction commands are in [the decision report](OUSTER_CHANNEL_DECISION.md) and [machine-readable summary](../config/ouster_channel_decision.json).
 
-| Fourth feature | Rejected observations | Invalid candidate rows | Median accepted final boxes | Median of final-score medians |
-| --- | ---: | ---: | ---: | ---: |
-| Original signal | 15 / 48 | 33 | 590 | ≈1.000 |
-| Signal / 65,535 | 0 / 48 | 0 | 15 | 0.164 |
-| Reflectivity / 255 | 0 / 48 | 0 | 18.5 | 0.166 |
-| min(reflectivity / 100, 1) | 0 / 48 | 0 | 26 | 0.173 |
+## Earlier experiments and what they contribute
 
-All 33 invalid rows had nonfinite length. The three normalized variants had no invalid rows in **144 observations**. This supports the unscaled fourth feature as a contributor to numerical failure; smaller counts and lower scores do not establish accuracy.
-
-Complete `reflectivity_div255` ROS replay matched **291/291** and **265/265** input/output occurrences, with no recorded invalid message fields or detector log errors. Duplicate source headers were counted as separate occurrences. Original `raw_signal` remains the default of `rosbag_ouster.sh`; the detail wrapper explicitly selects normalized input. Reflectivity/255 is a bounded code encoding, not validated physical reflectance or training calibration. There are no object labels for these recordings. Details: [feature experiment](OUSTER_FEATURE_COMPARISON.md), [feature inventory](../config/ouster_feature_inventory.json).
-
-## Camera and scene-detail results — 13–14 October
-
-Ouster camera export contains **58 + 53 original images**, approximately 2 Hz. Two 1280×1070 MP4 previews last **29.000 s** and **26.433 s**. The merged replay preserved all **111 image**, **111 CameraInfo** and **556 normalized cloud** payloads. Camera/LiDAR header clocks differ; coordination uses bag record time. No calibrated detection-image overlay or proven acquisition-time synchronization is claimed. Attribution: Kenji Koide, AIST, calibration dataset v3, DOI `10.5281/zenodo.7780490`, CC-BY-4.0. See [camera guide](OUSTER_CAMERA_VISUALS.md).
-
-The original-data Ouster view adds `/ouster/raw_points` alongside normalized inference. Five live cloud pairs passed comparisons of all non-intensity bytes. Its scans retain 32,768 entries, including 13,206–15,775 zero-range/zero-XYZ entries in the selected experiment; those do not add visible surfaces. Closer/brighter rendering changes presentation, not point density.
-
-The separate KITTI raw drive `2011_09_26_drive_0005_sync` contains **154 full 360° clouds and 154 front-camera images**, with **98,532–124,122 points/scan**. Recorded integration received **154 matched detections, 154 images and 154 CameraInfo messages**. Original XYZI hashes and decoded camera pixels matched source data. Predictions numbered 83–132 per frame, median 106; counts are not accuracy. The camera is forward-facing; LiDAR is not cropped. Attribution: Geiger, Lenz, Stiller and Urtasun, KIT/TTI-C, CC-BY-NC-SA-3.0. See [detail/frontal guide](FRONTAL_COMPARISON_AND_RVIZ_DETAIL.md) and [inventory](../config/kitti_front_inventory.json).
-
-## Visual examples from the supplied screencasts
-
-Frames were extracted from the two local WebM files in `/media/ae/New Volume/datasets/vedios`, whose filenames are dated 20 October. Offsets below are decoded presentation timestamps from the start of each recording, rounded to milliseconds. Full frames are preserved in PNG format.
-
-![RViz points and candidate boxes from the first screencast](figures/rviz-screencast-1.png)
-
-First recording, **32.035 s**: a close RViz view shows intensity-colored LiDAR points, candidate boxes and score labels.
-
-![RViz road scene from the second screencast](figures/rviz-screencast-2.png)
-
-Second recording, **16.023 s**: a wider road view shows point geometry and boxes. These screenshots establish visible rendering in the supplied recordings. They do not identify the underlying bag, feature variant, engine hash or correctness of individual boxes; those require the recorded experiment manifests. No camera projection or ground truth is visible in these selected frames. [Frame provenance and checksums](figures/README.md).
-
-## Useful commands
-
-Start inference separately with `sudo bash tools/deploy.sh`. Use **one player per input topic/domain**; keep inference, player and RViz domains matched. Run the player and corresponding viewer in separate terminals.
-
-| Purpose | Player / preparation | Viewer |
+| Date / study | Recorded result | What it establishes |
 | --- | --- | --- |
-| Original KITTI sequence04 demo | `bash tools/rosbag_demo.sh` | `bash tools/visualize.sh` |
-| Normalized Ouster diagnostic | `PP_OUSTER_FEATURE=reflectivity_div255 bash tools/rosbag_ouster.sh` | `RVIZ_CONFIG="$PWD/rviz/ouster.rviz" bash tools/visualize.sh` |
-| Original Ouster geometry + camera | `bash tools/rosbag_ouster_detail.sh` | `RVIZ_CONFIG="$PWD/rviz/ouster_detail.rviz" bash tools/visualize.sh` |
-| Frontal KITTI recording | `bash tools/rosbag_kitti_front.sh` | `RVIZ_CONFIG="$PWD/rviz/kitti_front.rviz" bash tools/visualize.sh` |
-| Labeled KITTI comparison (domain 42) | `bash tools/kitti_accuracy.sh live` | `bash tools/kitti_accuracy.sh view` |
-| Existing frozen accuracy report | `bash tools/kitti_accuracy.sh report` | No viewer required |
+| 3 October: labeled KITTI | 16 test frames; moderate 3D AP_R40 0% for all classes; BEV AP_R40 Car 5.7516%, Pedestrian 0%, Cyclist 0.02577% | A poor frozen diagnostic baseline, with explicit Vehicle-to-Car mapping |
+| 3 October: TensorRT 8/10 reference | 192 raw observations; identical NMS selections on 192 same-candidate cases; shared upward car error | NMS is consistent on identical inputs; exact inference/training parity remains open |
+| 13 October: Koide OS1-32 feature study | Raw signal rejected 15/48 observations; all three normalized candidates rejected 0/48 each | Scaling the fourth feature removed observed numerical failures on those scans |
+| 13 October: complete normalized replay | 556/556 source/output occurrences matched | Message-flow and conversion correctness on the two unlabeled bags |
+| 13–14 October: camera/detail replay | 111 images and CameraInfo preserved; 154 frontal KITTI cloud/detection/image sets matched | Payload preservation and integration, without new accuracy labels |
+| 23 October: filtering/counters | 60 native plus 60 deployed GPU frames at thresholds 0, 0.5 and 0.95 | Scores, headers, counts and RViz counter rendering agree |
+| 7 November: fresh MOSEP live test | 40 raw/adapted pairs checked; RViz rendered actual output | Original-bag → adapter → GPU → RViz integration |
+| 8 November: launcher fixes | Actual GPU replay; one interrupt removed each test container in about 0.5 s | Matching defaults, caching and shutdown behavior in that test |
 
-Preparation/deployment can need network access and host dependencies as described in each guide. No playback, container replacement, installation or image rebuild was performed for this documentation update.
+Do not combine these samples or test counts into one accuracy score. The Koide and MOSEP recordings have no object-detection labels in these workflows. KITTI uses its AP_R40 protocol; the Ouster report uses a separately declared diagnostic evaluator. Their AP values are not interchangeable.
 
-## Constraints, discrepancies and next work
+Read [KITTI accuracy](KITTI_ACCURACY_RESULTS.md), [reference comparison](MODEL_REFERENCE_COMPARISON.md), [older Ouster feature study](OUSTER_FEATURE_COMPARISON.md), [camera guide](OUSTER_CAMERA_VISUALS.md), [detail/frontal guide](FRONTAL_COMPARISON_AND_RVIZ_DETAIL.md), and [fresh visual test](FRESH_OUSTER_VISUAL_TEST.md) for the corresponding evidence.
 
-- **Current code versus design:** the latest-frame worker is proposed, not implemented. Inference remains synchronous, with reliable depth 700. Configurable sensor QoS, timing/drop metrics, sustained benchmarks and CI/operational acceptance remain unfinished.
-- **Model contract:** artifact-bound labels are verified, but `docker/node.yaml` still has generic labels and scale 1.0. Runtime publishes numeric IDs. Input/training semantics, deterministic bounded voxelization, broader failure/memory checks and accuracy acceptance remain open.
-- **Startup:** the historical native launch file still contains a fixed `/home/nvidia/...` engine path and scale 255. Use the documented configured Docker/native procedure. Docker builds published Git, so local unpushed runtime edits are excluded.
-- **Historical wording:** early plans, transcript quotations and archived Foxy commands describe their original dates. In particular, direct RViz detection display now works through the plugin; old “RViz cannot display Detection3DArray” statements are historical. A completed compatibility comparison still does not mean original-training parity passed.
-- **Git state:** review started at `ee6b36c` with no tracked modifications and an untracked user `prompt.md`, preserved. Validation/reference work is committed in `29ef404`; later demo work is committed in `ee6b36c`. Older “local until committed” remarks are historical. No push/publication claim is inferred from local Git history.
-- **Evidence:** ignored results/media are not backed up by Git/source checkpoints. Saved ownership/process records describe earlier sessions; inspect live state before stopping resources. No current running-container state is asserted here.
-- **Documentation scope:** every project Markdown guide/history and all three LaTeX sources were refreshed. `CLA.md` retains its legal terms; the user's untracked `prompt.md` is unchanged. Generated/build/cache/SDK trees were excluded.
+## Start the current Ouster replay
 
-Next resolve original input/training conventions and bounded voxelization, then test a justified correction or suitable model against a larger untouched acceptance set. Keep the frozen poor baseline and provenance intact.
+From the repository root, prepare the image once or after runtime changes:
 
-## Verification of this documentation update
+```bash
+sudo env PP_BUILD_ONLY=1 bash tools/deploy.sh
+```
 
-The **64 existing Python tests passed** on 23 October. Six local HTTP-fixture tests initially could not bind loopback sockets inside the sandbox; the complete rerun with local socket access passed. This checks current helper behavior, not fresh GPU inference.
+`PP_BUILD_ONLY=1` is optional: it stops after image preparation. Without it, `deploy.sh` starts the detector only. To run Ouster bag conversion, start these in separate terminals:
 
-The review rehashed **8 KITTI baseline JSON artifacts, 11 reference JSON artifacts and 9 Ouster feature JSON artifacts** against their inventories: all matched. The complete frontal KITTI observation file matched its recorded SHA256 and summary; the Ouster raw-view observation matched its inventory. Runtime/experiment data were not regenerated. Test/check logs are under `.recovery/verification/docs-2026-10-23/`.
+```bash
+# Terminal 1: adapter and detector
+sudo bash tools/start_ouster.sh bag
+# Terminal 2: original, unchanged MOSEP recording
+sudo bash tools/start_ouster_bag.sh
+```
 
-All three updated LaTeX sources were submitted to the built-in compiler. Each failed before parsing because the TeX bundle was uncached and its download failed. Compilation and page layout remain unverified; sources and figure assets are preserved. Static source/asset/link checks and compiler diagnostics are recorded in the dated [progress entry](../recovery/PROGRESS.md). Old PDFs are historical renditions until regenerated from the updated sources; they must not be described as current compilations.
+The bag profile uses Fast DDS, domain 99 and `/sensing/lidar/points`. The adapter publishes reflectivity/255 as `/point_cloud`; the detector publishes `/bbox`. Stop each foreground launcher with one Ctrl+C and allow shutdown time. Use one player per input topic/domain. For the viewer and live-driver settings, follow [startup and replay](STARTUP_AND_REPLAY.md). The live profile and bag profile have different defaults; choose explicitly.
+
+## Next work and thesis interpretation
+
+Keep reflectivity/255 as the experimental baseline and keep signal/65,535 as a diagnostic alternative. Next, specify valid-return and pillar-capacity handling, investigate the shared height/input-training mismatch, and test a justified correction or suitable Ouster-trained model. Choose tuning settings on development recordings, then evaluate on fresh recording-disjoint data. The inspected test frames can no longer be treated as untouched acceptance data.
+
+A latest-frame worker, configurable detector sensor QoS, timing/drop metrics, sustained benchmarks, fuller memory/race checks and operational acceptance remain unfinished. No empirical z offset or production capacity policy has been silently installed. The model artifact's labels are verified, but generic display configuration labels do not replace that contract.
+
+For a thesis, the defensible contribution is a reproducible migration, integration and evaluation workflow, followed by a measured, limited channel recommendation. **Do not describe the system as an accepted accurate 3D detector.** Keep uncertainty, excluded-label counts and differences between integration, numerical stability and accuracy alongside each result.
+
+## Evidence and preservation
+
+Committed summaries under `config/` identify model, engine, source, GPU, inputs and report hashes. Large originals, observations, logs and engines remain in ignored `.recovery/` or the external dataset folder. Git alone does not back them up. Preserve those assets with their manifests when transferring the project.
 
 ## Trial shutdown and restart — 23 October 2026
 
-At **19:47 UTC (21:47 Europe/Berlin)** the user requested closing the current processes. The recorded IDs were matched before stopping `pointpillars-kitti-front-bag` and `pointpillars`; the exact `rviz2 -d .../rviz/kitti_front.rviz` process received SIGINT and exited. A follow-up Docker/process inspection found no remaining trial containers or RViz process. The detector's last verified setting was **0.5**; there is no live detector parameter to query while it is stopped. The image, `pp-engines` volume, data and frozen reports remain. Local shutdown evidence: `.recovery/verification/published-deployment/shutdown.json`.
+This heading is retained for existing links. At 19:47 UTC on 23 October, the user-requested KITTI trial detector, player and RViz were closed after identity checks. Its last threshold was 0.5, and images, cache and data were preserved. This is a historical shutdown record, not a current process-state assertion. Local record: `.recovery/verification/published-deployment/shutdown.json`.
 
-To repeat the trial, run these in **three separate terminals** from the project root, using Docker permissions appropriate to the host:
+To repeat the historical counter-view trial in separate terminals:
 
 ```bash
-# Terminal 1: checks/builds local source, then starts inference.
 PP_CONFIDENCE_THRESHOLD=0.5 bash tools/deploy.sh
-# Terminal 2: starts/reuses the prepared KITTI front-drive player.
 bash tools/rosbag_kitti_front.sh
-# Terminal 3: opens a NEW RViz window with the last tested configuration.
 RVIZ_CONFIG="$PWD/rviz/kitti_front.rviz" bash tools/monitor_detections.sh rviz
 ```
 
-`deploy.sh` checks the host GPU/Docker and reuses a matching runtime-input image; changed runtime inputs trigger a cached local build. Base pulls require `PP_PULL_BASE=1`. It preserves an existing same-name container and starts a new detector unless optional `PP_BUILD_ONLY=1` is set. Container `--rm` removes it on exit while preserving the image and named engine volume. Use one cloud player per topic/domain.
+The monitor opens a new RViz window. In an existing window, use File → Open Config or add a Reliable / Transient Local MarkerArray display on `/bbox/count`. Docker permissions must already be available for these commands.
 
-The monitor's `rviz` mode calls `tools/visualize.sh`. Both open a new window. To load this profile in an already-open RViz window, use **File → Open Config** and choose `rviz/kitti_front.rviz`; to keep your existing layout, add a Reliable / Transient Local MarkerArray display on `/bbox/count` instead. Monitoring alone starts neither inference nor playback. With inference running, `PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh` streams counters, and the `threshold` option reads the live setting.
+![Verified historical RViz boxes, scores and counters](figures/rviz-filter-counters-2026-10-23.png)
 
-![Verified KITTI RViz boxes, scores and counters before shutdown](figures/rviz-filter-counters-2026-10-23.png)
+This saved scan shows 3 published boxes, 94 before filtering and 91 removed at 0.5. Totals count detection events, not unique objects. [Capture provenance](figures/filter-counters-provenance.json).
 
-The saved scan has 3 published boxes, 94 before score filtering and 91 removed at 0.5. Totals count detection events after filtering, not unique objects. No accuracy improvement is inferred. [Capture provenance and dataset attribution](figures/filter-counters-provenance.json).
+## Supplementary thesis evidence — 9 November 2026
+
+The illustrated thesis appendix documents 50 problem groups and four subcases. A new full Python regression check passed 119 tests. Six separate GPU demonstrations used one unchanged unlabeled Koide scan: three raw-signal outputs were rejected by the production box decoder, while three reflectivity/255 outputs passed. This small, fixed-order reproduction illustrates the numerical failure; it is not a new accuracy comparison and is not included in the frozen 1,120-observation study. The historical engine and original recordings were preserved.
+
+The [casebook](THESIS_CASEBOOK.md) labels original captures, controlled reproductions and source explanations separately. [The review record](../config/thesis_casebook_review.json) records verification and compilation limits.
+
+## Full-bag before/after input comparison — 9 November 2026
+
+The earlier index described a 291-scan / 1,746-inference study in `OUSTER_BEFORE_AFTER_COMPARISON.md`, but that report is absent from this checkout. Those historical claims were not revalidated here. The [21 November investigation](OUSTER_VERIFICATION_AND_PERSON_DIAGNOSIS_20261121.md) provides available source audits, controlled observations and explicit limits; do not cite the missing page as verified evidence.
+
+## Primary experiment inputs — 21 November 2026
+
+New experiments use `raw01` (default) and `ouster1` from
+`/media/ae/New Volume1/rosbags`. The replay launcher opens their original standalone
+MCAPs read-only; the shared bag profile now uses `/ouster1/points`, domain 99 and
+Fast DDS. Sampled clouds use frame `ouster1_lidar` and have literal signal and
+reflectivity channels. See [startup and replay](STARTUP_AND_REPLAY.md) for commands and inspection limits.
+Historical datasets and frozen results remain unchanged; this input selection
+does not establish new inference or accuracy results.

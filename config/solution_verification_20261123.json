@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "reviewed_local_date": "2026-11-23",
+  "timezone": "Europe/Berlin",
+  "baseline_commit": "15a82bca8149aba934de26ba48c5714bff0ea51f",
+  "scope": "Detector failure-output invalidation and deterministic accuracy-solution protocol; no neural accuracy fix or deployment claimed",
+  "accuracy_accepted": false,
+  "acceptance_preference": "User: undecided absolute targets, but should be improved from current state. Require paired labeled comparison; no selected absolute target.",
+  "implementation": {
+    "files": [
+      "src/detection_output.cpp",
+      "tests/ros/test_detection_output.cpp"
+    ],
+    "behavior": "Publish empty Detection3DArray with failed scan header; failure diagnostics WARN/counts unavailable; successful counters unchanged.",
+    "limits": [
+      "Only failures reaching detector report_failure are handled",
+      "No sensor-silence/adapter-rejection watchdog",
+      "No new GPU inference or RViz pixel verification",
+      "No change to weights, input transforms, sampling, NMS, confidence defaults"
+    ]
+  },
+  "verification": {
+    "cpu_ros_ctest": {
+      "passed": 8,
+      "failed": 0
+    },
+    "evaluator_unit_tests": {
+      "passed": 12,
+      "failed": 0
+    },
+    "regression_negative_control": {
+      "old_output_source_with_new_test": "failed as expected on absent failure publication",
+      "patched_source": "passed",
+      "initial_sandbox_attempt": "invalid control due to blocked DDS sockets; retained separately; unrestricted control used"
+    },
+    "logs": {
+      "configure.log": {
+        "path": ".recovery/verification/solution-20261123/configure.log",
+        "sha256": "ba08c8454b45006c53dac463dcea8205e921baf3acbd44f4656dd3378e541bf7"
+      },
+      "build.log": {
+        "path": ".recovery/verification/solution-20261123/build.log",
+        "sha256": "a08718e9978c1dd243973beaa9cf777638000737fb9da567447a4c06a7fe5d14"
+      },
+      "ctest.log": {
+        "path": ".recovery/verification/solution-20261123/ctest.log",
+        "sha256": "88ec8bc9fd0d2ee1978afd67112b8f81367fb84f4a2639cb5755b532e9f2971c"
+      },
+      "evaluator.log": {
+        "path": ".recovery/verification/solution-20261123/evaluator.log",
+        "sha256": "8bedfecfb7aad66146a910f55d8f36df7034f1b1f9a75849f2b483c8fbbbf4d4"
+      },
+      "negative-control-unrestricted.log": {
+        "path": ".recovery/verification/solution-20261123/negative-control-unrestricted.log",
+        "sha256": "f7dbcd222db48615377c5ecb5ddb8637fb3dbad348df48229f957d770b69fd52"
+      }
+    }
+  },
+  "source_sha256": {
+    "src/detection_output.cpp": "23a604b664bd24620777c90cbcf83cd9fd6c7e87eb01366bc1bee29269614409",
+    "tests/ros/test_detection_output.cpp": "7111f783155648fdab4daf39b2f54d425d737bfeee3d597e174d3ca4b972e455"
+  },
+  "protocol": "docs/POINTPILLARS_SOLUTION_PROTOCOL_20261123.md",
+  "next_accuracy_work": [
+    "Independent full 3D target labels and recording/session holdout",
+    "Verified sensor/model convention and controlled calibration comparison",
+    "Target-compatible checkpoint or Ouster fine-tuning if alignment does not recover geometry",
+    "Framework/export/TensorRT parity and paired heldout precision/recall/FP/localization comparison"
+  ]
+}

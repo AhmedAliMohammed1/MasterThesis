@@ -1,0 +1,23 @@
+{
+  "date": "2026-11-24",
+  "description": "Actual persisted 3D matched-GT metrics; 16 historical frames, six annotated person boxes; mean of three repeats, not independent scenes.",
+  "generator": ".recovery/verification/candidate-eval-20261124/plot_pedestrian_comparison.py",
+  "files": [
+    {
+      "path": "docs/figures/2026-11-24/candidate-pedestrian-comparison.png",
+      "sha256": "02d4267f1ec31356c7923b6eaa2b5befe6a1bd277bb8865ae03add3b95636bc1"
+    },
+    {
+      "path": ".recovery/verification/candidate-eval-20261124/plot_pedestrian_comparison.py",
+      "sha256": "e2b08b2cd6e5b4e9d1650dbea658f343d5ac179221f21cded9b61d2c5188afa5"
+    },
+    {
+      "path": ".recovery/verification/candidate-eval-20261124/dur360/gate-0.3.json",
+      "sha256": "cab9e2ee59d6bc5a0dac52b4038db4d26ae2fa11a3b0c038f4401a6b23614a50"
+    },
+    {
+      "path": ".recovery/verification/candidate-eval-20261124/dur360/gate-0.5.json",
+      "sha256": "a7b73a50c53386af47e17a0fcd6303f0f08eacf08ad4249663a14f7491e362e6"
+    }
+  ]
+}

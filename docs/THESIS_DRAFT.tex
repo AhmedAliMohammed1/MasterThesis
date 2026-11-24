@@ -1,0 +1,2234 @@
+% Working manuscript, updated 21 November 2026; dated studies retain their original scope. Not a final university template.
+% References and limitations must remain with reused results.
+\documentclass[11pt,a4paper]{article}
+% XeTeX can load installed OpenType files directly, without fontspec.
+% On another OS, adapt these paths; absent files retain the class defaults.
+\newcommand{\projectnativefamily}[5]{%
+  \DeclareFontFamily{TU}{#1}{}%
+  \DeclareFontShape{TU}{#1}{m}{n}{<-> "[#2]"}{}%
+  \DeclareFontShape{TU}{#1}{m}{it}{<-> "[#3]"}{}%
+  \DeclareFontShape{TU}{#1}{m}{sl}{<-> "[#3]"}{}%
+  \DeclareFontShape{TU}{#1}{b}{n}{<-> "[#4]"}{}%
+  \DeclareFontShape{TU}{#1}{bx}{n}{<-> "[#4]"}{}%
+  \DeclareFontShape{TU}{#1}{b}{it}{<-> "[#5]"}{}%
+  \DeclareFontShape{TU}{#1}{bx}{it}{<-> "[#5]"}{}%
+  \DeclareFontShape{TU}{#1}{b}{sl}{<-> "[#5]"}{}%
+  \DeclareFontShape{TU}{#1}{bx}{sl}{<-> "[#5]"}{}%
+}
+\IfFileExists{/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf}{%
+  \ifcsname T@TU\endcsname\else
+    \DeclareFontEncoding{TU}{}{}
+  \fi
+  \projectnativefamily{projectserif}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSerif-BoldItalic.ttf}
+  \projectnativefamily{projectsans}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf}
+  \projectnativefamily{projectmono}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Oblique.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSansMono-BoldOblique.ttf}
+  \renewcommand{\encodingdefault}{TU}
+  \renewcommand{\rmdefault}{projectserif}
+  \renewcommand{\sfdefault}{projectsans}
+  \renewcommand{\ttdefault}{projectmono}
+  \DeclareFontSubstitution{TU}{projectserif}{m}{n}
+}{\PackageWarningNoLine{project}{DejaVu font files absent; using class font defaults}}
+\usepackage[margin=25mm]{geometry}
+\usepackage{graphicx,booktabs,array,tabularx,tikz,hyperref}
+\usetikzlibrary{arrows.meta,positioning}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{.6em}
+\newcommand{\projectfigure}[3]{%
+  \begin{figure}[htbp]\centering
+  \IfFileExists{figures/#1}{\includegraphics[width=\linewidth,height=.65\textheight,keepaspectratio]{figures/#1}}{%
+    \IfFileExists{docs/figures/#1}{\includegraphics[width=\linewidth,height=.65\textheight,keepaspectratio]{docs/figures/#1}}{%
+      \PackageWarningNoLine{thesis}{External figure #1 unavailable in this compiler}%
+      \fbox{\parbox{.9\linewidth}{\centering Figure asset unavailable in this standalone preview.\par
+      Keep \code{#1} beside the source in the project figures folder.}}}}
+  \caption{#2}\label{#3}\end{figure}}
+% Nonfloating evidence panels stay beside their case and remain visibly labeled.
+\newcommand{\casefigure}[4]{%
+  \par\medskip\noindent\begin{minipage}{\linewidth}\centering
+  \IfFileExists{figures/#1}{\includegraphics[width=\linewidth,height=.36\textheight,keepaspectratio]{figures/#1}}{%
+    \IfFileExists{docs/figures/#1}{\includegraphics[width=\linewidth,height=.36\textheight,keepaspectratio]{docs/figures/#1}}{%
+      \PackageWarningNoLine{thesis}{Case image #1 unavailable in standalone preview}%
+      \fbox{\parbox{.9\linewidth}{\centering Evidence image unavailable in this standalone preview.\par Keep \code{#1} with the project figures.}}}}
+  \refstepcounter{figure}\label{#4}%
+  \addcontentsline{lof}{figure}{\protect\numberline{\thefigure}#2}%
+  \par\smallskip{\small Figure \thefigure: #3\par}
+  \end{minipage}\par\medskip}
+% Editable case summaries: source text and rules, with no raster report panels.
+\newcommand{\casetable}[4]{%
+  \par\medskip\noindent\begin{minipage}{\linewidth}\small
+  \begin{tabularx}{\linewidth}{@{}YY@{}}\toprule
+  \textbf{Problem or comparison} & \textbf{Observed response or current position} \\\midrule
+  #3 & #4 \\\bottomrule
+  \end{tabularx}%
+  \refstepcounter{table}\label{tab:case-#1}%
+  \addcontentsline{lot}{table}{\protect\numberline{\thetable}#1: #2}%
+  \par\smallskip Table \thetable: #1. #2. The case text states the evidence scope and remaining limits.\par
+  \end{minipage}\par\medskip}
+% Three main stages and a labeled alternative, kept together near the case.
+\newcommand{\caseflow}[7]{%
+  \par\medskip\noindent\begin{minipage}{\linewidth}\centering
+  \begin{tikzpicture}[>=Stealth,font=\footnotesize,
+    stage/.style={draw,align=center,text width=3.7cm,minimum height=1.1cm,inner sep=3pt},
+    alternative/.style={draw,dashed,align=center,text width=8.2cm,minimum height=.8cm,inner sep=3pt}]
+    \node[stage] (start) at (0,0) {#3};
+    \node[stage] (check) at (4.8,0) {#4};
+    \node[stage] (next) at (9.6,0) {#5};
+    \node[alternative] (other) at (4.8,-1.7) {#6};
+    \draw[->] (start) -- (check);
+    \draw[->] (check) -- (next);
+    \draw[->] (check) -- (other);
+  \end{tikzpicture}%
+  \refstepcounter{figure}\label{fig:workflow-#1}%
+  \addcontentsline{lof}{figure}{\protect\numberline{\thefigure}#1: #2}%
+  \par\smallskip{\small Figure \thefigure: #7\par}
+  \end{minipage}\par\medskip}
+
+\title{Migrating and Evaluating a PointPillars LiDAR Detector\\in ROS 2 Jazzy with TensorRT 10}
+\author{Ahmed Elsaify\\THI\\Master of International Automotive Engineering\\[1em]\small Supervisor: to be confirmed}
+\date{21 November 2026; historical studies and dated verification addendum}
+\begin{document}
+\maketitle
+\begin{abstract}
+This work modernizes a ROS 2 LiDAR detection pipeline built around a pretrained
+PointPillars model. The implementation targets ROS 2 Jazzy and TensorRT 10, with
+explicit input/output checks, reusable GPU resources, reproducible Docker
+deployment and an Ouster input adapter. Engineering verification is separated
+from object-detection accuracy. A controlled study compares signal divided by
+65,535 with reflectivity divided by 255 using unchanged production inference
+code. It includes 480 observations on unlabeled weather recordings, 320 on
+publisher-annotated Ouster scans and a separate 320-observation capacity control.
+Both normalized channels complete the measured numerical observations without
+inference failure. In the 16-scan test subset, reflectivity yields four Vehicle
+bird's-eye-view matches per repeat among 60 in-region annotations, while signal
+yields none. Neither channel produces qualifying three-dimensional matches at
+the declared overlap criteria. Vertical localization and input-capacity effects
+remain unresolved. The results support reflectivity as an experimental baseline
+for this configuration, while showing why software migration and successful
+visualization are insufficient evidence of accurate 3D perception.
+\end{abstract}
+\textbf{Draft status.} This manuscript is a starting point for the final thesis.
+Supervisor details, institutional formatting and the
+remaining evaluation must be completed. It includes the engineering journey expanded on 9 November and reports experimental evidence through
+8 November 2026, with separate engineering reproductions on 9 November.
+A dated appendix adds the 21 November Ouster verification and exact-person case;
+its measurements are separate from the historical study summarized above.
+This is not a claim of operational or safety acceptance.
+\setcounter{tocdepth}{1}
+\tableofcontents
+\clearpage\listoffigures
+\clearpage\listoftables
+\clearpage
+\section*{Abbreviations and reading guide}
+\addcontentsline{toc}{section}{Abbreviations and reading guide}
+\begin{tabularx}{\linewidth}{@{}lY@{}}
+\toprule Term & Plain meaning \\ \midrule
+LiDAR & A sensor that measures distances and supplies a cloud of 3D points. \\
+XYZI & Point coordinates x, y and z, followed by a numerical intensity feature. \\
+BEV / 3D & Footprint overlap viewed from above / overlap of complete boxes including height. \\
+IoU & Intersection over union: the shared area or volume divided by the combined area or volume. \\
+TP / FP / FN & Matched prediction / unmatched counted prediction / missed counted annotation. \\
+Precision / recall & Fraction of predictions that match / fraction of annotations that are found. \\
+NMS & Non-maximum suppression: remove strongly overlapping candidate boxes under a declared policy. \\
+ROS / DDS / QoS & Robot software interfaces / a transport technology / delivery rules used by publishers and subscribers. \\
+ONNX / engine & Saved model graph and weights / GPU execution plan built from that model. \\
+CUDA / TensorRT & NVIDIA GPU execution platform / model optimization and inference library. \\
+Hash / ROI & A file-content identity check / the declared region of interest. \\
+Fixture & Artificial input or a mock service used to test one behavior safely. \\
+Nonfinite value & A numerical value such as NaN or infinity that is not a finite real number. \\
+\bottomrule\end{tabularx}
+
+Read Sections 1–3 for the purpose and system, Section 4 for the engineering story, Sections 5–8 for method/results/discussion/conclusion, and Appendix A for the step-by-step visual cases. Original captures, new controlled checks and source-based explanations are labeled separately.
+\clearpage
+
+\section{Introduction}
+LiDAR object detection connects a physical sensor, a learned model and a
+software execution environment. A pipeline may compile, publish messages and
+display boxes while still detecting objects inaccurately. This distinction
+matters when an existing implementation is moved to a newer runtime or another
+sensor.
+
+The project starts from an older PointPillars ROS implementation and targets
+Ubuntu 24.04, ROS 2 Jazzy and TensorRT 10. Its objective is a maintainable inference
+path and an auditable evaluation of the assumptions behind its outputs. It does
+not introduce a new neural-network architecture or claim the original
+PointPillars paper's benchmark performance.
+
+The research questions are:
+\begin{enumerate}
+\item Which interface and resource-management changes are needed to execute and
+inspect the pipeline on the new software stack?
+\item How do two fixed Ouster channel encodings affect numerical behavior and
+agreement with supplied object labels?
+\item How does a deterministic point-capacity control affect repeatability and
+the measured accuracy conclusion?
+\end{enumerate}
+
+The contributions are the migrated implementation, a reproducible deployment
+and measurement workflow, and a controlled analysis that separates numerical
+success from object accuracy. The negative 3D result is part of the finding,
+not an omitted exception.
+
+\section{Background and related work}
+\subsection{What a point-cloud detector receives and returns}
+A LiDAR scan is a set of measured points. This project uses each point's x, y and
+z coordinates and one additional numerical feature, called intensity in the
+model interface. The name alone does not tell us the sensor's physical meaning
+or the scale expected during training. That distinction becomes important when
+moving a pretrained network from one sensor to another.
+
+The output is a set of boxes with a position, dimensions, heading, class and
+score. A score is an output of the model; it is not a measured probability that
+the box is correct on an unfamiliar sensor. A valid message can still contain
+an incorrectly placed object. This thesis therefore tests the software interface
+and the object geometry separately.
+
+\subsection{PointPillars and the inherited implementation}
+PointPillars learns a feature representation from points grouped into vertical
+columns, then uses a two-dimensional convolutional detection network. Lang et
+al.~\cite{pointpillars} introduce the method and evaluate its speed and accuracy.
+Their benchmark results belong to that published implementation and experiment,
+not to this project's migrated software.
+
+NVIDIA's ROS application connects a TAO PointPillars export to a LiDAR message
+interface~\cite{nvidiaros}. It serves as a relevant deployment reference for this
+project. Reusing the pretrained model does not establish that every coordinate,
+feature or plugin assumption remains correct after changing the runtime and
+sensor. The present work studies those engineering and evaluation boundaries;
+it does not introduce a new detector architecture.
+
+\subsection{ROS transport and deployment-specific inference}
+ROS 2 supports modular robotic software with components communicating through
+defined interfaces~\cite{ros2}. Here, PointCloud2 carries the points and
+Detection3DArray carries the output boxes. A topic name identifies a stream;
+its data layout and delivery rules must also match. Domain and middleware
+configuration govern discovery and communication. A visible node name alone
+does not establish that a cloud reached its callback.
+
+An ONNX file stores a trained graph and weights. TensorRT prepares an execution
+plan for deployment. Its engine compatibility conditions depend on the selected
+platform and software settings~\cite{trtsupport}. The documented TensorRT 8-to-10
+patterns introduce named tensor addresses and enqueueV3~\cite{trtmigration}.
+These interfaces motivate part of the migration, but this project's actual
+source, engine and GPU checks determine what was verified. Engine building is
+deployment preparation, not model training.
+
+\subsection{Ouster channels and evaluation conventions}
+Ouster distinguishes signal from reflectivity. Its documentation describes a
+piecewise reflectivity code mapping: the diffuse-target range and the stronger
+retroreflector range do not form one physical linear fraction~\cite{ousterdata}.
+Dividing that code by 255 is therefore a numerical encoding. It does not prove
+that the result equals the feature distribution used to train this model.
+Some recorded driver schemas call the signal channel intensity; that alias
+must be verified from the actual sensor schema rather than assumed.
+
+KITTI evaluates boxes using class-specific overlap and difficulty rules; its
+3D protocol requires 0.7 overlap for Car and 0.5 for Pedestrian/Cyclist
+\cite{kittiprotocol}. This project keeps its small KITTI diagnostic AP-R40
+measurement separate from the later Dur360 continuous-AP diagnostic policy.
+The two metrics and datasets are not interchangeable leaderboard results.
+
+\subsection{Position of this thesis}
+The literature and upstream tools supply a detector design, message framework,
+runtime and data conventions. This thesis contributes their inspected migration,
+repeatable operation and a sequence of controlled checks that exposes remaining
+input and accuracy problems. The related-work scope is the system studied here;
+no unsupported claim of superiority over other detection methods is made.
+
+\section{System design and implementation}
+\subsection{Data flow}
+The current system has a separate optional Ouster conversion process followed by
+the detector. The adapter reads an explicitly selected channel and publishes
+compact FLOAT32 XYZI. It preserves XYZ and the sensor header. A source already
+supplying the required layout can be configured directly; automatic source-type
+selection is not implemented.
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[node distance=7mm,>=Stealth,font=\small,
+ stage/.style={draw,rounded corners,align=center,text width=10.7cm,minimum height=8mm}]
+\node[stage] (sensor) {LiDAR driver or recording};
+\node[stage,below=of sensor] (adapter) {Optional Ouster process: selected channel / divisor to XYZI};
+\node[stage,below=of adapter] (input) {CPU callback: validate layout and pack finite points};
+\node[stage,below=of input] (gpu) {GPU: pillar processing, PointPillars network and candidate decoding};
+\node[stage,below=of gpu] (nms) {CPU: validate candidates, rotated BEV NMS and confidence gate};
+\node[stage,below=of nms] (output) {ROS boxes, diagnostics and RViz count text};
+\foreach \a/\b in {sensor/adapter,adapter/input,input/gpu,gpu/nms,nms/output}
+ \draw[->] (\a) -- (\b);
+\end{tikzpicture}
+\caption{Current implementation flow. The optional conversion is an explicit
+configuration choice. The detector still runs synchronously; this figure does
+not imply a background inference worker.}
+\label{fig:architecture}
+\end{figure}
+
+The detector checks the input layout and capacity, packs finite points and
+executes the pretrained engine. The CPU validates returned candidate boxes,
+runs rotated BEV non-maximum suppression (NMS) and applies a confidence gate.
+The outputs are accepted boxes, aggregate diagnostics and count text. Headers
+retain the original sensor frame and timestamp. The system neither invents a
+world transform nor tracks unique objects across scans.
+
+\subsection{Resource ownership and deployment}
+The migration introduces explicit engine/tensor checks, named TensorRT I/O and
+owned runtime resources. Persistent GPU buffers and a persistent stream are
+reused. A serious GPU execution fault is retained rather than hidden by
+unconditional per-frame reconstruction.
+
+The container build installs the declared dependencies, pins the GPU package versions and verifies the pretrained ONNX checksum. Base image tags and other apt packages are not fully frozen, so this is not a hermetic build.
+Startup creates or reuses a matching target engine in a persistent volume. The
+node loads that engine once. Current deployment builds local runtime source by
+default, reuses matching image inputs and requires an explicit base-image pull.
+An optional build-only switch prepares the image without starting a detector.
+
+The detector remains synchronous with reliable input history depth 700. A
+latest-frame worker, configurable sensor QoS and sustained end-to-end timing
+acceptance remain proposed work. Short inference/NMS timings exclude sensor
+acquisition and ROS transport.
+
+\subsection{Model and input limits}
+The export accepts batch-one XYZI with a maximum of 204,800 points. Its encoded
+range is approximately x/y plus or minus 51.2 m and z from -1.4 to 4.4 m. Its
+limits are 10,000 pillars and 32 points per pillar. Passing the total point-count
+check does not establish compliance with these internal limits.
+
+The adapter currently selects literal fields named signal or reflectivity.
+Recorded signal named intensity requires an explicit verified mapping for a
+future ROS signal comparison. The offline comparison prepares those channels
+according to their recorded schema. It does not certify an automatic adapter
+field-alias feature.
+
+% BEGIN ENGINEERING JOURNEY
+\section{Engineering journey: problems, investigations and outcomes}
+The following chapter explains the available technical history in order. The illustrated casebook gives the small steps behind each problem group. Appendix A presents all 50 documented problem groups, small solution steps and labeled visual evidence, including additional subcases. Dated outcomes retain their original limits; this narrative does not imply a new experiment.
+
+\subsection{How the investigation developed}
+
+The project began with a practical question: could an older PointPillars application be made usable on a newer ROS and NVIDIA stack? Answering that question uncovered several different problems. Some prevented compilation. Others allowed execution but made its output unsafe to trust. Later, correctly delivered and well-formed messages still contained inaccurate objects. The investigation therefore developed from software compatibility, through repeatable operation, to numerical behavior and labeled accuracy.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{.20\linewidth}p{.22\linewidth}Y@{}}
+\toprule
+Recorded period & Main question & Work and outcome \\ \midrule
+1--2 October & Can the migrated pipeline run? & Separate geometry, ROS and GPU responsibilities; validate tensors, reuse owned resources and cache engines. \\
+3 October & Are the boxes correct? & Freeze the labeled KITTI diagnostic sample. TensorRT 8 also shows poor 3D results; identical-candidate NMS agrees. Capacity and height error remain open. \\
+13--14 October & Does the sensor feature matter? & Normalized Ouster features avoid the measured raw-signal failures. Preserve raw geometry and camera context; accuracy is still unproven. \\
+23 October & Can users inspect the output? & Verify a live confidence gate, per-frame counters and RViz. Totals count detection events rather than unique objects. \\
+28 October--8 November & Can Ouster be operated reliably? & Investigate physical-host driver/schema issues, verify fresh MOSEP conversion and align launch profiles, caching and shutdown. \\
+8 November & Which channel is better supported? & Complete 1,120 measured inferences. Reflectivity gives four test Vehicle BEV matches per repeat versus zero for signal; neither gives qualifying 3D matches. \\
+\bottomrule
+\end{tabularx}
+\caption{Recorded stages of the investigation. The periods overlap; this chronology is not a benchmark curve and does not mean that earlier open problems were resolved.}
+\label{tab:journey-phases}
+\end{table}
+
+The chronology table records stages of the investigation, rather than a sequence in which every earlier problem was closed. In particular, model-input semantics, internal pillar capacity, memory/failure acceptance and sustained latency remain open.
+
+\subsection{Starting from an incompatible baseline}
+
+The inherited instructions targeted Ubuntu 20.04, ROS Foxy, TensorRT 8.2 and hard-coded CUDA paths. The chosen machine instead used Ubuntu 24.04 and ROS Jazzy. The original CMake configuration mixed language standards, fixed a CUDA location and omitted dependencies used by the source. The node also included a missing local header and used an older \code{vision_msgs} hypothesis layout. These were concrete build and interface problems; reinstalling the application would not resolve them.
+
+The first design separated CPU box geometry, ROS message adaptation and GPU inference. C++17 and explicit target dependencies replaced the conflicting build settings. A reduced CPU configuration made it possible to verify geometry without ROS, CUDA or TensorRT, while a separate ROS configuration tested messages without a real engine. Jazzy output construction uses nested hypothesis fields and preserves the incoming cloud header.
+
+This separation made progress possible while the SDK was downloading and gave failures a clearer location. It did not complete the proposed architecture: a single inference worker with at most one pending frame was designed but has not been implemented. The current callback still runs inference synchronously and requests reliable history depth 700. The often-cited example of 70 seconds at a 10 Hz input is a possible backlog calculation, not a measured delay.
+
+\subsection{Keeping work recoverable across interruptions}
+
+Development was interrupted by usage limits, disk-space pressure and an unmounted project volume. Relying on a conversation's remembered state was insufficient: one narrative draft existed only in session storage when a limit was reached. It later had to be recovered from the available session record and saved as a real file. The volume was reconnected through the normal disk service; the recorded recovery did not format it or force a filesystem repair.
+
+The checkpoint helper records eligible source files, hashes, Git identity, separate staged/unstaged patches, task state and the next action. Temporary checkpoints become complete only after their contents are written. Integrity checks and drift reporting help the next session identify what changed. Twelve early tests included index preservation, corrupt or interrupted snapshots and a directory replaced by a file; the last case exposed a bug that was corrected.
+
+Models, SDKs, engines, bags and most generated evidence are excluded from these small source checkpoints. The helper does not restore files automatically, run tests, buy usage credits or decide that a milestone passed. Large experimental assets still require an independent backup. This distinction became part of the project method: source continuity and scientific evidence preservation are related, but neither replaces the other.
+
+\subsection{Distinguishing GPU access from a broken driver}
+
+An early \code{nvidia-smi} call failed in the restricted execution environment. A GPU-accessible host check then found a working RTX 4060 Laptop GPU. The first failure was therefore an access limitation, not evidence that this laptop needed a driver reinstall. Host driver capability, installed CUDA compiler version and container CUDA libraries were recorded separately; they do not have to display the same version number.
+
+A later physical-host case was different. User-supplied logs from an RTX A4500 Embedded system showed NVIDIA modules built for a different kernel and conflicting package proposals from mixed repositories. Matching driver/modules followed by a reboot restored GPU access in that record. The Ouster driver also had an undefined Fast CDR serialization symbol; updating the compatible ROS/DDS package group restored its launch according to those logs. These were host-specific repairs. They are not evidence that the A4500 completed the later RTX 4060 accuracy study.
+
+That host's engine-building attempts also showed why workspace is not total GPU memory: 256 MiB was below a plugin's 270,532,608-byte scratch request, a 1024 MiB attempt encountered allocation failure, and a 512 MiB build succeeded. Neither the largest nor the smallest setting was universally best. A fatal CUDA/driver state may require the recovery action reported by the system even when \code{nvidia-smi} still responds; the project did not establish a general display-GPU reset procedure.
+
+\subsection{Finding the model and selecting a compatible runtime}
+
+The repository contained no ready model or engine. The supplied Downloads directory held a deployable ONNX and a trainable TLT artifact. Both were inventoried and hashed. The ONNX was used; the TLT was not decrypted or retrained. Read-only metadata inspection identified FLOAT32 points with capacity 204,800 by four features, an INT32 point count, candidate boxes with nine columns and a separate box count. It also identified the required VoxelGenerator, PillarScatter and DecodeBbox3D plugins.
+
+A pretrained model did not remove the need for a compatible C++ runtime and plugins. TAO training/export, TensorRT engine building and application inference were explained as separate stages. TensorRT 11.3 was discussed but not validated. TensorRT 10.16.1 was selected only after checking that its actual library contained the required version-one plugin creators, that ONNX parsing succeeded and that a batch-one FP32 engine could be built and executed. An OSS plugin rebuild proved unnecessary for this selected SDK.
+
+Native provisioning also changed from the initial proposal. Because password-protected system installation was unavailable to the tool session, the downloaded repository DEB and selected component packages were extracted into a local SDK. This supplied headers, shared libraries and \code{trtexec} without running maintainer scripts or registering host packages. Later Docker builds obtained their own declared packages. These are two recorded provisioning methods, not evidence that the original host completed every installation command printed in an earlier guide.
+
+\subsection{Making ROS input and box geometry defensible}
+
+The old input path assumed that a received cloud could be converted and sent to the model. The replacement validates dimensions, multiplication/byte bounds, field offsets and scalar types, row stride and padding, endianness, point capacity and positive intensity scale before conversion. The generic detector expects little-endian FLOAT32 XYZI. Valid organized padding is supported, nonfinite points are removed, and an empty valid cloud skips GPU inference. Oversized clouds are rejected explicitly instead of being silently truncated.
+
+The original rotated-overlap code also had unsafe degenerate calculations, including a division without a valid intersection count. Convex polygon clipping and geometry validation replaced that path. Analytical cases and 2,000 randomized comparisons checked overlap and NMS behavior independently of the model. Deterministic tie handling and candidate bounds made the filtering policy testable. Class-aware suppression is available in the CPU core, but production remains class-agnostic; it was not silently enabled as an accuracy fix.
+
+Jazzy message fixtures verified dimensions, yaw quaternions, hypotheses and copied timestamps/frame IDs. Focused CPU ASan/UBSan paths passed. LeakSanitizer could not operate under the traced environment, and ROS node creation exposed an allocator type mismatch in installed system code. The latter path was tested normally while instrumented data-only fixtures remained separate. No blanket suppression was used to turn these limits into a memory-safety pass.
+
+\subsection{Replacing fragile TensorRT assumptions}
+
+The legacy inference path relied on tensor binding positions, incompletely checked sizes and difficult resource lifetimes. The migrated runtime checks names, tensor roles, types, shapes, profile, linear format and device storage before accepting an engine. Named tensor addresses and \code{enqueueV3} replace the old binding-index execution path. A file is not accepted merely because it deserializes or has four tensors.
+
+The runtime now owns the TensorRT runtime, engine, context and profiler, alongside a reusable CUDA stream and capacity-sized buffers. Input padding and counts are reset deliberately. Output transfer reads the count first, synchronizes, validates the count, then copies only the required rows and synchronizes again. Impossible counts, invalid classes/scores and nonfinite or nonpositive dimensions fail the output contract. This is a checked count-first implementation, not the fully asynchronous pipeline originally proposed.
+
+Real SDK testing found details that header compilation alone had missed. TensorRT version macros used aliases, so the build guard needed a preprocessor check. \code{setProfiler(nullptr)} was rejected by the actual runtime; the solution retained the owned profiler and disabled accumulation. Callback overhead is therefore not proven absent when collection is disabled. A failure in the CUDA/TensorRT execution and transfer path latches a fault and rejects later inference until restart; the node logs and drops affected frames. Candidate decoding and NMS validation occur outside that fault-latch catch. Automatic runtime reconstruction and restart/rollback supervision remain unfinished. The Ouster launcher already supervises the two child process groups and stops both if either child exits.
+
+The selected SDK linked successfully and ran ten synthetic GPU frames, capacity rejection, profiler and empty-result/destruction checks. A subsequent live ROS synthetic round trip preserved the header. These were progressively stronger checks than syntax compilation, but neither a synthetic box nor successful destruction proved real-scene accuracy or exhaustive fault handling.
+
+\subsection{Solving build and deployment obstacles}
+
+Several build problems were small but blocking. PCL/VTK exports required C/MPI configuration in the ROS build path; the reduced CPU build remained C++ only. ROS parameter tests needed a writable log directory. Strict shell nounset handling conflicted with ROS setup scripts, so it was relaxed only while those scripts were sourced. The user-facing native workflow moved to colcon, with separate build directories preventing reduced test options from contaminating the full inference build. The legacy launch file's absolute paths were not modernized into a validated production launcher.
+
+Docker packaging developed in stages: first local SDK/model inputs, then automatic source/package/model retrieval, and finally the current local-source build. Initial package resolution mixed incompatible TensorRT secondary components; the selected lean, dispatch, plugin and related GPU package versions were then pinned consistently. Large development images and unused static libraries exhausted root-disk space. The footprint was reduced to required CUDA components and shared runtime libraries, with identified generated cache cleanup recorded. Moving the checkout to another disk did not move Docker's layer storage.
+
+A multistage image kept compilers in the build stage. A separate check using Dockerfile input and an empty context established that the then-automatic download route did not secretly rely on local ignored model files. That historical result applies to that recipe; current local-source mode deliberately includes runtime source from the checkout. Base tags and non-GPU apt packages are not fully frozen, so the deployment is not fully frozen.
+
+\subsection{Separating image preparation, engine generation and execution}
+
+The request for a build that also left a node running required a wrapper: a Docker build cannot keep its build container as the persistent application. The deployment script therefore prepares the image and then starts a foreground runtime container. The host supplies the NVIDIA driver and Docker GPU integration; the image supplies application libraries. Support is limited to the tested Linux x86-64 recipe, with an RTX 4060 physically exercised. A capability check is not proof of all-GPU compatibility; Jetson/ARM needs another platform build.
+
+Engine generation belongs to startup on the chosen GPU. Cache identity includes model, GPU identity/capability, driver, CUDA/TensorRT and build settings. A lock serializes builders; a temporary engine is promoted only after success. Early restart checks generated one engine across two starts and preserved synthetic message flow. An engine is a local execution plan, not an archive extracted from ONNX or a retrained model. Standard startup still checks ONNX even on cache reuse.
+
+The cache protects against an interrupted build, but automatic recovery from a later corrupted nonempty cache file is not complete. The runtime retains a fault until restart, and there is no completed rollback supervisor. These are operational gaps alongside the successful cache checks.
+
+\subsection{Correcting repeated rebuilds and difficult shutdown}
+
+The early Dockerfile fetched published Git source. That was convenient for clone-and-deploy operation, but a local edit was absent from the image until published, and changes near dependency installation could invalidate expensive layers. The user later reported repeated downloads and having to press Ctrl+C several times. The original command also pulled base images on each deployment invocation. Image caching, dependency caching and engine caching had become confused in the operating workflow.
+
+The November correction builds local runtime source by default and fingerprints the relevant inputs. A matching saved image skips rebuilding; independent SDK/model layers survive source edits; base refresh is explicit. The runtime fingerprint excludes documentation-only edits, and SOURCE\_REVISION is declared after dependency installation so revision metadata does not invalidate that expensive layer. Existing-image startup is separate from deployment. Optional \code{PP_BUILD_ONLY=1} prepares the image and exits, avoiding an unwanted detector before starting the combined Ouster stack. It is not a mandatory operating mode.
+
+Shutdown handling records the exact created container ID in a private temporary directory and stops that owned container when the launcher receives SIGINT. The private directory prevents another local process from substituting a container-ID file. Engine-builder interruption also removes unfinished pending files while preserving good cached engines. It does not target an unrelated replacement merely because it reuses a name. The validation recorded one SIGINT stopping each test launcher with exit 130 in under 0.5 seconds, alongside dependency-layer reuse, repeated-build skipping, 91 Python tests and seven C++/ROS tests. This fixes the measured launch behavior; it does not certify every possible hung application or host state.
+
+\subsection{Diagnosing quiet terminals and missing ROS data}
+
+A terminal that stopped printing after GPU information initially looked like a stalled launch. Inspection showed a running node with a reused engine but no point-cloud publisher. The missing part was the source, not another installation. The bag player, detector and viewer became explicit separate jobs. ROS package, executable and node names were also distinguished: \code{ros2 run pp_infer pp_infer} selects a package/executable, while \code{/pointpillars} is the configured node name.
+
+The first host-to-container Fast DDS shared-memory path did not deliver data in the tested root-container/desktop-user arrangement. UDPv4 did. The viewer/helper defaults were adjusted accordingly, with overrides retained. Reliable detector input was another separate constraint: a best-effort-only sensor publisher could be visible in discovery without matching it. The later Ouster adapter accepts sensor-data best effort and republishes reliable XYZI; configurable QoS throughout the detector is still pending.
+
+A November report combined a live-profile stack with the bag player. The stack listened on \code{/ouster1/points} through Zenoh/domain 0, while the bag published \code{/sensing/lidar/points} through Fast DDS/domain 99. No reachable Zenoh router was present. Shared explicit bag defaults resolved this profile mismatch. Host networking alone cannot connect different middleware/domain settings, and \code{sudo} can discard environment exports. The original MCAP metadata warning was not the established cause: unchanged replay later published and processed clouds despite it.
+
+\subsection{Making the output visible without inventing geometry}
+
+RViz was installed but its \code{Detection3DArray} display plugin was missing. The official plugin package was extracted locally when system installation was unavailable; the launcher also supports a normal system installation. Live point and box rendering was then verified. Path-with-spaces checks were important after the checkout moved: quoted paths and location-relative helpers were repaired, while native generated caches containing old absolute paths required regeneration.
+
+Sensor-only playback did not supply a world transform tree. Selecting the actual common sensor frame allowed clouds and boxes to render without fabricating a transform. Numeric class colors were used while class provenance was unresolved. Later NGC artifact metadata verified Vehicle/Pedestrian/Cyclist order, superseding the earlier uncertainty without rewriting it as if it had always been known. No tracking was added; empty tracking IDs and repeated detection totals are not unique-object estimates.
+
+The Ouster view later looked sparse. Inspection showed 32,768 source entries but 13,206–15,775 zero-range/zero-XYZ entries in the selected scans. Display distance, point size and intensity coloring also affected appearance. A separate raw-data topic and brighter, closer view made original geometry inspectable. Byte comparisons showed normalization had not moved or deleted the source coordinates. The solution was an honest original-data view, not invented points or a hidden change to inference input.
+
+\projectfigure{rviz-filter-counters-2026-10-23.png}{Actual RViz rendering in the 23 October filtering trial: points, accepted boxes and counters. This demonstrates rendering and publication, not individual object accuracy. KITTI attribution and capture hashes are preserved in the figure catalog.}{fig:journey-rviz-filter-counters-2026-10-23}
+
+This recorded screenshot verifies visible points, boxes and counters for that trial. It is not evidence that individual detections match ground truth. The figure catalog preserves its capture identity and KITTI attribution.
+
+\subsection{Obtaining useful data and preserving its identity}
+
+The first reproducible demonstration used the public KITTI sequence04 ROS conversion, mapped to drive 2011\_09\_30\_drive\_0016. Its 283 clouds and IMU messages did not contain camera images or the object labels needed for an accuracy score. Input remapping and explicit reliable playback QoS enabled integration checks: 25 matched frames inside Docker and another 25 through host transport had valid output fields. Those short samples did not establish sustained rate or detection correctness.
+
+The matching camera archive was much larger than the selected images. Validated HTTP range reads, object identity checks, ZIP member CRCs, bounded caches and pending-file promotion allowed selected data to be obtained and resumed. Corrupt completed files were preserved and reported. Camera timestamps drove a variable-frame-rate MP4. The 285 camera frames, 283 clouds, approximately 0.210-second initial offset and independently controlled playback speeds prevented an exact synchronization claim. The video provided scene context, not a calibrated box overlay.
+
+Labeled KITTI preparation followed a different method. All 7,481 training annotations were considered before deterministic scenario selection. Entire source drives were separated into 16 tuning and 16 test frames. Selected clouds, labels, calibration and images were preserved; full rectification and extrinsic transforms converted camera-bottom box centers into LiDAR geometric centers. DontCare stayed a 2D ignore region. Known geometry fixtures, hashes and split checks guarded against an apparently plausible but wrong ground truth.
+
+The preparation also recorded model-range coverage. Many points or box corners outside the export range indicated a compatibility question, but did not justify translating the sensor or removing inconvenient labels. Pretrained training-frame overlap remained unknown. A small scenario-rich diagnostic sample was not relabeled as an unbiased benchmark.
+
+\subsection{Discovering that valid boxes were inaccurate}
+
+The first labeled KITTI measurement used original XYZI, scale 1.0, the existing FP32 engine, NMS IoU 0.01 and top-N 4096. The evaluator reused pinned official devkit routines with an explicit Vehicle-to-Car compatibility mapping. Calibrated camera visibility, neighboring classes, difficulty and ignore regions were retained. Of 2,876 predictions across 32 frames, 862 were camera-visible and 2,014 were outside this camera-labeled evaluation; the latter were not silently counted as false positives.
+
+On the 16 test frames, moderate 3D AP was zero for all three classes. BEV AP\_R40 was 5.7516\% Car, 0\% Pedestrian and 0.02577\% Cyclist. Twelve BEV-matched test cars had a median upward center error of about 1.53 m. Green calibrated boxes in RViz exposed the problem more clearly than a view containing predictions alone.
+
+Known-box controls produced 100\% AP, missing predictions produced false negatives and duplicates produced false positives. These checks made an obvious evaluator mistake less likely, but did not prove the model correct. A same-engine \code{trtexec} probe showed elevated centers already in raw candidates. It was only a limited consistency check: shared engine/plugins, rounded JSON and non-unique matching could not establish exact reference parity. No label-fitted z translation was installed to make the pictures agree.
+
+\subsection{Testing suspected causes instead of choosing one from appearance}
+
+The next experiment separated inference, postprocessing and transport. A direct runner executed the exact ONNX in TensorRT 8.6 and TensorRT 10, three repeats for all 32 KITTI frames: 192 raw observations. NVIDIA's unchanged sample NMS and the current CPU NMS were then applied to identical candidates. Their selected boxes agreed in all 192 comparisons. This narrowed the NMS hypothesis; it did not validate every upstream candidate or make class-agnostic suppression optimal.
+
+Both runtimes reproduced poor 3D accuracy and upward displacement. Cross-runtime final-box agreement was about 75.70\% at the diagnostic tolerance, while repeated execution within each runtime was similarly variable. The evidence did not support blaming the API migration alone, declaring exact numerical parity, or blaming the pretrained weights alone. Shared preprocessing or plugins could affect both environments.
+
+A capacity audit found 12 of 32 KITTI scans above 10,000 occupied pillars and crowded pillars above 32 points. Published kernel source raised an internal tensor-bounds concern, although source inspection could not establish the exact packaged machine code. Two tuning-only, geometry-preserving capacity controls improved repeated matching to roughly 99.6–100\%. That was evidence about variability, not a tested production correction or accuracy recovery.
+
+Memory checks had two different outcomes. Early Compute Sanitizer 12.0 failed to initialize meaningful instrumentation. Later actual 12.9 allocation probes ran on one original and one capped frame with zero reported errors. TensorRT can place internal tensors within a larger allocation, so those two probes did not clear tensor-bound violations, races, leaks or all resource-failure scenarios. Both the failed tool attempt and limited successful probe belong in the result.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}YYY@{}}
+\toprule
+Observed symptom & What the check establishes & Justified next work \\ \midrule
+Raw Ouster signal gives invalid outputs. & In the earlier feature study, 15/48 raw-signal observations are rejected; normalized variants have no recorded rejection. Scaling matters numerically, but physical feature equivalence is unproven. & Verify the selected field, divisor and training-input contract. Do not assume a signal alias. \\
+Boxes are too high. & TensorRT 8 reproduces the broad KITTI symptom, while two NMS implementations agree on 192 identical-candidate observations. Neither migration nor NMS alone explains the error. & Trace sensor origin, training coordinates, anchors and decoder conventions. Do not fit a z offset to the inspected test labels. \\
+Repeated outputs can change. & Internal pillar limits are exceeded. Separate capacity controls improve aspects of repeatability without repairing 3D accuracy. & Test valid-return and bounded-pillar policies as explicit changes, then evaluate fresh labeled data. \\
+No recent incoming clouds. & Live and bag profiles initially disagree. Matching them restores the tested path; a later large-cloud ROS A/B attempt remains incomplete. & Check schema, topic, QoS, domain, middleware and load. Direct GPU inference does not certify ROS delivery. \\
+\bottomrule
+\end{tabularx}
+\caption{Symptoms, the limited conclusions supported by their checks, and the next investigation. Each row narrows a question; it does not establish a unique root cause.}
+\label{tab:diagnostic-evidence}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Stealth,font=\small,node distance=6mm,
+ stage/.style={draw,align=center,text width=11.8cm,minimum height=8mm,inner sep=4pt}]
+\node[stage] (symptom) {Record the symptom and preserve the input, output and runtime identities};
+\node[stage,below=of symptom] (check) {Choose a focused check: transport, numerical validity, geometry or repeatability};
+\node[stage,below=of check] (scope) {State what the result establishes and what it leaves unresolved};
+\node[stage,below=of scope] (next) {Test the proposed correction separately and evaluate new independent data};
+\draw[->] (symptom) -- (check);
+\draw[->] (check) -- (scope);
+\draw[->] (scope) -- (next);
+\end{tikzpicture}
+\caption{How a recorded symptom leads to the next investigation. This is an explanatory workflow, not evidence that every proposed correction has been completed.}
+\label{fig:diagnostic-workflow}
+\end{figure}
+
+The diagnostic table separates a missing message from an invalid numerical output and from a well-formed but inaccurate box. The workflow shows how to choose a focused check and preserve its limits. It does not imply that one check identifies every fault.
+
+\subsection{Learning why raw Ouster signal was unsuitable}
+
+The Koide/AIST OS1-32 bags introduced a different fourth-feature distribution. All 556 source clouds were structurally valid FLOAT32 XYZI and below total point capacity, but signal reached 9,059 rather than KITTI's approximately 0–1 range. Initial short replay produced hundreds of saturated-score boxes and 51 logged frame drops for invalid output boxes. Received valid messages alone had hidden the failed observations.
+
+A controlled comparison froze 16 scans and changed only the fourth feature across four encodings and three repeats: 192 observations. Raw signal rejected 15 of 48 observations, with 33 nonfinite box lengths. Signal/65,535, reflectivity/255 and clipped reflectivity/100 each rejected zero of 48. Median accepted box counts fell from 590 for raw signal to 15, 18.5 and 26 respectively. Geometry, point order and zero returns were identical. This established a numerical input improvement, not correct objects.
+
+\begin{table}[htbp]\centering\small
+\begin{tabularx}{\linewidth}{@{}Yrrrr@{}}
+\toprule
+Feature & Rejected & Invalid rows & Median boxes & Score median \\
+\midrule
+Raw signal & 15/48 & 33 & 590 & 1.000 \\
+Signal / 65,535 & 0/48 & 0 & 15 & 0.164 \\
+Reflectivity / 255 & 0/48 & 0 & 18.5 & 0.166 \\
+min(reflectivity / 100, 1) & 0/48 & 0 & 26 & 0.173 \\
+\bottomrule
+\end{tabularx}
+\caption{Earlier same-scan Ouster feature experiment on unlabeled Koide data: 16 scans, four variants and three repeats. Numerical failures and accepted output statistics are distinct from accuracy.}
+\end{table}
+
+Box-count medians include accepted observations only; score entries are medians of per-observation medians. The 48 observations per feature are 16 scans repeated three times. This table measures numerical behavior on unlabeled data, not object accuracy.
+
+Reflectivity/255 was a bounded code encoding rather than a proven physical reflectance fraction; high reflectivity codes have nonlinear meaning. No per-scan maximum normalization was used. The old helper retained raw signal as its reproducible default, with normalized replay explicit. The newer live adapter uses a different default. Those two helper paths must not be described as one automatic selection mechanism.
+
+Complete normalized replay initially appeared to lose messages because the verifier counted unique headers. The originals actually contain duplicate timestamps: 291 occurrences with 289 unique headers and 265 with 264. Counting occurrences separately corrected the verification method without retiming the data. All 556 normalized occurrences then matched input and output, with no recorded detector log errors. The original failed verifier output was retained. This was a correction to measurement logic, not a detector fix.
+
+\subsection{Keeping camera context and scene detail honest}
+
+Koide's original camera messages were only approximately 2 Hz. A 30 fps preview held those source images; it did not create 30 independent measurements each second. Combined bags preserved all 111 image and CameraInfo payloads and 556 prepared clouds. Camera headers around 756 seconds and LiDAR headers around 1744 seconds used different clock values, while bag record times were epoch-based. Playback used recorded arrival ordering, not proven acquisition synchronization or camera-to-LiDAR projection.
+
+A separate frontal KITTI drive provided a denser road scene and a forward-looking camera. The full 360-degree LiDAR scans were kept; “frontal” did not mean filtering away rear points. All 154 clouds, matching detections, images and CameraInfo messages were verified, with source XYZI and camera pixels preserved. Its approximately 10 ms paired camera/cloud timestamp offset was retained. Neither this clip nor the Koide camera preview supplied object labels for an accuracy score.
+
+\subsection{Making confidence filtering and counters interpretable}
+
+Cluttered visual output motivated a publication confidence gate after NMS. The output layer now publishes accepted boxes, aggregate diagnostics and RViz count text. The live parameter rejects invalid values atomically. Tests exercised boundaries, complete box/header preservation, remapped topics, empty frames, error reporting and retained status. Later native and deployed checks matched 20 observations at each of thresholds 0.0, 0.5 and 0.95: 60 per execution path. Actual RViz rendering was verified separately.
+
+This change addressed output selection and observability. NMS decides overlap-based suppression; the confidence gate removes low-scoring surviving candidates. Neither corrects vertical displacement, changes the engine or proves accuracy. A cumulative total counts detection events across scans, not tracked people or vehicles. Failed frames have unavailable counts rather than successful zeros, and retained counters may be stale after input stops.
+
+The node/YAML default is 0.5, while the current launcher fallback is 0.4. Earlier documentation that named only one default was incomplete. Reproduction must record the effective live parameter. Frozen baseline collection explicitly requests an unfiltered publication threshold and refuses inconsistent mid-collection settings, preserving the old accuracy evidence rather than rewriting it after adding the gate.
+
+\subsection{Adding a separate adapter and testing an unchanged fresh bag}
+
+Physical-host clouds eventually revealed another issue: FLOAT32 XYZ and integer signal/reflectivity, but no FLOAT32 intensity field. The detector rejected 565 observed clouds on that host because the schema was incompatible. This was distinct from TensorRT execution. A separate Ouster adapter was added so the sensor-specific representation could become compact FLOAT32 XYZI before generic inference. It validates the selected field and divisor, preserves XYZ/header and republishes reliable output. It does not discover arbitrary schemas, blend channels or automatically decide which channel is better.
+
+Before that fresh test, an offline check passed 556 recorded scans through four declared schema cases, giving 2,224 converter/packer observations. One case used original reflectivity fields; another renamed recorded signal from intensity to signal in memory. Two reconstructed live-layout cases numerically converted signal/reflectivity to the documented integer types and offsets, while retaining the recorded scan dimensions. The actual production C++ converter and detector XYZI packer were exercised. These fixtures did not verify GPU execution, DDS delivery or a physical 128-beam recording, which is why a new unchanged source bag and end-to-end test were still needed.
+
+The fresh November test downloaded different MOSEP recordings and verified the publisher checksum. The nine extracted original files remained read-only and unchanged after replay. A saved image lacked the new adapter, so an isolated image compiled the adapter against the existing ROS stack while retaining the detector/model and original saved image. Reflectivity/255 from \code{/sensing/lidar/points} reached GPU inference and an actual RViz window in the correct \code{lidar/os_lidar} frame.
+
+The observer verified 40 raw/adapted pairs with bit-identical XYZ and independently calculated intensity, plus 39 matching detection headers. A later snapshot showed 103 processed loop frames and no input/inference errors. These are different observation scopes, not a lossless full-bag count. The test demonstrated the adapter and end-to-end path; it did not establish channel accuracy or complete delivery under best-effort transport.
+
+An important alias gap remains: these recordings call signal \code{intensity}, while the production adapter selects literal \code{signal} or \code{reflectivity}. The offline study reads the verified schema; that does not add live alias support. Renaming a field's datatype without converting its bytes would not be a valid repair.
+
+\subsection{Moving from a numerical preference to labeled channel evidence}
+
+Neither camera appearance nor box count could decide agreement with ground truth. The November comparison therefore added original Dur360BEV-Extended points and supplied labels containing both channels. Validated range retrieval avoided downloading the approximately 159 GB archive in full. All 32 selected point/label pairs passed publisher checksums, and selection was frozen before inference. Publisher train/test indices were disjoint, but independent recording-drive separation was not established. The annotation method was model-assisted with human review according to the original paper; the Extended card did not separately document its process.
+
+The initial large-cloud host-to-container ROS A/B attempt lost UDP messages and did not complete. Its logs were preserved and those incomplete observations were excluded. The completed comparison called unchanged production C++ inference/NMS directly. This isolated the feature question from that transport failure without claiming the complete ROS A/B path had passed.
+
+The original 262,144-point labeled scans exceeded the 204,800-point input capacity. Identical model-ROI and all-zero-return removal reduced both variants to 65,238–175,559 points; this adaptation was explicit. The primary weather run retained original points. Twenty of 32 primary labeled scans still exceeded the internal 10,000-pillar limit, motivating a separate bounded-pillar sensitivity control rather than a hidden production preprocessing change.
+
+The completed study used 80 distinct primary scans: 48 weather scans and 32 labeled scans, each repeated five times for two features. The separate control reused those same 32 labeled scans; repeats are not new scenes. It made 1,120 measured GPU inferences: 480 weather, 320 labeled primary and 320 separate capacity-control observations, plus 18 excluded warmups. Both normalized channels completed all 560 measurements per channel. At confidence 0.4 and Vehicle IoU at least 0.7, among 60 in-region test vehicles, reflectivity/255 found four BEV matches in every repeat; signal/65,535 found none. Reflectivity's mean run precision was 27.81\% and recall 6.67\%. Neither channel produced qualifying 3D or pedestrian matches. The four first-repeat vehicle footprints overlapped well, but their centers were 0.60–1.14 m too high.
+
+Independent label-convention and Python/C++ overlap checks supported the geometry calculation. Removing the confidence gate still produced no qualifying 3D matches. The capacity control removed empty/nonempty repeat changes but retained the four-versus-zero BEV result and zero 3D matches, with mean reflectivity precision 21.99\%. This supported reflectivity as the experimental baseline and capacity as a repeatability concern; it did not solve 3D accuracy or establish a universal stability winner.
+
+\subsection{Preserving negative results and the unfinished work}
+
+The journey produced working software boundaries, deployment, conversion, visualization and an auditable evaluation. It also produced evidence against several simple explanations. Bad ROS display alone does not explain elevated raw candidates. A different NMS implementation did not change selected boxes on identical candidates. A TensorRT 8 compatibility reference shared the broad accuracy failure. Scaling the feature removed the observed raw-signal numerical failures, but did not create accurate 3D boxes. Deterministic capacity selection improved aspects of repeatability, but did not repair localization.
+
+The next defensible step is to resolve valid-return/capacity handling and the input/training/decoder coordinate contract, with a trusted independent reference. Any model change or fine-tuning must be chosen on training/tuning data and evaluated on fresh recording-disjoint data. The inspected small test subset cannot become an untouched acceptance set again. The latest-frame worker, configurable detector QoS, sustained stage/end-to-end latency, full memory/failure checks, CI and clean-host/multi-GPU acceptance also remain unfinished.
+
+Documentation itself had a recurring failure mode. Built-in LaTeX attempts encountered missing compiler resources, network/DNS failures and font dependencies. Font-loading adjustments reduced some dependencies, but successful compilation and complete page layout were not verified. A historical separately rendered presentation is not a newly compiled thesis PDF. Editable sources, original images and diagnostics are preserved, with visible placeholders when the standalone compiler cannot receive external figures.
+% END ENGINEERING JOURNEY
+
+\section{Experimental method}
+\subsection{Fixed configuration and paired inputs}
+The study compares signal divided by 65,535 with reflectivity divided by 255.
+It uses current production inference and NMS C++ sources, an existing FP32
+engine and the same RTX 4060 Laptop GPU. NMS IoU is 0.01, top-N is 4096 and the
+primary publication confidence threshold is 0.4. All post-NMS scores are
+retained before that gate for a separate unfiltered analysis.
+
+Both encodings use identical XYZ, order and count within each experiment.
+Variant/scan order is randomized within each of five repeats using seed
+20261108. Warmups are excluded. Original recordings and labels are unchanged;
+prepared inputs, runtime identities and observations are recorded by hash.
+The comparison does not retrain the model or apply a coordinate shift.
+
+\subsection{Datasets and annotations}
+\begin{table}[htbp]\centering\small
+\begin{tabularx}{\linewidth}{@{}l r Y@{}}
+\toprule
+Data & Scans & Role \\
+\midrule
+MOSEP, three weather conditions & 48 & Numerical observations; no object labels \\
+Dur360BEV-Extended train subset & 16 & Diagnostic training-side comparison \\
+Dur360BEV-Extended test subset & 16 & Fixed labeled comparison \\
+\bottomrule
+\end{tabularx}
+\caption{Distinct scans in the two primary experiments. Five repeats and the
+separate capacity control do not create additional independent scenes.}
+\end{table}
+
+The MOSEP release provides dry, 30 mm/h and 100 mm/h recordings~\cite{mosep}.
+Its camera and radar streams are not substituted for object ground truth.
+Dur360BEV-Extended retains both channels and supplies object
+annotations~\cite{dur360,dur360extended}. The selected original point and label
+files pass the publisher's checksums. Selection is frozen before inference.
+
+Published train/test indices are disjoint, but independent-drive separation is
+not established. The original paper describes model-assisted annotation
+followed by experienced human review and additions. The Extended card does not
+separately document that process. These annotations are independent of our
+predictions, but should not be described as perfect metrology or purely manual
+labels.
+
+The official loader treats labels as geometric centers with height, width,
+length and yaw. The evaluation reorders those fields without adding half height
+or shifting z. All 320 primary exported ground-truth records were checked
+against that source convention.
+
+\subsection{Point preparation and capacity control}
+The original 128-beam labeled scans contain 262,144 points, exceeding the
+engine's capacity. The labeled-data preparation therefore applies the model
+ROI and removes all-zero invalid XYZ returns, identically for both channels.
+It retains 65,238--175,559 points. The primary MOSEP experiment retains its
+original points and zero returns. This preparation difference limits
+cross-dataset comparisons.
+
+Twenty of the 32 primary labeled scans exceed the internal pillar limit. A
+separate geometry-only sensitivity control selects the first 10,000 encountered
+XY pillars and first 32 points in each retained pillar. Original point order is
+preserved for both encodings. This deterministic CPU policy does not reproduce
+CUDA thread encounter order and is not enabled production preprocessing.
+
+\subsection{Metrics and exclusions}
+The evaluation region is x/y in [-50,50) m and z in [-1.4,4.4) m. Both labels and
+predictions use the same center rule. The original test labels contain 70 Car
+and seven Pedestrian annotations; 60 Vehicle and six Pedestrian annotations
+remain in-region. Two cars are outside XY and another eight cars plus one
+pedestrian are outside the model's z coverage. Excluded objects are reported,
+not treated as detections. The subset contains no Cyclist labels.
+
+Matching is class-aware and one-to-one. Required rotated IoU is at least 0.7
+for Vehicle and 0.5 for Pedestrian, evaluated separately in BEV and 3D.
+Precision is matched predictions divided by counted predictions; recall is
+matched annotations divided by counted annotations. Failed frames retain
+missed labels. The continuous precision-envelope AP used here is diagnostic,
+not KITTI AP-R40 or an official Dur360 leaderboard score.
+
+Numerical completion and same-scan repeatability are reported separately.
+Both-empty output pairs are not credited as perfect object agreement. The
+paired-frame bootstrap averages repeated counts within each frame; its
+independence assumption is weakened by temporal correlation in one collection.
+
+\section{Results}
+The study completes 1,120 measured GPU inferences plus 18 discarded warmups:
+480 MOSEP observations, 320 primary labeled observations and 320 capacity-control
+observations. Both normalized channels complete their 560 measured observations
+without recorded inference failure. The latest recorded Python regression suite
+has 119 passing tests. These counts describe the stated tests, not indefinite
+runtime reliability.
+
+\begin{table}[htbp]\centering
+\begin{tabularx}{\linewidth}{@{}Yrr@{}}
+\toprule
+Test Vehicle metric at score 0.4 & Signal / 65,535 & Reflectivity / 255 \\
+\midrule
+BEV true positives per repeat & 0 & 4 \\
+Mean BEV precision & 0\% & 27.81\% \\
+BEV recall & 0\% & 6.67\% \\
+Qualifying 3D true positives & 0 & 0 \\
+\bottomrule
+\end{tabularx}
+\caption{Primary result on the same 16 test scans and 60 in-ROI Vehicle
+annotations. Precision is the mean of five run ratios. Repeats are not pooled
+as new scenes.}
+\label{tab:primary}
+\end{table}
+
+Neither encoding produces a qualifying Pedestrian match. Disabling the
+additional publication gate does not produce qualifying 3D matches in the
+primary study. Reflectivity's unfiltered Vehicle BEV recall averages 22.67\%,
+with precision 5.84\%; signal still has no test Vehicle BEV matches.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}Yll@{}}
+\toprule
+Primary test observation & Signal / 65,535 & Reflectivity / 255 \\ \midrule
+Vehicle BEV matches per repeat & 0 & 4 \\
+Qualifying Vehicle 3D matches per repeat & 0 & 0 \\
+First-repeat matched footprint IoU & No qualifying matches & 0.762--0.822 \\
+Upward center error for those BEV matches & Not applicable & 0.60--1.14 m \\
+3D IoU for those BEV matches & Not applicable & 0.141--0.381 \\
+\bottomrule
+\end{tabularx}
+\caption{The BEV advantage does not establish 3D accuracy. The overlap and height ranges describe the four first-repeat qualifying BEV matches; they do not represent four independently identified physical vehicles. The study uses 16 test scans and 60 in-region Vehicle annotations.}
+\label{tab:channel-overlap-summary}
+\end{table}
+
+Reflectivity's four first-repeat Vehicle BEV matches have footprint IoUs of
+0.762--0.822, but their centers are 0.60--1.14 m too high. Their 3D IoUs are only
+0.141--0.381, below the required 0.7. This is zero qualifying matches, not zero
+overlap. An independent comparison of Python and compiled C++ BEV geometry
+agrees on 5,084 pairs, with maximum absolute difference about 2.33e-15.
+
+\projectfigure{ouster-channel-ground-truth-2026-11-08.png}{Fixed middle test
+frame, first repeat. Green boxes are publisher annotations; orange/purple boxes
+are predictions. The side projection exposes vertical displacement. Original
+Dur360BEV-Extended data: TomEeee / Durham University, publisher CC-BY-4.0.
+Exact source and output hashes are in the adjacent figure provenance.}{fig:scene}
+
+The capacity control removes empty/nonempty changes between repeats while
+retaining the four-versus-zero Vehicle BEV result and zero qualifying 3D
+matches. Reflectivity control precision averages 21.99\%, so this selection
+does not generally improve accuracy.
+
+The older KITTI diagnostic baseline also has zero moderate 3D matches. A
+separate TensorRT 8 compatibility comparison reproduces poor accuracy and
+elevated centers. These observations motivate investigation of shared
+input/model assumptions rather than attributing the result to the API migration
+alone. Exact training/numerical parity remains unresolved.
+
+\section{Discussion and validity}
+Reflectivity/255 is the better supported experimental input for this fixed
+configuration. This does not establish superiority over every possible signal
+calibration, model or sensor profile. The measured BEV precision and recall are
+low; neither configuration passes the declared 3D matching criteria.
+
+Numerical completion, repeatability and accuracy answer different questions.
+Signal often produces no accepted boxes at 0.4, and an empty output is not
+evidence of stable correct objects. A successful ROS replay establishes message
+flow. A screenshot establishes rendering. Neither replaces labels.
+
+The vertical error is a symptom, not a validated constant correction. A z shift
+chosen after inspecting these test labels would change the experiment and may
+hide input/training incompatibility. Sensor origin, model training convention,
+anchor/decoder behavior and point filtering should be checked against a verified
+reference before deploying a correction.
+
+The labeled sample is small and comes from one collection. The 64-beam weather
+sensor differs from the 128-beam labeled sensor, so no labeled weather-accuracy
+claim is made. Metadata does not establish individual factory reflectivity
+calibration validity. Publisher labels are independent of this experiment but
+have their own annotation limitations.
+
+The direct comparison uses unchanged production inference/NMS code, but does
+not certify the complete ROS A/B transport path. An initial large-cloud UDP
+attempt did not complete and was excluded. Full memory/failure acceptance,
+latest-frame scheduling and a sustained real-time benchmark remain unfinished.
+
+\subsection{Follow-up diagnosis: 9 November 2026}
+A subsequent investigation checked the model identity, input geometry and two
+packaged TensorRT plugins. The exact deployable-v1.1 ONNX and label hashes match
+NVIDIA's file API. The associated model-level card describes proprietary
+solid-state LiDAR data, but its version-specific training description is empty
+\cite{ngcmodelcard}. This supports a training-domain concern; it does not prove
+the exact training set, sensor or mounting height for this export.
+
+\begin{table}[htbp]\centering\small
+\begin{tabularx}{\linewidth}{@{}p{.25\linewidth}Y@{}}
+\toprule
+New check & Result and limit \\ \midrule
+Known box encodings & Three actual packaged decoder controls return the expected geometric-center z. This argues against a universal bottom/center correction, without validating all learned residuals. \\
+Tiny voxel features & Two artificial GPU controls verify the expected ten features and show that zero XYZ returns affect cluster means. These inputs do not test overflow or all boundary cases. \\
+Tuning geometry & On 16 KITTI tuning scans, 34,698 of 41,329 points counted inside Car boxes remain in the model ROI. The lower z bound removes 6,618 such points within XY coverage. Counts may include background or overlapping boxes; this is not a causal accuracy result. \\
+Repeated Ouster inputs & Eighteen production inferences compare original, nonzero-only and bounded inputs on two unlabeled scans, three repeats each. Bounded outputs match across repeats at the declared 0.001 component tolerance; zero removal alone is not consistently better. This is repeatability, not bitwise identity or labeled accuracy. \\
+\bottomrule
+\end{tabularx}
+\caption{Separate follow-up controls. These observations are not added to the frozen 1,120-inference study and do not create additional labeled scenes.}
+\label{tab:detection-followup}
+\end{table}
+
+The implementation adds a small CPU packed-XYZI preparation helper and an
+optional offline tool. Explicit bounded mode removes invalid returns, applies
+a declared ROI and retains the first encountered pillars and points within
+specified limits. Retained coordinates, features and order keep their original
+bits. Passthrough remains the helper default, and neither the live detector nor
+adapter calls the new policy. Independent real-scan checks reproduce the Python
+preparation byte for byte. The fresh Python suite passes 119 tests and the CPU
+build passes three CTest executables. Review also corrected the optional tool's
+build guard so the minimal Docker source context remains usable.
+
+These findings narrow the explanation without resolving the learned height
+error. The next step is an independently verified training/export reference,
+followed by a compatible model or fine-tuning if the target-sensor mismatch
+persists. No label-fitted z shift or new accuracy acceptance is introduced.
+Commands, failed attempts, input identities and the review are recorded in
+\href{DETECTION\_INVESTIGATION\_AND\_PLAN.md}{the detection investigation report}.
+
+\section{Conclusion and next work}
+The project establishes a working migration and an auditable comparison
+workflow. The evidence favors reflectivity/255 as an experimental baseline,
+while withholding an accuracy-acceptance claim for either current 3D detector
+configuration.
+
+The next work is explicit valid-return/capacity handling, investigation of the
+vertical/input-training mismatch and an Ouster-compatible model or fine-tuning
+if the fixed model remains inaccurate. A new recording-disjoint evaluation must
+use agreed metrics and targets, sufficient class coverage, negatives, varied
+distances and weather. Worker/QoS/timing changes should then be assessed under
+sustained load rather than inferred from mean inference time.
+
+\section*{Evidence and submission checklist}
+Project-specific numbers are recorded in
+\code{config/ouster_channel_decision.json}, the KITTI/reference inventories and
+the source/evidence hashes they identify. Large recordings and raw observations
+are ignored under \code{.recovery}; a Git checkout is not their backup. The
+figure catalog records attribution, selection and permitted interpretation.
+
+Before submission: confirm supervisor details, obtain supervisor
+agreement on scope and acceptance targets, complete the related-work review,
+perform the larger evaluation, verify figure permissions, adapt the university
+template, and compile and inspect the complete illustrated document. Missing
+external images in a standalone preview are explicit placeholders, not a fully
+illustrated thesis.
+
+% BEGIN ILLUSTRATED CASEBOOK
+\clearpage
+\appendix
+\section{Illustrated problem and solution casebook}
+\label{appendix:casebook}
+Each case answers five questions: what happened, why it happened, what small steps were taken, what checked the result, and what remains open. A successful software check is kept separate from a successful accuracy result.
+
+Each problem is summarized in an editable comparison table. Selected cases also use a flowchart to show the check, the normal path and an alternative or failure path. These tables and charts explain the recorded evidence; they do not add new experiments. New controlled checks use isolated fixtures; mock Docker does not mean a real container failed. Original RViz captures and two genuine terminal demonstrations are retained and identified separately.
+
+Unsafe physical failures were not recreated: no disk was filled, no display driver was deliberately broken, and no source bag or annotation was damaged. Where only supplied-log summaries survive, that is stated. The six new raw-signal/reflectivity GPU demonstrations are separate from the frozen 1,120-observation accuracy/numerical study; they do not add independent labeled scenes or establish accuracy.
+
+The detailed source, command and log identities are recorded in \code{docs/thesis_cases.json}. The retained screenshots have separate provenance. Tables and flowcharts are typeset directly from text in this document, so they remain editable and readable at print size. The following pages distinguish an implemented correction from an unresolved finding.
+
+\clearpage
+\subsection{J01. Old OS, ROS and build settings}
+\label{case:J01}
+\textbf{What happened.} The old build combined C++14 settings with an explicit C++11 flag, old CUDA paths and a Foxy-era dependency layout.
+
+\textbf{Why.} Those settings described another software stack. The migration made CPU tests independent and declared ROS and GPU dependencies only for targets that need them.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Read the old CMake file without changing the checkout.
+\item Select C++17 and explicit target dependencies.
+\item Configure the CPU-only build with runtime and ROS adapter disabled.
+\item Build and run the geometry and output-contract controls before enabling ROS/GPU targets.
+\end{enumerate}
+\textbf{Check.} A fresh isolated current-source CPU configuration and build succeeded on 9 November; both test executables passed. Legacy CMake was inspected through git show 2301135:CMakeLists.txt.
+
+\textbf{What remains open.} This does not validate a fresh host installation, another GPU or exact inference parity.
+
+\textbf{Evidence type.} Source-based explanation.
+
+\casetable{J01}{Old OS, ROS and build settings}{Old source mixes C++14 and C++11 settings and hardcoded CUDA paths.}{Current CPU-only targets configure and build independently; focused checks pass.}
+\textbf{Evidence files.} {\footnotesize\path{CMakeLists.txt}}; {\footnotesize\path{PROJECT_REVIEW_AND_UPDATE_PLAN.md}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/migration/cpu-configure.log}}.
+
+\clearpage
+\subsection{J02. Old include and ROS message schema}
+\label{case:J02}
+\textbf{What happened.} The source included a nonexistent local point\_cloud2\_iterator.hpp and wrote obsolete hypothesis fields.
+
+\textbf{Why.} Jazzy stores class ID and score inside hypothesis. Removing the unused include is separate from correctly translating box and header data.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Remove the unused nonexistent include.
+\item Construct the current nested Jazzy hypothesis fields.
+\item Copy the source header to the array and each detection.
+\item Check dimensions, pose and class ID using a small known box.
+\end{enumerate}
+\textbf{Check.} A safe compiler-only control of the missing include exited 1 with a real fatal error. The freshly compiled current-code probe then emitted class\_id=1, source\_frame=lidar and the fixture timestamp; the ROS data suite passed.
+
+\textbf{What remains open.} The old full node was not executed; this is a controlled include failure and a current-schema control.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J02}{Old include and ROS message schema}{Compiler-only old-include control: the referenced header cannot be found.}{Current production validator constructs Jazzy nested hypotheses and preserves the fixture header.}
+\textbf{Evidence files.} {\footnotesize\path{PROJECT_REVIEW_AND_UPDATE_PLAN.md}}; {\footnotesize\path{src/pointcloud_adapter.cpp}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/migration/J02-original-include-control.log}}.
+
+\clearpage
+\subsection{J03. Malformed, oversized and nonfinite clouds}
+\label{case:J03}
+\textbf{What happened.} Malformed rows, missing fields, excessive point counts or NaNs could make point-cloud conversion unsafe or misleading.
+
+\textbf{Why.} A PointCloud2 message has a binary layout. Validate dimensions, strides, field bounds and capacity before conversion; is\_dense alone is not proof that points are finite.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Check width, height, point\_step, row\_step and exact data length.
+\item Require nonoverlapping scalar little-endian FLOAT32 x/y/z/intensity fields.
+\item Reject point or byte capacity overflow before allocation.
+\item Remove nonfinite points even when is\_dense is true.
+\item Require a finite positive intensity divisor and clear stale packed output on failure.
+\end{enumerate}
+\textbf{Check.} The fresh production-code probe printed exact layout, capacity, missing-field, endian and divisor rejections. Repairing row\_step accepted four points; inserting one NaN packed three. All 11 existing ROS data controls passed.
+
+\textbf{What remains open.} Finite all-zero invalid returns are not removed here. Total point limits do not enforce the internal pillar limits.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J03}{Malformed, oversized and nonfinite clouds}{Invalid row stride, point capacity, field layout, byte order or divisor is rejected.}{Correct padded rows pack four points; one NaN reduces the packed cloud to three.}
+\caseflow{J03}{Input validation}{Receive PointCloud2}{Check layout, capacity and divisor}{Valid: pack finite XYZI; infer only if nonempty}{Invalid: reject the cloud and clear packed output. Do not call inference.}{Input validation precedes packing. An empty valid cloud skips GPU inference; finite all-zero returns still require a separate policy.}
+\casefigure{thesis/J03-live-validator-terminal.png}{J03: original capture or live demonstration}{Actual new terminal capture: the current C++ validator rejects an artificial malformed row and accepts corrected padding. Other invalid-layout controls are shown. No GPU or ROS node is created.}{fig:case-J03-capture}
+\textbf{Evidence files.} {\footnotesize\path{src/pointcloud_adapter.cpp}}; {\footnotesize\path{include/pp_infer/model_contract.hpp}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log}}.
+
+\clearpage
+\subsection{J04. Degenerate overlap and unstable filtering}
+\label{case:J04}
+\textbf{What happened.} Degenerate boxes, unstable overlap calculations or stale outputs could undermine filtering.
+
+\textbf{Why.} Rotated IoU needs robust geometry handling. Suppression should reject invalid configuration, preserve deterministic score ties and replace previous-frame output even for an empty frame.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Validate finite centers, dimensions and yaw; require positive dimensions.
+\item Compute rotated overlap using bounded polygon clipping.
+\item Validate IoU threshold and top-N before suppression.
+\item Use stable score ordering and clear the output on every attempt.
+\item Check touching, contained, rotated, degenerate and random boxes.
+\end{enumerate}
+\textbf{Check.} The current-source probe returned IoU=0 for zero-length geometry, rejected a negative NMS threshold and changed a one-box output to zero on an empty frame. Fresh geometry tests passed 15 cases including 2,000 randomized comparisons.
+
+\textbf{What remains open.} Robust suppression does not move inaccurate boxes or establish detector accuracy.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J04}{Degenerate overlap and unstable filtering}{Negative NMS threshold is rejected; zero-length geometry safely yields zero overlap.}{Valid suppression returns one box; a subsequent empty input clears it.}
+\textbf{Evidence files.} {\footnotesize\path{src/postprocess.cpp}}; {\footnotesize\path{tests/core/test_postprocess.cpp}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log}}.
+
+\clearpage
+\subsection{J05. Cross-class suppression policy}
+\label{case:J05}
+\textbf{What happened.} Two overlapping predictions with different class IDs can suppress each other.
+
+\textbf{Why.} Production NMS intentionally remains class-agnostic. The CPU core has a class-aware option, but it is not the current production policy or a demonstrated accuracy improvement.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Create two boxes with identical footprints and different class IDs.
+\item Run the current default NMS and record the retained count.
+\item Run the core class-aware option on the same candidates.
+\item Keep the production policy explicit; evaluate a proposed change on tuning data before deployment.
+\end{enumerate}
+\textbf{Check.} The fresh current-source probe retained one box with the default and two with the class-aware option; the existing same-class/cross-class regression passed.
+
+\textbf{What remains open.} No production policy was changed, and no class-aware accuracy advantage has been measured.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J05}{Cross-class suppression policy}{Default class-agnostic NMS keeps one of two overlapping boxes with different classes.}{The diagnostic core class-aware option keeps both; production was not changed.}
+\textbf{Evidence files.} {\footnotesize\path{src/postprocess.cpp}}; {\footnotesize\path{tests/core/test_postprocess.cpp}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log}}.
+
+\clearpage
+\subsection{J06. Session and usage interruption}
+\label{case:J06}
+\textbf{What happened.} A usage/session interruption can lose the next action and confuse what was actually tested.
+
+\textbf{Why.} Recovery saves eligible source, hashes, separate patches and a handoff. Its evidence text is caller-reported, not a substitute for test execution.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Save a checkpoint before a coherent change or long operation.
+\item Record the next action and actual verification commands.
+\item On return, read RESUME, PROGRESS and the task ledger.
+\item Run recovery status and inspect Git drift before continuing.
+\item Back up ignored large artifacts separately.
+\end{enumerate}
+\textbf{Check.} All 12 recovery tests passed in isolated temporary repositories. A deliberate corruption in a temporary checkpoint produced the actual Integrity: FAILED status with exit 1.
+
+\textbf{What remains open.} A local source checkpoint does not buy credits, resume an unavailable model or back up models, bags, engines and the whole machine.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J06}{Session and usage interruption}{Intentional corruption of an isolated checkpoint produces Integrity: FAILED.}{The helper detects corrupted checkpoint content; all 12 isolated regression tests pass.}
+\textbf{Evidence files.} {\footnotesize\path{tools/recovery.py}}; {\footnotesize\path{tests/test_recovery.py}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/migration/J06-integrity-failure-control.log}}.
+
+\clearpage
+\subsection{J07. Checkpoint directory replaced by a file}
+\label{case:J07}
+\textbf{What happened.} A tracked directory replaced by a regular file made looking up its former child raise NotADirectoryError.
+
+\textbf{Why.} A deleted child path may have a parent that is now a file. Snapshot collection must record that child as deleted while saving the replacement.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Use a temporary repository with a tracked directory and child file.
+\item Replace the directory with a regular file.
+\item Catch NotADirectoryError alongside FileNotFoundError during path inspection.
+\item Verify the old child is marked deleted and the replacement content is saved.
+\end{enumerate}
+\textbf{Check.} The isolated fixture recorded component/old.cpp as deleted and saved the replacement component file. Its dedicated regression and the complete 12-test recovery suite passed.
+
+\textbf{What remains open.} This tests the corrected current behavior; it is not a rerun of the historical buggy implementation.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J07}{Checkpoint directory replaced by a file}{A temporary tracked directory is replaced with a regular file.}{Current checkpoint records the child as deleted and saves the replacement.}
+\textbf{Evidence files.} {\footnotesize\path{tools/recovery.py}}; {\footnotesize\path{tests/test_recovery.py}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/migration/J07-directory-to-file-control.log}}.
+
+\clearpage
+\subsection{J08. GPU query failed inside the sandbox}
+\label{case:J08}
+\textbf{What happened.} An early nvidia-smi query failed inside the restricted execution environment.
+
+\textbf{Why.} The sandbox did not expose NVIDIA device nodes. A host-accessible read-only query showed the laptop GPU and working driver; the early query did not justify reinstalling the driver.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Check whether the execution environment exposes the GPU devices.
+\item Compare with an authorized host-side read-only GPU query.
+\item Record which environment produced each result.
+\item Continue GPU tests in the environment with actual device access.
+\end{enumerate}
+\textbf{Check.} The saved environment inventory records RTX 4060 Laptop, 8,188 MiB and driver 595.71.05 outside the sandbox. No new GPU isolation failure was induced.
+
+\textbf{What remains open.} This is distinct from the later physical-host driver mismatch. The historical inventory alone is not current hardware health.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J08}{GPU query failed inside the sandbox}{Historical sandbox query could not see NVIDIA device nodes.}{Saved host-accessible inventory records the working RTX 4060 and driver.}
+\textbf{Evidence files.} {\footnotesize\path{config/environment_inventory.json}}; {\footnotesize\path{docs/PROJECT_HISTORY_AND_DECISION_RECORD.md}}.
+
+\clearpage
+\subsection{J09. Physical-host kernel and NVIDIA driver mismatch}
+\label{case:J09}
+\textbf{What happened.} On the separate alfonso-h017 host, NVIDIA modules did not match the running kernel.
+
+\textbf{Why.} User-supplied physical-host logs reported a real kernel/driver mismatch, unlike the laptop sandbox access issue. Matching branch-595 open modules and driver plus reboot reportedly restored access.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Inspect the actual GPU, running kernel and installed module packages.
+\item Simulate the package transaction and check mixed Ubuntu/CUDA sources.
+\item Install only the compatible kernel-module/driver set identified for that host.
+\item Reboot, then verify GPU access before starting ROS.
+\end{enumerate}
+\textbf{Check.} The physical-host repair record reports restored GPU access. This documentation task did not reinstall drivers or reproduce the fault.
+
+\textbf{What remains open.} Later live inference and accuracy on that RTX A4500 Embedded host remain unverified by the supplied logs. These steps are historical, not a universal driver prescription.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J09}{Physical-host kernel and NVIDIA driver mismatch}{Separate physical host: installed NVIDIA modules did not match its kernel.}{Supplied-log summary reports compatible modules/driver and reboot restored access.}
+\textbf{Evidence files.} {\footnotesize\path{docs/LIVE_OUSTER_TROUBLESHOOTING.md}}.
+
+\clearpage
+\subsection{J10. Ouster Fast CDR serialization symbol failure}
+\label{case:J10}
+\textbf{What happened.} The Ouster drivers reported an undefined Fast CDR serialization symbol on the physical host.
+
+\textbf{Why.} The driver and ROS/DDS serialization packages were incompatible. The supplied logs reported that updating the compatible package group restored launch.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Stop the affected ROS nodes.
+\item Inspect versions of ouster-ros, ouster-sensor-msgs, fastcdr, fastrtps and typesupport/RMW packages.
+\item Update a compatible group after reviewing package resolution.
+\item Start the driver and check its actual topic schema.
+\end{enumerate}
+\textbf{Check.} The physical-host record reports launch recovery and an observed 128x1024 cloud with signal and reflectivity but no intensity. No serialization library fault was deliberately created.
+
+\textbf{What remains open.} Updating one arbitrary library is not a reproducible general fix. Successful driver launch is not successful model inference.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J10}{Ouster Fast CDR serialization symbol failure}{Separate physical host: Ouster driver reports an undefined serialization symbol.}{Supplied-log summary reports compatible Ouster/ROS/DDS packages restored launch.}
+\textbf{Evidence files.} {\footnotesize\path{docs/LIVE_OUSTER_TROUBLESHOOTING.md}}.
+
+\clearpage
+\subsection{J11. Model and plugin compatibility uncertainty}
+\label{case:J11}
+\textbf{What happened.} A pretrained ONNX was available, but compatible TensorRT libraries and required plugin creators were not established.
+
+\textbf{Why.} A trained model still needs an inference runtime and plugins. TensorRT 10.16.1.11 was verified with the exact model; the proposed TensorRT 11 package was not treated as a drop-in replacement.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Hash and inventory the ONNX and any separate trainable artifact.
+\item Inspect input/output tensor metadata.
+\item Check VoxelGeneratorPlugin, PillarScatterPlugin and DecodeBbox3DPlugin creators.
+\item Parse the exact ONNX and build a target-GPU engine.
+\item Run a synthetic smoke test after actual linking.
+\end{enumerate}
+\textbf{Check.} The historical runtime inventory and smoke log record all three creators, successful engine creation and ten synthetic frames. No model, SDK or GPU experiment was rerun for this case.
+
+\textbf{What remains open.} Structural and smoke checks do not prove original training parity, object accuracy or TensorRT 11 compatibility.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J11}{Model and plugin compatibility uncertainty}{An ONNX alone does not establish compatible runtime and plugin availability.}{Saved actual SDK smoke reports repeated inference, capacity rejection and empty-result checks.}
+\textbf{Evidence files.} {\footnotesize\path{config/model_inventory.json}}; {\footnotesize\path{config/runtime_inventory.json}}; {\footnotesize\path{.recovery/verification/w04-gpu-smoke.txt}}.
+
+\clearpage
+\subsection{J12. System TensorRT installation unavailable}
+\label{case:J12}
+\textbf{What happened.} System SDK installation could not proceed through the intended sudo-based route.
+
+\textbf{Why.} The actual native workaround extracted the repository DEB and selected component package data into a local SDK, without running maintainer scripts or registering host packages. Docker later used a separate package-install recipe.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Verify the downloaded repository DEB hash.
+\item Extract it into a dedicated local SDK directory.
+\item Extract compatible shared libraries, headers and tools; omit unused static archives.
+\item Source the local environment helper.
+\item Verify the actual plugin registry and linker/runtime before inference.
+\end{enumerate}
+\textbf{Check.} The historical runtime inventory and SDK build/smoke records identify the local extracted SDK and successful native execution. No extraction or host install was repeated.
+
+\textbf{What remains open.} Local extraction does not create a complete system package installation. SDK binaries and installers are excluded from source checkpoints.
+
+\textbf{Evidence type.} Source-based explanation.
+
+\casetable{J12}{System TensorRT installation unavailable}{Normal system SDK installation was unavailable through the intended sudo route.}{Recorded native method uses a local extracted SDK; Docker later installs its own packages.}
+\textbf{Evidence files.} {\footnotesize\path{docs/local_runtime.md}}; {\footnotesize\path{tools/env_tensorrt.sh}}; {\footnotesize\path{config/runtime_inventory.json}}.
+
+\clearpage
+\subsection{J13. Binding-position and engine assumptions}
+\label{case:J13}
+\textbf{What happened.} The old runtime depended on binding positions and assumed an engine interface.
+
+\textbf{Why.} A deserialized engine is not automatically compatible. The migrated runtime checks names, roles, types, format, device location, shapes, profile and capacity before binding tensors.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Require the supported four named I/O tensors and one profile.
+\item Check FLOAT32/INT32 types, device locations and linear format.
+\item Resolve the batch-one shapes and verify capacities.
+\item Set named tensor addresses and execute enqueueV3.
+\item Reject an incompatible engine before processing clouds.
+\end{enumerate}
+\textbf{Check.} Current source was inspected; the historical SDK configure/build/smoke logs record actual TensorRT 10 execution. Fresh output-contract tests also passed, but do not instantiate an incompatible GPU engine.
+
+\textbf{What remains open.} A full incompatible-engine matrix and exact original-model numerical parity remain incomplete.
+
+\textbf{Evidence type.} Source-based explanation.
+
+\casetable{J13}{Binding-position and engine assumptions}{A positional engine assumption does not validate tensor identity or capacity.}{Current runtime checks named roles, types, format and resolved shapes before inference.}
+\textbf{Evidence files.} {\footnotesize\path{src/pointpillar.cpp}}; {\footnotesize\path{include/pp_infer/model_contract.hpp}}; {\footnotesize\path{.recovery/verification/w04-gpu-smoke.txt}}.
+
+\clearpage
+\subsection{J14. Repeated allocation and stream ownership}
+\label{case:J14}
+\textbf{What happened.} Per-frame allocations, resource lifetime ambiguity and unchecked output counts could create stale data or unsafe copies.
+
+\textbf{Why.} Owned persistent resources remove repeated allocation. The runtime copies the result count first, checks it against capacity and only then copies box rows; serious GPU-work failure latches the runtime as faulted.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Create and own the runtime, engine, context, stream and buffers once.
+\item Reuse buffers and clear input padding/output count for each cloud.
+\item Copy and validate the output count before copying rows.
+\item Validate decoded classes, geometry and scores before publication.
+\item Drain work during failure unwinding and require restart after a fault.
+\end{enumerate}
+\textbf{Check.} The freshly compiled probe rejected counts -1 and 11 for capacity 10, then accepted count 10. Fresh output-contract tests passed; historical GPU smoke exercised repeated inference and cleanup.
+
+\textbf{What remains open.} The current probe validates pure CPU count behavior, not injected GPU faults or complete resource/memory safety.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J14}{Repeated allocation and stream ownership}{Counts below zero or above engine capacity are rejected before box-row transfer.}{A count equal to capacity is accepted; GPU fault handling remains a separate limit.}
+\textbf{Evidence files.} {\footnotesize\path{src/pointpillar.cpp}}; {\footnotesize\path{include/pp_infer/cuda_resources.hpp}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log}}.
+
+\clearpage
+\subsection{J15. Real SDK version-macro and profiler incompatibilities}
+\label{case:J15}
+\textbf{What happened.} Actual TensorRT headers used macro aliases, and TensorRT 10.16 rejected setting the context profiler to null.
+
+\textbf{Why.} Parsing a literal version from a header was insufficient. The build now asks the preprocessor; the runtime keeps an owned profiler attached and gates its accumulation.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Evaluate NV\_TENSORRT\_MAJOR with a compiler preprocessor guard.
+\item Reject unsupported major versions before building the runtime.
+\item Keep the profiler alive for the context lifetime.
+\item Toggle accumulation instead of passing null.
+\item Run actual SDK smoke checks; record callback overhead as unresolved.
+\end{enumerate}
+\textbf{Check.} A compiler-only control using macro aliases rejected major 8 with TensorRT 10 required and accepted major 10. The historical record explains the null-profiler failure and subsequent GPU smoke success.
+
+\textbf{What remains open.} The null-profiler GPU failure was not rerun. Callback overhead is not proven absent when timing accumulation is disabled.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J15}{Real SDK version-macro and profiler incompatibilities}{Synthetic major-8 header is rejected by the same preprocessor guard used in CMake.}{Macro-aliased major 10 passes; historical null-profiler fix retains an owned profiler.}
+\textbf{Evidence files.} {\footnotesize\path{CMakeLists.txt}}; {\footnotesize\path{src/pointpillar.cpp}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/migration/J15-version-8-control.log}}.
+
+\clearpage
+\subsection{J16. Build, ROS logging and shell setup blockers}
+\label{case:J16}
+\textbf{What happened.} ROS builds needed C/MPI target support, writable logging and compatible shell setup; an unsourced probe could not load librclcpp.so.
+
+\textbf{Why.} Different blockers occurred at different layers. Enable C only for ROS/PCL targets, give tests a writable ROS\_LOG\_DIR and relax nounset only while sourcing generated setup scripts. Native executables also need the ROS library environment.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Keep the standalone CPU build independent of ROS/PCL.
+\item Enable C in the ROS build path to satisfy exported MPI targets.
+\item Use a build-local writable ROS log directory.
+\item Source ROS and the overlay with scoped nounset relaxation.
+\item Rerun the same executable and compare the actual failure and success.
+\end{enumerate}
+\textbf{Check.} On 9 November the isolated compiled probe really exited 127 with missing librclcpp.so before ROS setup. The same executable succeeded after sourcing Jazzy. The fresh CPU configure and existing ROS data tests also passed.
+
+\textbf{What remains open.} The newly observed loader failure is a controlled environment mistake, not a claimed replay of the original MPI/logging failure. No system package change was made.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J16}{Build, ROS logging and shell setup blockers}{New isolated executable really fails to load librclcpp.so without ROS setup.}{Sourcing Jazzy allows the same executable to run all current validator controls.}
+\textbf{Evidence files.} {\footnotesize\path{CMakeLists.txt}}; {\footnotesize\path{docker/entrypoint.sh}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/migration/J16-unsourced-probe-failure.log}}.
+
+\clearpage
+\subsection{J17. Sanitizer coverage limitations}
+\label{case:J17}
+\textbf{What happened.} Some sanitizer runs could not support the requested coverage; ROS node creation exposed an allocator type mismatch and early GPU instrumentation failed.
+
+\textbf{Why.} A sanitizer result has a limited scope. The record separates passing CPU/data checks, distribution ROS allocator behavior, unavailable leak checking and incomplete GPU memory acceptance.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Run focused CPU address/undefined-behavior checks in a separate build.
+\item Record why LeakSanitizer is disabled in the traced environment.
+\item Keep the original ROS allocator mismatch log.
+\item Test parameter construction normally and instrument data paths separately.
+\item Distinguish the failed early GPU instrumentation from the later two zero-error allocation probes.
+\end{enumerate}
+\textbf{Check.} The original saved log contains AddressSanitizer new-delete-type-mismatch through rcutils\_string\_map\_fini. The early Compute Sanitizer log says the application terminated before its first instrumented call. Later reference records report two zero-error allocation checks. No harmful allocator/sanitizer environment was recreated.
+
+\textbf{What remains open.} Two allocation probes do not clear internal pooled tensor bounds, races or full GPU failure acceptance. The original allocator error was not hidden with blanket suppression.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J17}{Sanitizer coverage limitations}{Saved ASan trace reports new-delete-type-mismatch in the installed ROS allocator.}{Focused data checks and normal parameter checks are separated; full sanitizer acceptance remains open.}
+\textbf{Evidence files.} {\footnotesize\path{.recovery/verification/w03-system-allocator-asan.txt}}; {\footnotesize\path{.recovery/verification/w03-sanitized-data.txt}}.
+
+\clearpage
+\subsection{J18. Dependency resolution and disk-full builds}
+\label{case:J18}
+\textbf{What happened.} Docker package resolution mixed CUDA variants, and bulky build inputs exhausted storage in earlier attempts.
+
+\textbf{Why.} Pinning only top-level TensorRT packages let dependencies select another CUDA variant. Shared-library/header-only component selection reduced unused static/development content. Disk space for Docker is separate from the source drive.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Inspect the resolver error and exact conflicting package variants.
+\item Pin the compatible lean, dispatch and plugin dependencies too.
+\item Install only required CUDA components and shared/header packages.
+\item Check the actual Docker storage filesystem before rebuilding.
+\item Remove only identified disposable task-owned cache, then rerun the build.
+\end{enumerate}
+\textbf{Check.} The preserved automatic-deploy-first-failure log genuinely reports cuda12.9 dependencies with cuda13.2 candidates and exit 100. The current Dockerfile explicitly pins the compatible group; later saved full builds passed. Disk-full history is documented, not deliberately reproduced.
+
+\textbf{What remains open.} No fresh package installation or disk-full fault was induced. Base tags and all apt dependencies are not a fully hermetic supply chain.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J18}{Dependency resolution and disk-full builds}{Saved Docker resolver error mixes required cuda12.9 with selected cuda13.2 dependencies.}{Current Dockerfile pins the compatible group; later recorded full builds pass.}
+\textbf{Evidence files.} {\footnotesize\path{Dockerfile}}; {\footnotesize\path{.recovery/verification/automatic-deploy-first-failure.txt}}.
+
+\clearpage
+\subsection{J19. Build an engine for the selected GPU, then reuse it}
+\label{case:J19}
+\textbf{What happened.} A saved engine could be missing, built for another GPU, or left incomplete after an interrupted build.
+
+\textbf{Why.} A TensorRT engine is tied to its deployment conditions. The image contains the trained ONNX; startup builds a matching execution plan and keeps it in persistent storage.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Check the selected GPU and retain the ONNX checksum.
+\item Calculate the cache identity from model, GPU, driver/CUDA and build settings.
+\item Acquire the engine-file lock before checking or building that entry.
+\item Build into a pending file, and promote it only after trtexec succeeds.
+\item On interruption, stop the builder and remove its pending file.
+\item Reuse the matching completed engine on the next startup.
+\end{enumerate}
+\textbf{Check.} Historical startup/restart logs record one engine generation across two successful starts. The present audit rereads the cache and cleanup implementation; it does not rebuild an engine.
+
+\textbf{What remains open.} A nonempty corrupted engine is not automatically regenerated. Cross-GPU portability and exhaustive interruption/failure paths remain unaccepted.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J19}{Build an engine for the selected GPU, then reuse it}{A matching engine was absent at the first recorded startup.}{The engine was generated once and reused after restart. Interrupted pending files are removed; corrupted completed-cache recovery remains open.}
+\caseflow{J19}{Engine cache}{Identify model, GPU and build settings}{Acquire lock; matching complete engine?}{Yes: reuse and load once}{Missing: build a pending file, promote only on success, then load. Interrupted pending files are removed.}{A matching cache avoids rebuilding. Recovery from a corrupted completed engine remains open.}
+\textbf{Evidence files.} {\footnotesize\path{config/docker_inventory.json}}; {\footnotesize\path{docker/entrypoint.sh}}.
+
+\clearpage
+\subsection{J20. Stop rebuilding unchanged application inputs}
+\label{case:J20}
+\textbf{What happened.} The user saw repeated dependency downloads after edits, and local edits could be absent from a remote-source image.
+
+\textbf{Why.} Image preparation, dependency layers and target-GPU engine generation use different caches. Local runtime source is now the default; a matching runtime-input hash skips Docker build.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Check host GPU access and Docker before attempting the build.
+\item Hash only the declared runtime source, build settings and configuration.
+\item Compare the hash with the label on the saved image.
+\item Skip the build when the hashes match; documentation edits do not change it.
+\item When source changes, reuse independent dependency/model layers.
+\item Refresh base images only when PP\_PULL\_BASE=1 is requested.
+\end{enumerate}
+\textbf{Check.} Fresh isolated launcher tests passed reuse after documentation edits, rebuild after runtime edits, explicit pulls/remote source and custom-build-option cache separation. Docker and nvidia-smi are mocks in this rerun.
+
+\textbf{What remains open.} First builds, removed caches or changed dependency recipes still require downloads. This fixture is not a new clean-machine Docker build.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J20}{Stop rebuilding unchanged application inputs}{The first fixture invocation requests an image build.}{Unchanged inputs and a documentation-only edit skip the build; the recorded Docker calls show no rebuild.}
+\textbf{Evidence files.} {\footnotesize\path{tools/deploy.sh}}; {\footnotesize\path{Dockerfile}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-01.json}}.
+
+\clearpage
+\subsection{J21. Make one Ctrl+C stop the owned pipeline}
+\label{case:J21}
+\textbf{What happened.} Several Ctrl+C presses were needed, and stopping by container name could target a later unrelated container.
+
+\textbf{Why.} The launcher waits interruptibly, records its exact created container ID in a private directory and stops that ID. The Ouster supervisor owns both child process groups.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Create a private temporary directory for Docker to write the new container ID.
+\item Start Docker without automatic signal forwarding and wait with Bash.
+\item On Ctrl+C, read and validate the owned ID.
+\item Ask Docker to stop that ID with an eight-second cleanup bound.
+\item Stop both adapter/detector process groups when either exits.
+\item Remove the temporary ID file while retaining the image and good engine cache.
+\end{enumerate}
+\textbf{Check.} The fresh single-SIGINT fixture passed with a fake Docker client that deliberately ignores SIGINT. Fresh supervisor tests also passed peer failure, descendant cleanup and unexpected clean exit. Historical actual GPU launch shutdown took under 0.5 s per launcher.
+
+\textbf{What remains open.} The fresh rerun uses isolated processes and mocked Docker; it is not proof for every hung host or application.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J21}{Make one Ctrl+C stop the owned pipeline}{A private fake Docker run client deliberately ignores SIGINT.}{One injected SIGINT returns 130 and requests stop for the exact owned ID. Its private CID directory is removed.}
+\caseflow{J21}{Owned shutdown}{Start foreground launcher}{Receive SIGINT or child exit}{Stop owned container or both child groups}{Cleanup uses the recorded container ID or owned process groups. Keep images and good cached engines.}{Shutdown follows ownership. Exact IDs prevent a reused container name from targeting unrelated work.}
+\textbf{Evidence files.} {\footnotesize\path{tools/docker_foreground.sh}}; {\footnotesize\path{docker/ouster_stack.sh}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-05.json}}.
+
+\clearpage
+\subsection{J22. Recognize a running detector that has no input}
+\label{case:J22}
+\textbf{What happened.} The terminal became quiet after GPU information and appeared stalled.
+
+\textbf{Why.} A cached engine and initialized node can wait normally until a driver or player publishes. Package/executable names and the ROS node name describe different things.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Inspect the detector log and ROS node information.
+\item Confirm that the expected point-cloud topic has an active publisher.
+\item Start exactly one intended driver or bag player.
+\item Check adapter reception and detector processed/error counters.
+\item Open RViz separately using the matching source settings.
+\end{enumerate}
+\textbf{Check.} Historical synthetic and real-bag checks established a running node and later message round trips. Fresh monitor fixtures passed the distinction between a stopped container, a timed-out read and actual counter output.
+
+\textbf{What remains open.} A quiet terminal alone cannot diagnose a stall; the fresh fixture does not start a real sensor or detector.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J22}{Recognize a running detector that has no input}{A stopped container and an unanswered monitor read provide no usable count.}{The helper reports refusal or bounded timeout. A separate successful fixture reply is read; it is not scene data.}
+\textbf{Evidence files.} {\footnotesize\path{docs/STARTUP_AND_REPLAY.md}}; {\footnotesize\path{tools/monitor_detections.sh}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-02.json}}.
+
+\clearpage
+\subsection{J23. Match delivery policy as well as topic names}
+\label{case:J23}
+\textbf{What happened.} A host viewer received no clouds although container playback was active; best-effort sensor data also conflicted with reliable detector input.
+
+\textbf{Why.} The recorded host/container shared-memory path did not deliver in that setup. UDPv4 restored delivery. A best-effort-only publisher generally cannot satisfy a reliable subscriber under DDS.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Inspect the publisher and subscriber QoS and their actual topic names.
+\item For the recorded Fast DDS host/viewer setup, use the tested UDPv4 transport fallback.
+\item Receive raw Ouster data with sensor-data best-effort QoS in the adapter.
+\item Republish adapted XYZI reliably for the existing detector.
+\item Verify received messages and increasing processing counters, rather than discovery alone.
+\end{enumerate}
+\textbf{Check.} Historical observer checks matched 25 frames inside the container and 25 through the host after UDPv4 selection. The actual adapter source declares the two QoS policies. No fresh physical SHM fault was recreated.
+
+\textbf{What remains open.} Transport behavior depends on the host/RMW setup. Detector-wide configurable sensor QoS and sustained overload delivery remain open.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J23}{Match delivery policy as well as topic names}{The recorded default host transport received no clouds within eight seconds.}{UDPv4 restored host delivery; 25 input/output frames matched. The adapter separately bridges best-effort input to reliable output.}
+\textbf{Evidence files.} {\footnotesize\path{config/visualization_inventory.json}}; {\footnotesize\path{src/ouster_adapter_node.cpp}}.
+
+\clearpage
+\subsection{J24. Keep the bag and live Ouster profiles separate}
+\label{case:J24}
+\textbf{What happened.} The live stack listened on a different raw topic, domain and middleware from the original-bag player; Zenoh had no reachable router.
+
+\textbf{Why.} The mismatch combined /ouster1/points + domain 0 + Zenoh with /sensing/lidar/points + domain 99 + Fast DDS. Waiting longer could not align these settings.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Choose live mode only for a working driver using matching settings.
+\item For the original MOSEP recording, start tools/start\_ouster.sh bag.
+\item Start tools/start\_ouster\_bag.sh in another terminal.
+\item Keep topic, ROS\_DOMAIN\_ID and RMW\_IMPLEMENTATION identical across participants.
+\item Pass custom settings through sudo env when sudo would discard exports.
+\end{enumerate}
+\textbf{Check.} Fresh isolated launcher/player tests passed shared Fast DDS/domain99/raw-topic defaults, custom routing and preservation of existing containers. Historical actual GPU replay also confirmed the corrected profile.
+
+\textbf{What remains open.} The scripts do not start or repair a live driver or Zenoh router. Fixture success is separate from a current network test.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J24}{Keep the bag and live Ouster profiles separate}{Live-mode invocation requests Zenoh, domain 0 and /ouster1/points.}{Bag mode requests Fast DDS, domain 99 and /sensing/lidar/points, matching the player profile. This captures settings, not fresh discovery.}
+\caseflow{J24}{Source profile}{Choose live driver or original bag}{Align topic, ROS domain and middleware}{Check real reception and counters}{No data: inspect publisher, QoS and router availability; waiting does not fix mismatched profiles.}{Bag mode uses its declared Fast DDS/domain 99 profile. Live mode must match the running driver.}
+\textbf{Evidence files.} {\footnotesize\path{tools/ouster_profile.sh}}; {\footnotesize\path{tools/start_ouster.sh}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-03.json}}.
+
+\clearpage
+\subsection{J25. Treat the MCAP metadata warning according to observed playback}
+\label{case:J25}
+\textbf{What happened.} The player warned that rosbag2 metadata lacked serialized\_metadata.
+
+\textbf{Why.} The warning appeared while reading the publisher’s original MCAP, but actual playback still published clouds. It was not the established cause of the mismatched-topic failure.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Keep the original MCAP and metadata.yaml unchanged.
+\item Read the player log to identify the exact warning.
+\item Check whether raw clouds are actually arriving.
+\item Check adapted-cloud and detector counters independently.
+\item Record the warning alongside successful observations instead of suppressing or rewriting it.
+\end{enumerate}
+\textbf{Check.} The original player log preserves the warning. The fresh visual observer matched 40 raw/adapted pairs and 39 detection headers; a later snapshot showed processing without input/inference errors. This audit does not rerun the player.
+
+\textbf{What remains open.} That observed warning was nonfatal in the recorded replay; other playback errors still require separate diagnosis.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J25}{Treat the MCAP metadata warning according to observed playback}{The original player log reports missing serialized\_metadata.}{Independent historical observers still verify conversion and detector processing. The original bag is preserved.}
+\textbf{Evidence files.} {\footnotesize\path{.recovery/ouster-fresh-test/player.log}}; {\footnotesize\path{config/ouster_fresh_visual_validation.json}}.
+
+\clearpage
+\subsection{J26. Open RViz with the right plugin, frame and paths}
+\label{case:J26}
+\textbf{What happened.} The Detection3DArray display plugin was missing, sensor-only bags had a TF warning, and moved paths broke generated configuration.
+
+\textbf{Why.} The viewer needs its own desktop dependencies. Matching the real sensor frame is sufficient for shared points/boxes; inventing a world transform would hide missing information.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Install host ROS Jazzy/RViz or use the already prepared desktop.
+\item Provide the official vision\_msgs RViz plugin, through the system package or verified local extraction.
+\item Run the viewer as the desktop user with matching domain/middleware.
+\item Choose the actual cloud frame: velodyne for the recorded KITTI demo or lidar/os\_lidar for MOSEP.
+\item Quote paths containing spaces and regenerate native caches after relocation.
+\item Use File → Open Config to update an existing RViz window.
+\end{enumerate}
+\textbf{Check.} Historical actual rendering and isolated plugin bootstrap were verified, including a checkout path with spaces. Genuine RViz captures remain saved. No package installation or current desktop launch was performed for this rerun.
+
+\textbf{What remains open.} A sensor-only bag may still lack a world TF tree. Rendering does not establish detection accuracy or complete multi-host portability.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J26}{Open RViz with the right plugin, frame and paths}{The recorded desktop lacked the required detection-display plugin and had sensor-only frame information.}{The official plugin and actual sensor frame enabled the saved RViz view. No world transform was invented.}
+\casefigure{thesis/original-first-rviz.png}{J26: original capture or live demonstration}{Original 2 October RViz capture after display/plugin and transport checks. KITTI data: Geiger et al., KIT/TTI-C, CC-BY-NC-SA-3.0. This is rendering evidence, not accuracy.}{fig:case-J26-capture}
+\textbf{Evidence files.} {\footnotesize\path{tools/visualize.sh}}; {\footnotesize\path{config/visualization_inventory.json}}.
+
+\clearpage
+\subsection{J27. Download only needed camera/data assets and resume safely}
+\label{case:J27}
+\textbf{What happened.} The first bag had no camera images, while original camera archives were large and downloads could be interrupted.
+
+\textbf{Why.} Pinned source identities and checked HTTP ranges let the helper retrieve selected files. Complete checked assets are reused; corrupt completed files are preserved and reported.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Identify the original recording that produced the bag.
+\item Pin the bag checksum and the remote archive object identity.
+\item Fetch selected ZIP members with validated range responses and CRC checks.
+\item Resume incomplete downloads and promote only verified pending files.
+\item Encode and probe the camera video using the separate tool image.
+\item Reuse verified completed assets instead of downloading them again.
+\end{enumerate}
+\textbf{Check.} Fresh existing HTTP/range/resume/corruption/timestamp fixture tests passed. Historical actual downloads, MP4 encoding/full decoding and isolated playback remain separate evidence.
+
+\textbf{What remains open.} These fixture tests use localhost data, not a new public dataset download. The camera video is unannotated scene context.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J27}{Download only needed camera/data assets and resume safely}{A localhost fixture server ignores the requested byte range; the real helper refuses its response.}{A compliant fixture returns only selected archive ranges, and the real helper extracts the correct member with less than one quarter of archive bytes transferred.}
+\textbf{Evidence files.} {\footnotesize\path{tools/prepare_kitti_demo.py}}; {\footnotesize\path{tools/rosbag_demo.sh}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/operations/kitti_demo.stderr.log}}.
+
+\clearpage
+\subsection{J28. Keep camera playback separate from acquisition-time calibration}
+\label{case:J28}
+\textbf{What happened.} Camera and LiDAR streams had different counts, offsets or header clocks, so synchronized-looking playback could be misleading.
+
+\textbf{Why.} Bag arrival order is not proof of synchronized acquisition. A 30 fps video can hold the same approximately 2 Hz camera image rather than contain new measurements.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Keep original message headers and bag-record timestamps.
+\item Measure the first-frame offset and count the original observations.
+\item Build the preview timeline by holding each original image for its recorded duration.
+\item Preserve camera payloads and tie ordering in merged playback.
+\item Display camera context separately unless extrinsic/time calibration is verified.
+\item State that independent video/player speeds are not automatically synchronized.
+\end{enumerate}
+\textbf{Check.} Fresh camera-timeline fixtures passed initial offsets, intervals, final hold, rejection of invalid timelines and preservation of SQLite payloads/timestamp ties. Historical records preserve 111 Ouster images/CameraInfo messages; KITTI offsets are reported separately.
+
+\textbf{What remains open.} No calibrated detection-image overlay or acquisition-clock synchronization was established. Preview frame rate is not sensor measurement rate.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J28}{Keep camera playback separate from acquisition-time calibration}{A synthetic image timestamp outside the selected interval is rejected.}{Valid synthetic timestamps retain the initial gap, source-image interval and final hold. Playback coordination is not acquisition calibration.}
+\textbf{Evidence files.} {\footnotesize\path{tools/export_ouster_camera.py}}; {\footnotesize\path{tools/prepare_ouster_visual.py}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-06.json}}.
+
+\clearpage
+\subsection{J29. Explain sparse Ouster views without creating points}
+\label{case:J29}
+\textbf{What happened.} The Ouster scene looked much sparser than the KITTI view after normalization.
+
+\textbf{Why.} The original 32,768-entry scans included 13,206–15,775 zero-range/zero-XYZ returns. Orbit distance, point size and feature coloring also changed appearance; normalization had not moved the retained geometry.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Count the source entries and invalid zero returns before changing the display.
+\item Compare XYZ and other non-intensity bytes between source and adapted streams.
+\item Publish a separate original-data topic for visual comparison.
+\item Use a closer orbit and larger flat-color points to inspect geometry.
+\item Keep zero returns and the original recordings unchanged in this visualization path.
+\end{enumerate}
+\textbf{Check.} The historical detail audit reports five matching live clouds with every non-intensity byte preserved. Source/input counts and display settings are recorded in the detail inventory. No synthetic denser cloud or new inference input was created.
+
+\textbf{What remains open.} The raw-view adjustment improves inspection, not scene density or model accuracy. Invalid-return preprocessing remains a separate research change.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J29}{Explain sparse Ouster views without creating points}{The original Ouster scans include many zero returns; a distant small-point view looks sparse.}{The raw-data view preserves geometry and uses a closer, brighter display. No denser scene was synthesized.}
+\textbf{Evidence files.} {\footnotesize\path{docs/FRONTAL_COMPARISON_AND_RVIZ_DETAIL.md}}; {\footnotesize\path{config/ouster_detail_inventory.json}}.
+
+\clearpage
+\subsection{J30. Bind labels and coordinates to the exact model}
+\label{case:J30}
+\textbf{What happened.} Early messages used numeric class IDs with provisional names and intensity scale. A local label file alone did not prove the export order.
+
+\textbf{Why.} A model contract needs the exact artifact, its labels, tensor layout and coordinate conventions. Successful deserialization only checks a subset of those assumptions.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Identify the ONNX by SHA-256 rather than by filename.
+\item Compare the repository label file with the recorded exact-version NVIDIA label digest.
+\item Read the decoder convention: XYZ is a geometric box center, dimensions follow local axes and yaw is in radians.
+\item Keep generic display labels and unresolved training semantics separate from the verified artifact facts.
+\end{enumerate}
+\textbf{Check.} The new read-only check confirms label.txt matches the recorded digest and prints Vehicle/Pedestrian/Cyclist order, axes and remaining contract gaps. No internet lookup or inference is repeated.
+
+\textbf{What remains open.} Exact original-training/reference parity, sensor feature equivalence and runtime enforcement of the full semantic contract remain incomplete.
+
+\textbf{Evidence type.} Source-based explanation.
+
+\casetable{J30}{Bind labels and coordinates to the exact model}{Names and scale were provisional.}{Exact artifact labels verified; training/input semantics remain partial.}
+\textbf{Evidence files.} {\footnotesize\path{config/model_contract.json}}; {\footnotesize\path{label.txt}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J30.log}}.
+
+\clearpage
+\subsection{J31. Prove the evaluator responds to correct, missing and duplicate predictions}
+\label{case:J31}
+\textbf{What happened.} A plausible score could come from broken matching or ignore logic rather than from the detector.
+
+\textbf{Why.} Before interpreting a poor model result, controlled predictions must produce known outcomes. A second identical prediction must not reuse one annotation.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Create a known annotated box and an identical prediction in an analytic control.
+\item Remove that prediction and check that one false negative remains.
+\item Add a duplicate and check that only one prediction matches.
+\item Run the existing official KITTI metric controls using the already-cached development kit.
+\end{enumerate}
+\textbf{Check.} Actual controls print exact=1 TP/0 FP/0 FN, missing=0/0/1, and duplicate=1/1/0 with precision 0.5. The KITTI controls independently use 41 artificial frames per class and check AP\_R40=1 for exact boxes.
+
+\textbf{What remains open.} These artificial fixtures verify metric behavior. They are not real-world detector observations or evidence of dataset accuracy.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J31}{Prove the evaluator responds to correct, missing and duplicate predictions}{Missing prediction: 0 TP / 0 FP / 1 FN. Duplicate: 1 TP / 1 FP / 0 FN.}{Exact control: 1 TP / 0 FP / 0 FN. Official KITTI controls also pass.}
+\textbf{Evidence files.} {\footnotesize\path{tests/test_kitti_evaluation.py}}; {\footnotesize\path{tests/test_ouster_gt_evaluation.py}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J31.log}}.
+
+\clearpage
+\subsection{J32. Put predictions and labels in one coordinate and evaluation frame}
+\label{case:J32}
+\textbf{What happened.} KITTI labels use camera bottom centers; ROS detections use LiDAR geometric centers. Full scans also contain predictions outside the camera-labeled view.
+
+\textbf{Why.} Comparing raw coordinates or counting every rear-facing prediction as a false positive would produce misleading metrics. Calibration, split and visibility rules must be fixed first.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Load the matching calibration, rectification and camera dimensions.
+\item Convert the annotated bottom center to a geometric center and apply the complete transform.
+\item Check known centers, dimensions, headings and near-plane image clipping with the existing fixtures.
+\item Keep source recording drives separated between the KITTI tuning and test samples.
+\item Apply the declared camera visibility and ignore policy before scoring.
+\end{enumerate}
+\textbf{Check.} New tests exercise known camera coordinates, nontrivial translated/rectified calibration, outside-camera exclusion and near-plane clipping. The preserved baseline has 2,876 predictions: 862 camera-visible and 2,014 excluded; frozen drive overlap is zero.
+
+\textbf{What remains open.} KITTI camera-upright prediction formatting approximates calibration tilt. Small scenario-selected data and unknown pretrained overlap prevent a population or official leaderboard claim.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J32}{Put predictions and labels in one coordinate and evaluation frame}{Camera bottom centers and full LiDAR outputs are not directly comparable.}{Calibration/visibility fixtures pass. Historical baseline: 862 visible / 2,876 predictions; zero split-drive overlap.}
+\caseflow{J32}{Coordinate comparison}{Read labels and full calibration}{Bottom center to geometric center; transform to LiDAR}{Apply fixed visibility and ignore rules}{Missing or inconsistent calibration: stop scoring; do not compare raw camera and LiDAR coordinates.}{Coordinate conversion and evaluation visibility are required before interpreting an accuracy score.}
+\subsubsection{J32a. Preparation and evaluation hardening retained the original baseline}
+Initial preparation manifests remain as .initial-pre-review. Source pin/cache hardening revalidated unchanged frame selection/assets. The original evaluator report remains evaluation.pre-review; later image-dimension hardening reproduced every score/count/visibility decision unchanged.
+
+\textbf{Scope of this check.} New read-only equality comparison of original records; no preparation or inference rerun.
+
+\begin{enumerate}
+\item Read the preserved initial and final selection records.
+\item Compare every split metric and per-frame visibility decision.
+\item Keep old records and report unchanged findings beside the hardened policy.
+\end{enumerate}
+\casetable{J32a}{Preparation and evaluation hardening retained the original baseline}{Earlier preparation/evaluator records were kept before hardening.}{32 frame visibility decisions and all split metrics are unchanged. Policy identity changed; the poor accuracy result did not.}
+\textbf{Subcase evidence.} {\footnotesize\path{config/kitti_validation_inventory.json}}; {\footnotesize\path{config/kitti_accuracy_inventory.json}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J32a.json}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J32a.log}}.
+
+\textbf{Evidence files.} {\footnotesize\path{tests/test_kitti_validation.py}}; {\footnotesize\path{tests/test_kitti_evaluation.py}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J32.log}}.
+
+\clearpage
+\subsection{J33. Accept the poor KITTI result instead of treating valid messages as accuracy}
+\label{case:J33}
+\textbf{What happened.} The pipeline rendered boxes, but the labeled test had zero moderate 3D matches.
+
+\textbf{Why.} A footprint can overlap correctly from above while the box is too high to satisfy 3D overlap. Valid message fields do not establish correct object locations.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Keep the first predictions and their model/input identities frozen.
+\item Read the class-specific TP/FP/FN and AP\_R40 table under the declared policy.
+\item Inspect the calibrated height differences of BEV-matched objects.
+\item Compare the limited raw-candidate trtexec probe with the ROS output without claiming full parity.
+\end{enumerate}
+\textbf{Check.} The audit verifies the frozen moderate test has zero 3D TP for every class and prints Car BEV AP\_R40=5.7516\%, Pedestrian=0\%, Cyclist=0.02577\%. Twelve matched car footprints have median upward error about 1.529 m. An analytic vertical-overlap fixture also passes.
+
+\textbf{What remains open.} The diagnostic sample is small and inspected. The probe shares engine/plugins, rounded output and non-unique matching. The height symptom does not justify a universal z correction.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J33}{Accept the poor KITTI result instead of treating valid messages as accuracy}{Rendered boxes did not establish correct objects.}{Moderate 3D matches: 0 for all classes. 12 car BEV pairs: median height error +1.529 m.}
+\casefigure{thesis/original-kitti-ground-truth-rviz.png}{J33: original capture or live demonstration}{Original 3 October RViz capture of KITTI tuning frame 000368, with green calibrated annotations and predictions. It illustrates the mismatch; the reported test scores come from other frozen observations. KITTI: Geiger et al., CC-BY-NC-SA-3.0.}{fig:case-J33-capture}
+\textbf{Evidence files.} {\footnotesize\path{config/kitti_accuracy_inventory.json}}; {\footnotesize\path{docs/KITTI_ACCURACY_RESULTS.md}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J33.log}}.
+
+\clearpage
+\subsection{J34. Separate NMS behavior from inference differences}
+\label{case:J34}
+\textbf{What happened.} Poor accuracy raised the question whether migration or duplicate suppression changed the detections.
+
+\textbf{Why.} Feeding identical candidate rows to both NMS implementations isolates filtering. Comparing two independently generated candidate sets asks a different question.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Freeze the same ONNX, points, engine identities and postprocessing settings.
+\item Read the preserved TensorRT 8/10 repeated outputs.
+\item Apply unchanged NVIDIA NMS and project NMS to identical rows.
+\item Match rows uniquely by class and geometric components rather than array order.
+\item Report same-candidate agreement separately from cross-runtime numerical variability.
+\end{enumerate}
+\textbf{Check.} The new hash audit checks the saved all-repeat NMS comparison. All 192 same-candidate observations selected the same boxes. Frozen cross-version final-box matching is about 75.70\% (median per-frame final-box match fraction), and exact numerical/training parity flags remain false. Duplicate/angle matching fixtures run again.
+
+\textbf{What remains open.} TRT8 is a compatibility reference, not a trusted original-training fixture. Both versions can share plugin/input defects. NMS agreement does not exonerate all migration behavior or establish optimal suppression.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J34}{Separate NMS behavior from inference differences}{Migration and NMS were suspected causes.}{NMS agrees on all 192 identical-candidate observations. Median per-frame cross-runtime final-box agreement: 75.70\%; exact parity remains open.}
+\casefigure{thesis/original-trt-reference-rviz.png}{J34: original capture or live demonstration}{Original 3 October RViz reference comparison on a tuning frame. Cyan boxes are saved TensorRT8 outputs; appearance is not exact numerical parity. KITTI: Geiger et al., CC-BY-NC-SA-3.0.}{fig:case-J34-capture}
+\subsubsection{J34a. Interrupted raw collection is not automatically complete evidence}
+The reference collector verifies indexed files against hashes. Unindexed binary outputs are renamed and moved outside the active raw folder before recollection; a changed indexed file is rejected. The older Ouster feature collector instead preserves and refuses unindexed outputs, requiring a fresh folder. These are intentionally different recovery policies.
+
+\textbf{Scope of this check.} Read-only AST/source audit. The actual collector also starts Docker/GPU jobs; no extracted imitation of its quarantine branch was run.
+
+\begin{enumerate}
+\item Inspect how the real collector reads its frozen raw-file index.
+\item Trace the changed-file rejection and unindexed-file quarantine branches.
+\item Keep archived partial output outside the active raw folder before a future full collection.
+\end{enumerate}
+\casetable{J34a}{Interrupted raw collection is not automatically complete evidence}{A partial binary file is not automatically completed evidence.}{Indexed outputs require matching hashes; unindexed outputs are quarantined. This recovery branch was reviewed, not newly executed.}
+\textbf{Subcase evidence.} {\footnotesize\path{tools/kitti_reference.py:182}}; {\footnotesize\path{tools/compare_ouster_features.py:203}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J34a.json}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J34a.log}}.
+
+\textbf{Evidence files.} {\footnotesize\path{config/kitti_reference_inventory.json}}; {\footnotesize\path{.recovery/accuracy/kitti-reference-v1/all-repeat-nms-comparison.json}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J34.log}}.
+
+\clearpage
+\subsection{J35. Distinguish total point capacity from internal pillar capacity}
+\label{case:J35}
+\textbf{What happened.} A cloud could contain fewer than 204,800 points yet exceed the model’s 10,000 occupied-pillar or 32-point-per-pillar limits.
+
+\textbf{Why.} The point adapter checks the input allocation. The voxel encoder has additional internal limits and potentially order-dependent point selection.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Count occupied XY pillars and per-pillar occupancy on the frozen KITTI clouds.
+\item Compare these counts with the encoded export limits.
+\item Use the existing small first-pillar/first-point control fixtures to test deterministic selection.
+\item Keep two historical tuning-only capacity experiments separate from production preprocessing.
+\end{enumerate}
+\textbf{Check.} The audit recomputes 12 of 32 KITTI scans above 10,000 pillars, maximum 15,180, from the hashed capacity report. Existing controls verify stable original-bit/order selection and half-open boundaries. Historical repeated matching improved to roughly 99.6–100\% on two altered tuning frames.
+
+\textbf{What remains open.} Capacity control changes which points reach inference. It did not establish an accuracy improvement, reproduce CUDA encounter order or deliver a production fix.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J35}{Distinguish total point capacity from internal pillar capacity}{12 / 32 KITTI scans exceed 10,000 occupied pillars. Maximum: 15,180 pillars.}{Deterministic capacity fixtures preserve retained bytes/order. Two historical tuning controls improved repeats; no production fix.}
+\textbf{Evidence files.} {\footnotesize\path{config/kitti_reference_inventory.json}}; {\footnotesize\path{.recovery/accuracy/kitti-reference-v1/voxel-capacity-audit.json}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J35.log}}.
+
+\clearpage
+\subsection{J36. Keep allocation memcheck separate from internal tensor safety}
+\label{case:J36}
+\textbf{What happened.} The first GPU memory tool failed before checking; later runs reported zero allocation errors, which could be mistaken for complete memory safety.
+
+\textbf{Why.} Compute Sanitizer can check allocation boundaries while TensorRT internal tensors share larger allocations. It also does not establish race freedom or all failure behavior.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Read the original CUDA 12.0 setup failure log without re-triggering a GPU fault.
+\item Hash-check the later original/capped CUDA 12.9 memcheck logs.
+\item Record each actual exit code and zero-error summary.
+\item Keep the two-input allocation scope and unresolved tensor/race checks beside the result.
+\end{enumerate}
+\textbf{Check.} The new audit reopens the historical failed setup and verifies both later logs against their frozen SHA-256. Original and capped runs exited 0 with ERROR SUMMARY: 0 errors. No GPU or sanitizer was run now.
+
+\textbf{What remains open.} Two allocation probes do not certify internal tensor bounds, race freedom, leaks, long-run memory stability or complete GPU safety.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J36}{Keep allocation memcheck separate from internal tensor safety}{CUDA 12.0 could not instrument the process.}{Two CUDA 12.9 allocation probes: exit 0, zero errors. Internal tensor bounds and races remain unverified.}
+\textbf{Evidence files.} {\footnotesize\path{config/runtime_inventory.json}}; {\footnotesize\path{config/kitti_reference_inventory.json}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J36.log}}.
+
+\clearpage
+\subsection{J37. Show why raw Ouster signal caused numerical failures}
+\label{case:J37}
+\textbf{What happened.} Initial Ouster replay produced hundreds of saturated-score boxes and 51 logged invalid-output frame drops.
+
+\textbf{Why.} Structural XYZI compatibility did not make the fourth feature training-compatible. Raw Ouster signal reached thousands, whereas the model documentation describes a bounded feature range.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Verify the cached diagnostic image and read-only engine match the historical identities, with working GPU access.
+\item Copy and hash-check the historically invalid scan000000 raw-signal and reflectivity/255 inputs into a new output folder.
+\item Confirm XYZ bits, order and the 32,768-point count match between encodings.
+\item Execute the existing cached pp-reference runner three times per encoding, preserving every raw GPU output.
+\item Feed each result to the actual production decode\_boxes implementation and record its exit code/error without removing invalid rows.
+\item Keep this six-inference numerical reproduction separate from labeled accuracy and from the older 192-observation feature study.
+\end{enumerate}
+\textbf{Check.} New actual GPU run on 9 November: one frozen original Koide scan with 32,768 identical XYZ points and 2,907 occupied pillars, three executions per encoding. Raw signal produced 2,179 candidates each time; each contained one nonfinite length and the actual production decode\_boxes rejected it with exit 1, Invalid output box. Reflectivity/255 produced 176,177,176 candidates, zero invalid rows, accepted by that same decoder with exit 0. The cached image/engine identities match; no new engine build, ROS replay or accuracy test occurred.
+
+\textbf{What remains open.} This is one unlabeled Koide scan, three raw executions followed by three reflectivity/255 executions, with no warmups or randomized order. It reproduces the numerical/output-contract failure and a working bounded encoding, not calibrated reflectance, accuracy, live ROS delivery, long-run reliability or a universal channel ranking.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J37}{Show why raw Ouster signal caused numerical failures}{Actual GPU reproduction: raw signal rejected 3 / 3 times. Each output had one nonfinite length: Invalid output box.}{Same XYZ, reflectivity / 255: accepted 3 / 3 times. Zero invalid rows; 176 / 177 / 176 raw candidates. Numerical success only; accuracy not measured.}
+\casefigure{thesis/J37-live-decoder-terminal.png}{J37: original capture or live demonstration}{Actual new terminal capture: the production CPU decoder rejects a newly generated raw-signal GPU output and accepts the paired reflectivity/255 output. The six new GPU runs are separate from the frozen study.}{fig:case-J37-capture}
+\textbf{Evidence files.} {\footnotesize\path{config/ouster_demo_inventory.json}}; {\footnotesize\path{config/ouster_feature_inventory.json}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/gpu-pair/summary.log}}.
+
+\clearpage
+\subsection{J38. Correct a verifier that confused duplicate headers with missing messages}
+\label{case:J38}
+\textbf{What happened.} The first full-bag check reported 289 outputs for 291 expected messages.
+
+\textbf{Why.} Headers were not unique in the source. A set of timestamps discarded repeated occurrences and made a complete replay appear incomplete.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Inspect the preserved failed unique-header report.
+\item Compare source message occurrences with unique header counts.
+\item Count matching occurrences rather than collapsing equal headers.
+\item Preserve all original timestamps and rerun the verification logic.
+\end{enumerate}
+\textbf{Check.} The new audit prints the original 291-expected/289-unique result and corrected 291/291 result with 289 unique headers. The second bag has 265/265 occurrences and 264 unique headers. A three-occurrence/two-header synthetic control demonstrates the counting error.
+
+\textbf{What remains open.} The correction validates the measurement method for these runs. It is not a detector repair, an accuracy result or a guarantee that every transport experiment is lossless.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J38}{Correct a verifier that confused duplicate headers with missing messages}{Old check: 291 expected, 289 unique headers.}{Correct check: 291 / 291 occurrences match. Second bag: 265 / 265; source timestamps unchanged.}
+\caseflow{J38}{Occurrence verification}{Read source and output occurrences}{Match headers with their multiplicity}{Compare occurrence counts}{Equal headers may occur more than once. A set of unique headers discards valid repeated messages.}{Count repeated message occurrences without changing source timestamps. Discovery and unique-header counts do not prove delivery.}
+\textbf{Evidence files.} {\footnotesize\path{config/ouster_feature_inventory.json}}; {\footnotesize\path{.recovery/accuracy/ouster-feature-v1/ros-first-sequence-unique-header-check.json}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J38.log}}.
+
+\clearpage
+\subsection{J39. Publish accepted boxes and meaningful counts}
+\label{case:J39}
+\textbf{What happened.} Cluttered boxes made inspection hard, and a missing frame or cumulative total could be mistaken for zero objects or unique tracked objects.
+
+\textbf{Why.} A CPU score gate follows NMS. It publishes only accepted boxes and separate aggregate diagnostics/markers; failed frames report unavailable counts rather than successful zeros.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Validate candidate boxes before applying the score gate.
+\item Keep boxes whose score is at least the live threshold.
+\item Publish the accepted array with the original cloud header.
+\item Report before-filter, removed and accepted counts together.
+\item Report input/inference failures separately and mark their per-frame counts unavailable.
+\item Inspect timestamps because retained counters may be old; totals count detection events, not unique objects.
+\end{enumerate}
+\textbf{Check.} Historical five C++/ROS output tests, 60 native plus 60 deployed GPU observations and actual RViz rendering verified output semantics. Fresh monitor fixtures passed retained snapshots, bounded waits and stopped-container handling. No new GPU replay was run.
+
+\textbf{What remains open.} The gate cannot correct wrong box geometry or guarantee removal of false positives. There is no tracker.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J39}{Publish accepted boxes and meaningful counts}{No response or a stopped container cannot establish zero detections.}{The helper reports unavailable data; a separately controlled reply is read. Historical RViz shows actual accepted/removed event counts.}
+\textbf{Evidence files.} {\footnotesize\path{src/detection_output.cpp}}; {\footnotesize\path{tests/ros/test_detection_output.cpp}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-02.json}}.
+
+\clearpage
+\subsection{J40. Record the effective threshold rather than assume one default}
+\label{case:J40}
+\textbf{What happened.} The native/YAML default was 0.5 while launchers supplied 0.4, risking inconsistent comparisons.
+
+\textbf{Why.} A shell override changes startup behavior. A live parameter query is the reliable source for the running value; frozen baseline export refuses undocumented filtering.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Read the C++/YAML default and launcher override separately.
+\item Query confidence\_threshold on the running node when performing a live run.
+\item Set the intended value explicitly in the experiment configuration.
+\item For baseline export, request 0.0 and validate matching per-frame statistics.
+\item Refuse changed/nonfinite thresholds or inconsistent counts during collection.
+\item Use a new output directory when experiment identity changes.
+\end{enumerate}
+\textbf{Check.} Fresh baseline-gate fixtures accepted unfiltered/empty frames and rejected changed/nonfinite gates, failures, missing fields and mismatched counts. Fresh helper fixtures also confirmed threshold mode only reads the parameter.
+
+\textbf{What remains open.} 0.0 disables the additional publication gate, not the model decode cutoff or NMS. No new threshold-specific accuracy claim is made.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J40}{Record the effective threshold rather than assume one default}{Filtered or nonfinite publication thresholds would contaminate the frozen baseline.}{The real validator refuses 0.5 and NaN fixture policies and accepts the declared unfiltered policy 0.0.}
+\textbf{Evidence files.} {\footnotesize\path{docker/node.yaml}}; {\footnotesize\path{tools/start_ouster.sh}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-07.json}}.
+
+\clearpage
+\subsection{J41. Convert the actual Ouster field numerically}
+\label{case:J41}
+\textbf{What happened.} The physical driver produced XYZ plus integer signal/reflectivity but no FLOAT32 intensity; 565 observed clouds were rejected.
+
+\textbf{Why.} A sensor-specific adapter must convert the numeric selected channel into a new FLOAT32 intensity field. Changing metadata alone would reinterpret bytes. The production selector still requires literal signal or reflectivity.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Inspect the incoming PointCloud2 fields, datatypes, offsets and dimensions.
+\item Select an existing signal or reflectivity field and declare its divisor.
+\item Validate layout, point/byte bounds and divisor before reading data.
+\item Copy header/XYZ and numerically convert the selected field into compact XYZI.
+\item Publish reliable adapted output and inspect conversion/rejection counters.
+\item For unchanged bags naming signal intensity, keep reflectivity selected until a verified alias is separately implemented.
+\end{enumerate}
+\textbf{Check.} Historical compiled converter/ROS tests and 2,224 offline conversion observations exercised numeric layout/header contracts. The fresh original MOSEP test independently checked conversion. This rerun only executes related Python input-contract fixtures, not the C++ converter.
+
+\textbf{What remains open.} Alias support for intensity→signal is not deployed. There is no auto-passthrough, channel choice, sensor fusion, ROI crop or production pillar-capacity policy.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J41}{Convert the actual Ouster field numerically}{The original physical cloud lacked compatible FLOAT32 intensity; 565 observed frames were rejected.}{The separate adapter converts a declared field numerically. The fresh saved pipeline log records reflectivity conversion; literal intensity-to-signal alias support remains open.}
+\caseflow{J41}{Ouster conversion}{Inspect schema; select channel and divisor}{Validate layout and numeric field}{Convert to FLOAT32 XYZI; preserve XYZ/header}{Missing selected field or invalid divisor: reject. A recorded intensity-to-signal alias requires a separately verified mapping.}{The adapter performs numerical conversion before the generic detector. Channel choice remains explicit.}
+\textbf{Evidence files.} {\footnotesize\path{src/ouster_adapter.cpp}}; {\footnotesize\path{src/ouster_adapter_node.cpp}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/operations/ouster_demo.stderr.log}}.
+
+\clearpage
+\subsection{J42. Test a fresh unchanged recording without replacing the saved production image}
+\label{case:J42}
+\textbf{What happened.} The saved detector image lacked the new adapter, and the user required an original bag plus visible output.
+
+\textbf{Why.} A separate derivative image compiled the adapter against existing ROS libraries, preserving detector/model/standard image. The new MOSEP archive was checksum-verified and replayed read-only.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Download and verify the publisher archive identity.
+\item Preserve original extracted files and record their hashes.
+\item Build a separate adapter test image when the saved main image lacks it.
+\item Mount the original bag read-only and select the matching transport/topic profile.
+\item Compare raw/adapted headers and XYZ bytes against independent conversion.
+\item Open actual RViz in the source sensor frame and keep sampled counts separate from later snapshots.
+\end{enumerate}
+\textbf{Check.} The historical observer checked 40 raw/adapted pairs and 39 detection headers; a later loop snapshot counted 103 processed frames and zero input/inference errors. Fresh bag-launcher fixtures passed readonly mounting, unchanged fixture bytes, existing-player refusal and image checks.
+
+\textbf{What remains open.} The fresh rerun is mocked launcher verification, not another live GPU/RViz run. The original visual test used reflectivity only and did not establish accuracy.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J42}{Test a fresh unchanged recording without replacing the saved production image}{An image missing the adapter and a private bag missing metadata are refused.}{With complete fixture inputs, the launcher requests a read-only bag mount. The genuine historical MOSEP RViz screenshot is separate live evidence.}
+\casefigure{thesis/original-fresh-ouster-rviz.png}{J42: original capture or live demonstration}{Original 7 November MOSEP replay capture. The adapted cloud, detection display and counters are visible. This earlier loop snapshot differs from the later 103-frame snapshot; it is not labeled accuracy. Source: Gaisberger and Schlager, MOSEP release19353314.}{fig:case-J42-capture}
+\textbf{Evidence files.} {\footnotesize\path{docs/FRESH_OUSTER_VISUAL_TEST.md}}; {\footnotesize\path{config/ouster_fresh_visual_validation.json}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/operations/observable-scenario-04.json}}.
+
+\clearpage
+\subsection{J43. Obtain independent two-channel annotations without rewriting originals}
+\label{case:J43}
+\textbf{What happened.} The weather bags and camera previews could not decide which channel was closer to ground truth.
+
+\textbf{Why.} The comparison required original scans containing both channels plus independent object annotations, source integrity and a selection frozen before predictions.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Use the pinned Dur360BEV-Extended revision and published checksum list.
+\item Select 16 published train and 16 published test frames before inference.
+\item Retrieve only the required original point/label members through validated ranges.
+\item Verify every selected member against the publisher MD5.
+\item Retain label conventions and the annotation/split limitations with the results.
+\end{enumerate}
+\textbf{Check.} The new local audit rehashes all 64 original point/label files for 32 frames against the publisher checksum list and prints the frozen selection and provenance. No downloads, conversions or source writes occur.
+
+\textbf{What remains open.} The split is index-disjoint within one collection, not verified drive-disjoint. Labels are model-assisted and human-reviewed according to the original paper; the Extended card does not separately document its procedure.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J43}{Obtain independent two-channel annotations without rewriting originals}{Unlabeled weather recordings cannot rank object accuracy.}{32 selected frames / 64 original files pass publisher MD5 checks again. Index-disjoint split; recording independence unverified.}
+\subsubsection{J43a. Initial archive-order mapping and selection were replaced before inference}
+Source provenance explicitly retains the failed initial tar-order mapping selection. The frozen-selection.json and frozen-selection-final.json files have different selection methods; the latter selected uniform archive-ordinal candidates and was frozen before model outputs. Do not use the earlier selection as the final evaluated frame list.
+
+\textbf{Scope of this check.} New read-only comparison of preserved manifests and provenance; no download, remapping or model run.
+
+\begin{enumerate}
+\item Read both preserved selection methods and frame lists.
+\item Compare their membership and the recorded archive-ordinal mapping.
+\item Use frozen-selection-final.json to identify the evaluated original files.
+\end{enumerate}
+\casetable{J43a}{Initial archive-order mapping and selection were replaced before inference}{An earlier archive-mapping selection was preserved.}{The evaluated final selection uses a different frozen method. Both manifests remain available; model predictions did not choose the final list.}
+\textbf{Subcase evidence.} {\footnotesize\path{.recovery/dur360bevet-study/source-provenance.json}}; {\footnotesize\path{.recovery/dur360bevet-study/frozen-selection.json}}; {\footnotesize\path{.recovery/dur360bevet-study/frozen-selection-final.json}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J43a.json}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J43a.log}}.
+
+\textbf{Evidence files.} {\footnotesize\path{config/ouster_channel_decision.json}}; {\footnotesize\path{.recovery/dur360bevet-study/source-provenance.json}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J43.log}}.
+
+\clearpage
+\subsection{J44. Exclude an incomplete ROS A/B attempt rather than interpret lost clouds}
+\label{case:J44}
+\textbf{What happened.} The initial large-cloud ROS A/B did not finish reliably across host/container UDP transport.
+
+\textbf{Why.} Missing delivery cannot be interpreted as zero objects or model inference failure. The subsequent direct C++ comparison answered the feature question with a narrower transport scope.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Preserve the incomplete ROS recipe, observations and logs.
+\item Check its complete flag and number of measured observations.
+\item Exclude that unfinished run from the final feature comparison.
+\item Use the unchanged production C++ inference/NMS directly for the completed paired study.
+\end{enumerate}
+\textbf{Check.} The new audit prints the actual incomplete flag and observation/warmup counts from ouster-current-ab-v2, alongside its recorded domain and point policy. It does not launch ROS or repeat the delivery failure.
+
+\textbf{What remains open.} The completed direct runner does not certify a live ROS signal/reflectivity A/B path. Existing bag signal aliases and target-sensor delivery still need separate verification.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J44}{Exclude an incomplete ROS A/B attempt rather than interpret lost clouds}{ROS A/B complete=false; no measured observations in v2.}{Incomplete run excluded. Completed direct C++ study has narrower transport scope.}
+\caseflow{J44}{Incomplete experiment}{Read ROS A/B completion record}{Is the declared run complete?}{No: preserve logs and exclude the run}{A separate direct production-C++ study can answer the feature question, but cannot certify the incomplete ROS transport path.}{An incomplete delivery experiment is not a valid zero-detection result. The replacement experiment has a narrower scope.}
+\textbf{Evidence files.} {\footnotesize\path{docs/OUSTER_CHANNEL_DECISION.md}}; {\footnotesize\path{.recovery/accuracy/ouster-current-ab-v2/observations.json}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J44.log}}.
+
+\clearpage
+\subsection{J45. Declare the Dur360 point-selection adaptation and its control}
+\label{case:J45}
+\textbf{What happened.} Original 128-beam labeled scans contain 262,144 points, beyond the 204,800-point engine allocation.
+
+\textbf{Why.} Both feature variants need identical geometry selection. Input point capacity and internal pillar capacity remain different constraints.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Record the original point count before preparation.
+\item Apply the encoded model ROI and all-zero-XYZ return removal identically to both channels.
+\item Audit retained counts and occupied pillars.
+\item Prepare a separate first-10,000-pillar/first-32-point sensitivity control.
+\item Keep that control out of the production adapter until separately validated.
+\end{enumerate}
+\textbf{Check.} The new recipe audit reports 65,238–175,559 retained points and 20/32 primary scans above the pillar limit; the bounded control has zero above that limit. Existing first-encountered pillar/32-point controls run again.
+
+\textbf{What remains open.} ROI and zero-return adaptation changes the input. The deterministic control does not reproduce CUDA thread order or automatically improve accuracy.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J45}{Declare the Dur360 point-selection adaptation and its control}{Original labeled scan: 262,144 points; engine capacity: 204,800.}{Declared ROI/nonzero selection: 65,238–175,559 points. Pillar excess: 20 / 32 primary, 0 / 32 bounded control.}
+\textbf{Evidence files.} {\footnotesize\path{config/ouster_channel_decision.json}}; {\footnotesize\path{.recovery/accuracy/ouster-production-dur360-v2/recipe.json}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J45.log}}.
+
+\clearpage
+\subsection{J46. Recommend reflectivity without claiming accepted 3D accuracy}
+\label{case:J46}
+\textbf{What happened.} Reflectivity detected four test vehicle footprints, but neither channel reached the required 3D overlap.
+
+\textbf{Why.} BEV evaluates footprint overlap; a vertical displacement can destroy a qualifying 3D match. The recommendation is a fixed experimental encoding/model decision, not a universal sensor ranking.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Hash-check the saved primary production GPU observations.
+\item Recompute the declared evaluator at confidence 0.4 on the CPU.
+\item Report per-run Vehicle BEV precision/recall and qualifying 3D matches.
+\item Inspect the four first-repeat height errors and 3D IoUs.
+\item Keep the primary precision separate from the bounded-control precision.
+\end{enumerate}
+\textbf{Check.} New CPU reanalysis of all 320 primary labeled observations reproduces four versus zero test Vehicle BEV matches, mean precision 27.81\% versus zero and recall 6.67\% versus zero. Both have zero qualifying 3D matches; saved height errors are 0.60–1.14 m. The full recomputed report is saved.
+
+\textbf{What remains open.} Only 16 test scans and 60 in-ROI vehicles; no test Pedestrian matches and no Cyclist ground truth. Repeats are not independent scenes. Primary 27.81\% and control 21.99\% precision are distinct.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J46}{Recommend reflectivity without claiming accepted 3D accuracy}{Signal: 0 qualifying Vehicle BEV matches at confidence 0.4.}{Reflectivity: 4 / 60; precision 27.81\%, recall 6.67\%. Both: 0 qualifying 3D matches; height error +0.60–1.14 m.}
+\caseflow{J46}{Channel assessment}{Same scans, geometry and fixed evaluation}{Compare numerical completion, BEV and 3D separately}{Reflectivity/255: experimental baseline}{Both encodings have zero qualifying 3D matches. Resolve localization and evaluate new independent data before acceptance.}{The recommendation uses paired evidence. Four test Vehicle BEV matches do not establish accepted 3D accuracy.}
+\textbf{Evidence files.} {\footnotesize\path{config/ouster_channel_decision.json}}; {\footnotesize\path{.recovery/accuracy/ouster-production-dur360-v2/observations.json}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J46.log}}.
+
+\clearpage
+\subsection{J47. Keep planned scheduling and acceptance separate from delivered code}
+\label{case:J47}
+\textbf{What happened.} A design for one pending frame could be mistaken for an implemented low-latency worker.
+
+\textbf{Why.} Current inference runs synchronously in the ROS callback with reliable depth 700. No sustained benchmark can be inferred from short GPU timings or a viewer refresh rate.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Read the actual subscription and callback, not only the design diagram.
+\item Compare implemented behavior with W06/W07/W08/W09 ledger states.
+\item Separate queue policy, delivery settings, stage timing and full end-to-end age.
+\item Leave throughput/accuracy acceptance open until agreed targets and sustained tests exist.
+\end{enumerate}
+\textbf{Check.} The new read-only audit prints the actual depth-700 callback evidence and open task states/targets. It launches no workload and marks no benchmark or CI gate complete.
+
+\textbf{What remains open.} The latest-frame worker, configurable detector QoS, sustained latency/memory acceptance, broader failure coverage and CI remain unfinished.
+
+\textbf{Evidence type.} Open problem.
+
+\casetable{J47}{Keep planned scheduling and acceptance separate from delivered code}{Design proposes one active and one pending frame.}{Actual callback remains synchronous, reliable depth 700. Worker, sustained metrics and acceptance remain open.}
+\textbf{Evidence files.} {\footnotesize\path{src/pp_inference_node.cpp}}; {\footnotesize\path{IMPLEMENTATION_ARCHITECTURE.md}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J47.log}}.
+
+\clearpage
+\subsection{J48. Separate compiler-environment failures from a valid PDF}
+\label{case:J48}
+\textbf{What happened.} Built-in compilation repeatedly failed before a complete current thesis PDF could be produced.
+
+\textbf{Why.} Missing TeX bundles, network/DNS problems and font dependencies are compiler-environment evidence, not proof that every source page has been checked.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Read the preserved built-in compiler diagnostics for the actual source.
+\item Identify the requested resource and failure stage.
+\item Keep the editable source and original figures intact.
+\item Report compilation/page-layout acceptance separately from source/link checks.
+\end{enumerate}
+\textbf{Check.} The new audit reads the actual historical compiler JSON and extracts the compile-failed/DNS/article.cls diagnostic. It does not repair networking, install a TeX distribution or claim a new compile pass. The latest native compiler result is reported separately in the thesis verification record.
+
+\textbf{What remains open.} A historical separate rendition is not native compilation of the current source. Final PDF and illustrated layout remain unverified until the current source compiles and is inspected.
+
+\textbf{Evidence type.} Preserved historical evidence.
+
+\casetable{J48}{Separate compiler-environment failures from a valid PDF}{Native compiler cannot fetch article.cls / TeX bundle.}{Historical compile-failed diagnostic preserved. No source/layout acceptance inferred from this audit.}
+\textbf{Evidence files.} {\footnotesize\path{.recovery/verification/thesis-history-2026-11-09/latex-compilation.json}}; {\footnotesize\path{docs/THESIS_DRAFT.tex}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J48.log}}.
+
+\clearpage
+\subsection{J49. Preserve source and artifact identity without leaking large assets}
+\label{case:J49}
+\textbf{What happened.} SDKs, models, bags and generated output could accidentally enter Git, while mutable image tags could obscure the tested runtime.
+
+\textbf{Why.} Ignore rules protect source control size, not independent evidence backup. Immutable hashes identify an experiment more reliably than a tag. Authentication advice is not an executed login.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Run git check-ignore on representative generated/model paths.
+\item Keep editable code, reports, figure provenance and small summaries versioned.
+\item Identify the model and tested image using frozen hashes.
+\item Back up ignored data and logs independently.
+\item Keep historical GitHub authentication guidance separate from actual credential actions.
+\end{enumerate}
+\textbf{Check.} The new audit runs the real git check-ignore command and prints frozen model/image identities. It reads or changes no credentials, stages nothing and pushes nothing.
+
+\textbf{What remains open.} Ignore rules do not remove already-tracked content or back up ignored evidence. Base tags/non-GPU apt packages are not fully pinned, so source pinning alone is not fully frozen reproduction.
+
+\textbf{Evidence type.} Source-based explanation.
+
+\casetable{J49}{Preserve source and artifact identity without leaking large assets}{Large generated artifacts and mutable tags weaken traceability.}{Actual ignore rules verified; immutable model/image identities recorded. Credentials untouched; ignored evidence needs its own backup.}
+\subsubsection{J49a. A frozen recipe rejects silent changes}
+freeze\_json compares canonical bytes with an existing record and requires a fresh output directory if they differ. This prevents a new model, selection or policy from quietly replacing a named experiment.
+
+\textbf{Scope of this check.} Actual freeze\_json exercised only in a temporary directory; expected mismatch raises ValueError, child exits1 and original bytes are preserved.
+
+\begin{enumerate}
+\item Create a temporary recipe using the actual freeze\_json function.
+\item Retry identical content and verify it is accepted.
+\item Change the model identity and record the actual refusal while checking original bytes.
+\end{enumerate}
+\casetable{J49a}{A frozen recipe rejects silent changes}{A frozen recipe already records model A.}{Identical retry succeeds. Model B is refused. Original recipe bytes remain unchanged.}
+\textbf{Subcase evidence.} {\footnotesize\path{tools/prepare_kitti_validation.py:44}}; {\footnotesize\path{tools/kitti_evaluation.py:176}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J49a.json}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J49a.log}}.
+
+\textbf{Evidence files.} {\footnotesize\path{.gitignore}}; {\footnotesize\path{.dockerignore}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J49.log}}.
+
+\clearpage
+\subsection{J50. Reject attractive but unsupported quick fixes}
+\label{case:J50}
+\textbf{What happened.} Changing a confidence threshold or shifting boxes could make a display cleaner without resolving the model mismatch.
+
+\textbf{Why.} A gate can remove a prediction but cannot move it. A label-fitted offset might improve the inspected data while hiding a training/frame or decoder problem.
+
+\textbf{Small steps.}
+\begin{enumerate}
+\item Use a known analytic box pair with identical footprints and a one-metre height error.
+\item Measure BEV and 3D overlap separately.
+\item Raise the confidence gate and verify it changes selection, not geometry.
+\item Keep real measured coordinates frozen while investigating the input/training contract.
+\item Choose any future correction on development data, then evaluate fresh recording-disjoint data.
+\end{enumerate}
+\textbf{Check.} The new analytic control prints BEV IoU=1 and 3D IoU=1/3 for the elevated box. At the declared 0.7 Vehicle criterion it remains a miss; raising confidence removes the prediction but does not recover the object. Existing vertical and score-boundary tests pass.
+
+\textbf{What remains open.} The analytic example explains a mechanism; it is not a fitted correction, a real scene result or authorization to change production z coordinates.
+
+\textbf{Evidence type.} New controlled reproduction.
+
+\casetable{J50}{Reject attractive but unsupported quick fixes}{Analytic elevated box: BEV IoU 1; 3D IoU 1/3.}{Raising confidence removes the box but does not move it. No measured coordinates or production settings changed.}
+\caseflow{J50}{Geometry and threshold}{Measure footprint and height overlap}{Does geometry meet the declared IoU?}{If not: investigate the input/model contract}{Changing a score gate only removes predictions. It does not move a box or establish a valid coordinate correction.}{Choose any future correction on development data and test on fresh recording-disjoint data.}
+\textbf{Evidence files.} {\footnotesize\path{tests/test_ouster_gt_evaluation.py}}; {\footnotesize\path{tools/ouster_gt_evaluation.py}}; {\footnotesize\path{.recovery/verification/thesis-evidence-2026-11-09/research/J50.log}}.
+
+\clearpage
+\section{Historical source coverage and evidence handling}
+
+The preserved records are \href{PROJECT\_HISTORY\_AND\_DECISION\_RECORD.md}{project history}, \href{CHAT\_DISCUSSION\_RECORD.md}{available discussion}, \href{../PROJECT\_REVIEW\_AND\_UPDATE\_PLAN.md}{original review}, \href{../recovery/PROGRESS.md}{implementation notebook} and \href{../recovery/tasks.json}{task ledger}. Git records the implementation milestones; the historical 51-file index covers only baseline 2301135 through dd687da, not the later entire project.
+
+The main structured evidence is \href{../config/environment\_inventory.json}{environment}, \href{../config/model\_inventory.json}{model}, \href{../config/model\_contract.json}{partial model contract}, \href{../config/runtime\_inventory.json}{native runtime}, \href{../config/docker\_inventory.json}{Docker}, \href{../config/visualization\_inventory.json}{visualization}, \href{../config/kitti\_validation\_inventory.json}{KITTI preparation}, \href{../config/kitti\_accuracy\_inventory.json}{KITTI accuracy}, \href{../config/kitti\_reference\_inventory.json}{reference comparison}, \href{../config/ouster\_demo\_inventory.json}{Ouster demo}, \href{../config/ouster\_feature\_inventory.json}{feature study}, \href{../config/ouster\_camera\_inventory.json}{camera}, \href{../config/ouster\_detail\_inventory.json}{detail}, \href{../config/kitti\_front\_inventory.json}{frontal replay}, \href{../config/ouster\_adapter\_bag\_validation.json}{offline adapter conversion}, \href{../config/ouster\_fresh\_visual\_validation.json}{fresh Ouster validation}, \href{../config/launcher\_fix\_validation.json}{launcher verification} and \href{../config/ouster\_channel\_decision.json}{channel decision}.
+
+Use the dated reports for exact commands, source/model/image identities and evidence hashes. The register is a synthesis, not a substitute for those records. Assertions from a proposal are labeled proposed; commands offered as advice are not reported as executed repairs. Original model weights, labels, source bags, failed attempts and historical quotations remain intact.
+
+
+\subsection{Reproduction records and image provenance}
+New evidence collection on 9 November uses current CPU fixtures, isolated launcher mocks, preserved observations and the six separate GPU demonstrations. It does not overwrite the frozen earlier studies. The full Python regression suite passed 119 tests in the new check. Test groups and repeated probes are not added together as independent tests or scenes.
+
+\code{docs/thesis_cases.json} maps each case to its source, command, result and evidence classification. The comparison tables and flowcharts are native LaTeX content. The former browser-report images are retained only as historical documentation assets and are no longer included in this manuscript. Original screenshots and new terminal captures have separate provenance. Large source logs remain ignored under .recovery and need an independent backup.
+
+The original display-driver/kernel mismatch, disk-full events and unsupported installation path were not deliberately recreated on the working host. The available record is explained in the case text and comparison table, with its limitations stated. Original captures are identified by date and context; controlled terminal demonstrations are labeled separately.
+% END ILLUSTRATED CASEBOOK
+
+
+\clearpage
+\section{Additional Ouster verification and person localization: 21 November 2026}
+\label{sec:ouster-nov21}
+This addendum records later evidence without replacing the earlier frozen studies.
+The detailed report is \code{docs/OUSTER_VERIFICATION_AND_PERSON_DIAGNOSIS_20261121.md};
+source identities, commands, predictions, failed attempts and plots are preserved under
+\code{.recovery/verification/}. The six-inference person case below is separate from
+the 2,268 measured inferences in the broader comparison.
+
+\subsection{Coverage and measured limits}
+All 6,137 source clouds across seven original bags and ten Ouster streams were audited
+for input structure and numerical properties. This is not exhaustive neural inference.
+The comparison used 94 selected scans, including 32 publisher-annotated Dur360 scans,
+and completed 2,268 measured GPU inferences plus four discarded warmups. Thirty actual
+source-message transport checks and the native/evaluator checks passed. Nonfinite XYZ
+values are removed by the production packer; some secondary streams contain extensive
+zero returns. Removing zero returns did not establish an accuracy improvement.
+
+On the reused 16-scan Dur360 test subset, there are 60 in-region Vehicle and six
+Pedestrian annotations. At score gate 0.3, averaged over three repeats, the baseline
+reflectivity/255 input produced five Vehicle BEV true positives and 30 false positives.
+Clipped reflectivity/100 produced five Vehicle BEV true positives and 50.333 false
+positives. Neither produced a qualifying Vehicle 3D or Pedestrian BEV/3D true positive
+on this subset. Different point-selection policies reached six or seven Vehicle BEV
+matches without resolving the missing 3D or pedestrian matches. The previously inspected
+subset is not fresh acceptance data. An independent geometric proposal method also
+failed to recover its six test pedestrians; no independent neural checkpoint was run.
+
+A train-only Vehicle output-height diagnostic estimated a median offset of
+$-1.06345$\,m. Applying it only to copied Vehicle predictions increased test Vehicle
+3D matches from zero to two out of 60, with pedestrian results unchanged. Its variable
+residuals and limited gain do not justify a universal or live z correction.
+\projectfigure{2026-11-21/multi-agent-comparison.png}
+{Preserved generated comparison plot. Input-policy trials and diagnostic corrections
+have different scopes; successful inference does not demonstrate reliable detection.}
+{fig:nov21-comparison}
+
+\subsection{User screenshots and a reproducibly identified scan}
+The user's moving-person screenshots show missed or displaced predictions, including
+boxes assigned to other structures. Point colours encode the displayed numerical
+feature, not semantic person labels. RViz orbit pitch, yaw and focal-point values are
+camera controls, not sensor calibration. A screenshot alone cannot establish a constant
+physical z offset or a synchronized 3D ground-truth box.
+\projectfigure{2026-11-21/user-moving-person-03.png}
+{Original user screenshot retained as qualitative evidence of a person-shaped cluster
+and a displaced prediction. This screenshot's exact source frame is not established.}
+{fig:nov21-user-scene}
+
+Two selected landmarks were independently matched to the same original
+\code{ouster1} cloud: zero-based frame 1403, bag offset 70.05539416\,s, record timestamp
+\code{1794397517854145698}. The user-identified head point is
+$(-2.5729,\ 0.28832,\ 0.37343)$\,m. The lower-body point is
+$(-2.7426,\ 0.64956,\ -0.88179)$\,m. Their visible vertical span is 1.25522\,m;
+the user explicitly reported incomplete leg visibility, so this is not body height
+or a floor measurement. Earlier selections from different locations and a background
+point were retained with corrections rather than used as a head--foot pair.
+\projectfigure{2026-11-21/user-head-point39860.png}
+{Original selection screenshot for head point 39860, uniquely matched to frame 1403.}
+{fig:nov21-head}
+\projectfigure{2026-11-21/user-lower-point111712.png}
+{Original selection screenshot for lower-body point 111712 in the same source cloud.
+This point is not verified as a foot or the ground.}
+{fig:nov21-lower}
+
+Six fresh inferences compared the two encodings over three repeats on this exact
+cloud. With clipped reflectivity/100, the nearby post-NMS Pedestrian candidate scored
+approximately 0.197--0.222, below the requested 0.3 display gate. Its bottom was
+approximately 0.890--0.908\,m above the selected lower-body point and its top
+1.282--1.297\,m above the selected head point. Reflectivity/255 gave nearby scores
+approximately 0.190--0.229. No Pedestrian box contained both selected points in any
+of the six runs. These are candidate geometry and landmark-coverage measurements,
+not full-box ground truth or an independently measured recall score.
+\projectfigure{2026-11-21/exact-person-frame1403.png}
+{Generated XY/YZ diagnostic of the reproducibly identified cloud and selected landmarks.
+Dashed candidates below the display gate are retained for diagnosis. All earlier plot
+variants remain in the image archive.}
+{fig:nov21-person-diagnostic}
+
+\subsection{Preservation and next evaluation}
+The portable project gallery at
+\code{.recovery/documentation-images/2026-11-21/index.html} retains 393 available
+unique images, with original bytes, checksums and source-path provenance. This includes
+user screenshots, generated plots, intermediate layouts and unfavorable results.
+Seventeen named figure copies and their provenance are catalogued under
+\code{docs/figures/2026-11-21/}. Screenshots without a verified source-frame match
+remain qualitative evidence. No deployment setting was changed by this documentation
+refresh. The next evaluation should use synchronized source clouds and independently
+checked 3D annotations, verify the model's training coordinate convention, and compare
+any proposed correction or adapted model on recording-disjoint data.
+
+\begin{thebibliography}{99}
+\bibitem{pointpillars} A. H. Lang, S. Vora, H. Caesar, L. Zhou, J. Yang and
+O. Beijbom, ``PointPillars: Fast Encoders for Object Detection from Point
+Clouds,'' CVPR, 2019. \url{https://arxiv.org/abs/1812.05784}.
+\bibitem{dur360} W. E et al., ``Dur360BEV: A Real-world 360-degree Single Camera
+Dataset and Benchmark for Bird-Eye View Mapping in Autonomous Driving,'' 2025.
+\url{https://arxiv.org/html/2503.00675v2}.
+\bibitem{dur360extended} TomEeee / Durham University, ``Dur360BEV-Extended,''
+dataset card, publisher CC-BY-4.0. Revision
+\code{07f166e558d7e1987e9a554ce0a89494f8fb87b0}.
+\url{https://huggingface.co/datasets/TomEeee/Dur360BEV-Extended}.
+\bibitem{mosep} C. Gaisberger and B. Schlager, ``Modular Multi-Sensor System for
+Environment Perception (MOSEP) Dataset Showcase,'' 2026.
+\url{https://zenodo.org/records/19353314}.
+\bibitem{project} This project, ``Ouster channel decision and proposal,''
+8 November 2026. \code{docs/OUSTER_CHANNEL_DECISION.md} and
+\code{config/ouster_channel_decision.json}. Consult the Git revision and frozen
+runtime/evidence identities when reproducing a result.
+\bibitem{ros2} S. Macenski, T. Foote, B. Gerkey, C. Lalancette and W. Woodall,
+``Robot Operating System 2: Design, Architecture, and Uses in the Wild,''
+Science Robotics, 7(66), eabm6074, 2022. \url{https://arxiv.org/abs/2211.07752}.
+\bibitem{nvidiaros} NVIDIA, ``ROS2 TAO PointPillars,'' upstream application
+repository. \url{https://github.com/NVIDIA-TAO/ros2_tao_pointpillars}.
+\bibitem{trtsupport} NVIDIA, ``TensorRT 10.x Support Matrix,'' archived
+documentation for the project version.
+\url{https://docs.nvidia.com/deeplearning/tensorrt/10.x.x/getting-started/support-matrix.html}.
+\bibitem{trtmigration} NVIDIA, ``C++ Migration Patterns for TensorRT 10.x.''
+\url{https://docs.nvidia.com/deeplearning/tensorrt/latest/api/migration/tensorrt-8x-to-10x-c-api-patterns.html}.
+\bibitem{ousterdata} Ouster, ``Sensor Data,'' sensor documentation.
+\url{https://static.ouster.dev/sensor-docs/image_route1/image_route2/sensor_data/sensor-data.html}.
+\bibitem{kittiprotocol} KITTI, ``3D Object Detection Evaluation,'' official
+benchmark protocol. \url{https://www.cvlibs.net/datasets/kitti/eval_object.php?obj_benchmark=3d}.
+\bibitem{ngcmodelcard} NVIDIA, ``PointPillarnet,'' NGC model card and
+\code{deployable_v1.1} file listing, inspected 9 November 2026.
+\url{https://catalog.ngc.nvidia.com/orgs/nvidia/teams/tao/models/pointpillarnet}.
+The shared description is model-level; version-specific training metadata is absent.
+\end{thebibliography}
+\end{document}

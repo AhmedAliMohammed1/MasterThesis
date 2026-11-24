@@ -15,6 +15,9 @@ public:
     const auto output = declare_parameter<std::string>("output_topic", "/point_cloud", immutable);
     source_ = declare_parameter<std::string>("intensity_source", "reflectivity", immutable);
     limits_.intensity_scale = declare_parameter<double>("intensity_divisor", 255.0, immutable);
+    clip_max_ = declare_parameter<double>("intensity_clip_max", 0.0, immutable);
+    if (!std::isfinite(clip_max_) || clip_max_ < 0)
+      throw std::invalid_argument("intensity_clip_max must be finite and nonnegative");
     const auto points = declare_parameter<std::int64_t>("max_points", 204800, immutable);
     const auto bytes = declare_parameter<std::int64_t>("max_cloud_bytes", 67108864, immutable);
     if (points <= 0 || bytes <= 0 ||
@@ -36,7 +39,7 @@ public:
       [this](const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg) {
         ++received_;
         try {
-          auto adapted = ouster_to_xyzi(*msg, source_, limits_);
+          auto adapted = ouster_to_xyzi(*msg, source_, limits_, clip_max_);
           publisher_->publish(adapted);
           ++converted_;
           last_error_.clear();
@@ -58,6 +61,7 @@ public:
     timer_ = create_wall_timer(std::chrono::seconds(2), [this] { inspect(); });
     RCLCPP_INFO(get_logger(), "%s -> %s; intensity = %s / %.9g. Input best effort; output reliable.",
       input_.c_str(), output_.c_str(), source_.c_str(), limits_.intensity_scale);
+    RCLCPP_INFO(get_logger(), "Intensity cap %.9g (0 disables clipping)", clip_max_);
   }
 private:
   void inspect() {
@@ -87,6 +91,7 @@ private:
     add("input_topic", input_); add("output_topic", output_);
     add("input_publishers", std::to_string(count_publishers(input_)));
     add("intensity_source", source_); add("intensity_divisor", std::to_string(limits_.intensity_scale));
+    add("intensity_clip_max", std::to_string(clip_max_));
     add("received", std::to_string(received_)); add("converted", std::to_string(converted_));
     add("rejected", std::to_string(rejected_)); add("schema", schema_);
     add("pointcloud_topics", candidates_);
@@ -97,6 +102,7 @@ private:
       input_.c_str(), candidates_.c_str());
   }
   InputLimits limits_{};
+  double clip_max_{};
   std::string source_, input_, output_, schema_, candidates_, last_error_;
   std::uint64_t received_{0}, converted_{0}, rejected_{0}, previous_received_{0};
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher_;

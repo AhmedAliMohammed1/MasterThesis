@@ -1,0 +1,67 @@
+{
+  "date": "2026-11-21",
+  "agents": 3,
+  "source_bag_files": 7,
+  "ouster_streams": 10,
+  "all_source_cloud_messages_audited": 6137,
+  "sampled_unique_neural_input_frames": 94,
+  "gpu_measured_inferences": 2268,
+  "gpu_discarded_warmups": 4,
+  "gpu_failures": 0,
+  "actual_cpp_adapter_cases_passed": 30,
+  "native_ctest_passed": 8,
+  "python_evaluator_tests_passed": 12,
+  "score_threshold_primary": 0.3,
+  "test_reference": {
+    "frames": 16,
+    "in_region_vehicle_labels": 60,
+    "in_region_pedestrian_labels": 6,
+    "qualification": "Previously inspected repeated diagnostic subset, not independent-drive acceptance"
+  },
+  "live_settings_preserved": {
+    "recording": "ouster1",
+    "rate": 1,
+    "feature": "min(reflectivity/100,1)",
+    "score_gate": 0.3
+  },
+  "conclusion": "No tested solution fixed pedestrian detection. Input schema/packing checks passed. Some numerical stability and limited vehicle localization improvements were measured; not accepted live fixes.",
+  "exact_person_case": {
+    "source_frame": {
+      "frame_index": 1403,
+      "record_ns": 1794397517854145698,
+      "offset_s": 70.05539416,
+      "source_cdr_sha256": "bc4b08c105662e570aa73923710874515c1833d6ccfa6b79c01fb409be260117",
+      "header_ns": 2700209784,
+      "found_targets": [
+        "head_partial",
+        "lower_partial"
+      ]
+    },
+    "observed_points": {
+      "head_partial": [
+        -2.572887897491455,
+        0.28831589221954346,
+        0.37342631816864014
+      ],
+      "lower_partial": [
+        -2.742640495300293,
+        0.64955735206604,
+        -0.8817899227142334
+      ]
+    },
+    "fresh_inferences": 6,
+    "warmups_discarded": 0,
+    "current_encoding_nearest_candidate_score_range": [
+      0.19688017666339874,
+      0.22239622473716736
+    ],
+    "current_encoding_nearest_candidate_xy_distance_range_m": [
+      0.47279817524218565,
+      0.4787796582592828
+    ],
+    "qualification": "Nearby post-NMS candidate, not confirmed same-object correspondence. Neither two points nor screenshots establish full3DIoU/recall. Six runs additional to2268cross-recordingstudy; not included inits totals."
+  },
+  "image_archive": ".recovery/documentation-images/2026-11-21",
+  "evidence": ".recovery/verification/ouster-multi-agent-20261121",
+  "exact_case_evidence": ".recovery/verification/user-person-exact-scan-20261121"
+}

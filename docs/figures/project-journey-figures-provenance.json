@@ -1,0 +1,22 @@
+{
+  "review_date": "2026-11-08",
+  "kind": "Authored vector explanatory diagrams; PNG counterparts drawn from identical layout",
+  "new_inference": false,
+  "datasets_embedded": false,
+  "sources": [
+    "docs/PROJECT_HISTORY_AND_DECISION_RECORD.md",
+    "recovery/PROGRESS.md",
+    "docs/CURRENT_STATUS_AND_RESULTS.md",
+    "docs/LIVE_OUSTER_TROUBLESHOOTING.md#physical-host-repair-history--28-october-2026",
+    "docs/FRESH_OUSTER_VISUAL_TEST.md",
+    "docs/OUSTER_CHANNEL_DECISION.md",
+    "config/ouster_channel_decision.json"
+  ],
+  "scope": "Chronology and diagnostic reasoning only; arrows do not assert unique causation; open acceptance remains explicit.",
+  "assets_sha256": {
+    "project-journey-timeline.svg": "d2a268b7e541cbafc9277a0dfe518c7a7704208bb55629278140183906413893",
+    "project-journey-timeline.png": "459d97b3564fd89a9668d77d06fad4894916e149a7572d2132faa4593e6a5cba",
+    "project-diagnostic-map.svg": "3706da96384f8fdd6c76230c93183582fa7d7245c8310a2bf9628bedd77f5efe",
+    "project-diagnostic-map.png": "e8159266ddcd08bec6d2d6ba1c6327355bfc844a136577c54c59feed39c007b1"
+  }
+}

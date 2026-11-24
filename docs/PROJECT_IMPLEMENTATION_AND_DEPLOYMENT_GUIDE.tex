@@ -1,1263 +1,376 @@
 \documentclass[11pt,a4paper]{article}
-\usepackage[T1]{fontenc}
-\usepackage{graphicx}
-\usepackage[utf8]{inputenc}
-\usepackage{lmodern,textcomp}
-\usepackage[margin=22mm]{geometry}
-\usepackage{longtable,booktabs,array}
-\usepackage{xcolor,listings,enumitem}
-\usepackage[unicode,hidelinks]{hyperref}
-\usepackage{url}
-\definecolor{codebackground}{RGB}{246,247,249}
-\lstset{basicstyle=\ttfamily\footnotesize,backgroundcolor=\color{codebackground},
- frame=single,rulecolor=\color{gray!35},breaklines=true,columns=fullflexible,
- keepspaces=true,showstringspaces=false,upquote=true,tabsize=2}
+% XeTeX can load installed OpenType files directly, without fontspec.
+% On another OS, adapt these paths; absent files retain the class defaults.
+\newcommand{\projectnativefamily}[5]{%
+  \DeclareFontFamily{TU}{#1}{}%
+  \DeclareFontShape{TU}{#1}{m}{n}{<-> "[#2]"}{}%
+  \DeclareFontShape{TU}{#1}{m}{it}{<-> "[#3]"}{}%
+  \DeclareFontShape{TU}{#1}{m}{sl}{<-> "[#3]"}{}%
+  \DeclareFontShape{TU}{#1}{b}{n}{<-> "[#4]"}{}%
+  \DeclareFontShape{TU}{#1}{bx}{n}{<-> "[#4]"}{}%
+  \DeclareFontShape{TU}{#1}{b}{it}{<-> "[#5]"}{}%
+  \DeclareFontShape{TU}{#1}{bx}{it}{<-> "[#5]"}{}%
+  \DeclareFontShape{TU}{#1}{b}{sl}{<-> "[#5]"}{}%
+  \DeclareFontShape{TU}{#1}{bx}{sl}{<-> "[#5]"}{}%
+}
+\IfFileExists{/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf}{%
+  \ifcsname T@TU\endcsname\else
+    \DeclareFontEncoding{TU}{}{}
+  \fi
+  \projectnativefamily{projectserif}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSerif-BoldItalic.ttf}
+  \projectnativefamily{projectsans}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf}
+  \projectnativefamily{projectmono}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Oblique.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSansMono-BoldOblique.ttf}
+  \renewcommand{\encodingdefault}{TU}
+  \renewcommand{\rmdefault}{projectserif}
+  \renewcommand{\sfdefault}{projectsans}
+  \renewcommand{\ttdefault}{projectmono}
+  \DeclareFontSubstitution{TU}{projectserif}{m}{n}
+}{\PackageWarningNoLine{project}{DejaVu font files absent; using class font defaults}}
+\usepackage{graphicx,booktabs,array,tabularx,tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\definecolor{ink}{HTML}{16324F}
+\definecolor{accent}{HTML}{087F8C}
+\definecolor{muted}{HTML}{597081}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+% A standalone editor may receive only this source, without project images.
+% Keep the PDF readable and explicitly identify any missing illustration.
+\newcommand{\projectshot}[2]{%
+  \IfFileExists{figures/#1}{\includegraphics[width=#2,height=.72\textheight,keepaspectratio]{figures/#1}}{%
+    \IfFileExists{docs/figures/#1}{\includegraphics[width=#2,height=.72\textheight,keepaspectratio]{docs/figures/#1}}{%
+      \PackageWarningNoLine{project}{Illustration #1 unavailable}%
+      \fbox{\parbox{.85\linewidth}{\centering\small Illustration unavailable in this compiler.\par
+      Source asset: \code{#1}.\par See docs/figures/README.md for provenance.}}}}}
+\usepackage[margin=23mm]{geometry}
+\usepackage{longtable}
+\usepackage[hidelinks]{hyperref}
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{6pt}
 \setlength{\emergencystretch}{3em}
-\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
-\title{PointPillars: From a Fresh Computer to a Running ROS Node\\
-\large Implementation record, deployment commands, and recovery guide}
-\author{MasterThesis project: \code{pp_infer}}
-\date{23 October 2026}
-
-% Locate illustration assets from docs/ or the repository root. The built-in
-% standalone compiler may not receive other project files; warn visibly then.
-\newcommand{\projectshot}[2]{%
-  \IfFileExists{figures/#1}{\includegraphics[width=#2]{figures/#1}}{%
-    \IfFileExists{docs/figures/#1}{\includegraphics[width=#2]{docs/figures/#1}}{%
-      \PackageWarningNoLine{project}{Screenshot #1 unavailable; illustrated output incomplete}%
-      \fbox{\parbox{.85\linewidth}{\centering\small Screenshot asset unavailable.\par
-      Keep \texttt{\detokenize{#1}} in the project's figures folder.\par
-      See docs/figures/README.md for the original image and provenance.}}}}}
-
+\renewcommand{\arraystretch}{1.15}
+\title{PointPillars: Implementation and Deployment Guide\\
+\large Current operating instructions and research status}
+\author{MasterThesis project}
+\date{8 November 2026}
 \begin{document}
 \maketitle
-This guide records the completed work and explains how another person can reproduce it. You do not need to understand C++ to follow the Docker deployment. Read each step, run its commands, and check the expected result before moving on.
-
-The recommended route uses Ubuntu 24.04 and a supported NVIDIA GPU. Docker carries the application and libraries. The computer supplies the driver. After one-time host setup, one deployment command downloads the inputs, builds the image, generates a target-GPU engine, and starts the node. The host supplies the NVIDIA driver and Docker GPU integration.
-
-The code does not require an RTX 4060. This image targets Linux x86-64 with NVIDIA hardware supported by TensorRT 10.16 and enough GPU memory. It has been physically tested on one RTX 4060 Laptop GPU. ARM and Jetson need a separate platform build. There is no universal image for every PC or operating system.
-
-Build, engine generation, synthetic ROS/GPU checks, real-bag message checks, and live RViz rendering passed. These demonstrate integration and display support, not real-world detection accuracy or real-time performance.
-\subsection*{Initial documentation review: 23 October 2026}
-Source review baseline: local commit \code{ee6b36c}. Recorded numerical results
-are from 1--14 October; supplied screencast filenames are dated 20 October.
-The initial documentation pass ran 64 Python tests successfully and checked saved
-result hashes; it performed no new GPU inference, installation or image rebuild.
-The current Linux checkout is \path{/media/ae/New Volume/MasterThesis}.
-
-The labeled KITTI test split still has zero moderate 3D matches. Later normalized
-Ouster replay matched 556 input/output occurrences, and the frontal KITTI clip
-matched 154 frames. Those are integration results, not accuracy acceptance.
-Detailed results, visual examples and limitations are included below and in
-\path{docs/CURRENT_STATUS_AND_RESULTS.md}. Earlier dates and counts retain the
-scope of their original experiments. Old PDFs are historical until regenerated
-from this source. If screenshot assets are unavailable to a standalone compiler,
-a visible placeholder marks the incomplete illustrated output.
+\begin{abstract}
+This project runs a pretrained PointPillars detector on LiDAR scans and publishes
+3D boxes through ROS 2. The software now supports Ubuntu 24.04, ROS Jazzy,
+TensorRT 10 and an explicit Ouster channel adapter. Deployment, conversion and
+visualization have been exercised on an RTX 4060 Laptop GPU. The latest labeled
+comparison supports reflectivity divided by 255 as the experimental input;
+neither tested channel is accepted as accurate 3D detection. This guide separates
+how to run the system from what the measurements establish.
+\end{abstract}
+This edition consolidates the older deployment notes and dated appendices.
+Historical experiment details remain in the Markdown reports and version history;
+commands below describe the current launchers. It is a practical companion to
+\path{docs/THESIS_DRAFT.tex} and the detailed Ouster decision report.
 \tableofcontents
 \newpage
 
-\section{Terms in plain language}
-\begin{longtable}{p{0.20\textwidth}p{0.73\textwidth}}
-\toprule Term & Meaning here \\ \midrule
-Driver & Host software that lets the computer use its NVIDIA GPU. It lives outside Docker. \\
-CUDA & NVIDIA's GPU computing libraries and tools. Docker carries the required application libraries. \\
-TAO & NVIDIA's toolkit for training, adapting, and exporting models. It is different from TensorRT. Deploying this pretrained export does not require another training run. \\
-ONNX & The exported model file used to build the engine. \\
-TensorRT / SDK & TensorRT prepares and runs the model on a GPU. Its development kit supplies headers, libraries, and tools. Pretrained models still need an inference runtime. \\
-Engine & Generated TensorRT file prepared for a selected GPU and software stack. \\
-ROS 2 & Framework used to pass point clouds and detection messages. We use Jazzy. \\
-Node / topic & A node is a running program; a topic is a named message channel. \\
-Image / container & An image packages the application; a container is a running instance. \\
-Colcon & ROS build tool, already used inside the Docker build. \\
-Checkpoint & Saved source, progress, and next action for continuing interrupted development. \\
+\section{Start here}
+Use the Docker route if you want to run the application. Native development is
+optional. A working host NVIDIA driver, Docker and NVIDIA Container Toolkit are
+prerequisites; deployment does not install or upgrade them. RViz additionally
+needs a graphical desktop, host ROS Jazzy and its detection display plugin.
+
+\begin{tabularx}{\linewidth}{@{}lY@{}}
+\toprule Item & Current role \\ \midrule
+Host & Ubuntu 24.04, Linux x86-64; supplies GPU access. \\
+Container & ROS Jazzy, CUDA libraries, TensorRT 10.16.1.11 and application. \\
+ONNX & Pretrained network and weights; no retraining is performed. \\
+Engine & GPU execution plan built from ONNX and cached persistently. \\
+Ouster adapter & Selects a declared sensor field and creates FLOAT32 XYZI. \\
+RViz & Displays points, predictions and count text; it does not run inference. \\
 \bottomrule
-\end{longtable}
-
-\section{What was done}
-The original repository targeted Foxy and TensorRT 8. The current work moves the build and inference path to Ubuntu 24.04, Jazzy, and TensorRT 10.16.1.11. Historical instructions are preserved in \path{docs/LEGACY_FOXY_README.md}.
-
-Three layers separate responsibilities: a CPU geometry core, a ROS message adapter, and a GPU inference runtime. Most geometry and input behavior can therefore be checked without a GPU.
-\begin{center}
-\fbox{LiDAR or bag $\rightarrow$ PointCloud2 $\rightarrow$ input validation}\\[8pt]
-$\downarrow$\\[8pt]
-\fbox{Reusable GPU buffers $\rightarrow$ TensorRT $\rightarrow$ box filtering}\\[8pt]
-$\downarrow$\\[8pt]
-\fbox{Detection3DArray on \code{/bbox}}
-\end{center}
-\begin{enumerate}
-\item Colcon builds the normal runtime and the reduced CPU/ROS test configurations. Runtime compilation requires TensorRT major version 10.
-\item Oriented box overlap/suppression use separate CPU code with validated inputs and stable ties. Class-agnostic suppression remains the default.
-\item The ROS adapter validates fields and byte limits, handles row padding, filters nonfinite points, and preserves output headers.
-\item The runtime uses named tensors and \code{enqueueV3}; startup validates tensor names, types, shapes, profile, and storage format.
-\item Engine, context, buffers, profiler, and stream have explicit owners. Buffers and one stream are reused; copies and output bounds are checked. CUDA failure faults the runtime until restart.
-\item The original native TensorRT SDK was extracted locally without registering host apt/dpkg packages. Docker now downloads pinned SDK libraries and headers from NVIDIA's signed apt repository, and checks the ONNX download hash. All three required plugins were present; an OSS rebuild was unnecessary.
-\item Deployment builds local source by default, reuses cached model/SDK layers, and compiles/tests with colcon when runtime inputs change. Direct Dockerfile builds default to remote Git source. The runtime stage contains ROS, GPU libraries, plugins, model, and executable. Compilers stay in the build stage.
-\item A single-command wrapper builds and launches. Startup inspects the selected GPU, builds an engine there, and caches it by model/GPU/driver/software/recipe identity.
-\item A Python helper saves source checkpoints and reports drift without resetting files or changing the Git index. The ledger records unfinished work.
-\end{enumerate}
-The node still processes callbacks synchronously with reliable delivery and queue depth 700. The planned worker with a bounded pending-frame slot is not implemented. The architecture plan is broader than the completed work.
-
-\subsection{Recorded baseline}
-\begin{longtable}{p{0.30\textwidth}p{0.63\textwidth}}
-\toprule Component & Recorded value \\ \midrule
-Host & Ubuntu 24.04.4, x86-64 \\
-ROS & Jazzy \\
-GPU & RTX 4060 Laptop, 8188 MiB reported memory \\
-Host driver & 595.71.05; already working \\
-Host tools & GCC 13.3, CMake 3.28.3, CUDA compiler 12.0.140 \\
-TensorRT & 10.16.1.11, CUDA 12.9 package variant \\
-Docker CUDA & CUDA 12.9 Update 1 components; exact pins in Dockerfile \\
-Image & \code{pp-infer:jazzy-trt10} \\
-Package / executable & \code{pp_infer} / \code{pp_infer} \\
-Container node & \code{/pointpillars} \\
-Input / output & \code{/point_cloud} / \code{/bbox} \\
-\bottomrule
-\end{longtable}
-Driver, Docker, and GPU integration were already installed. This work did not reinstall the driver. The original native TensorRT SDK was extracted without a system installation; Docker installs its own SDK packages. Image identity is in \path{config/docker_inventory.json}. Future rebuilds can differ because Ubuntu tags and ROS repository packages change.
-
-\section{Choose a route}
-Complete Steps 1--5, read Step 6's automatic-download explanation, then run the single deployment command in Step 7. Push source edits before rebuilding.
-
-For a computer that only runs the application, receive a built image: complete Steps 1--4, then Section~\ref{sec:transfer}. It needs no source, SDK download, host ROS, host TensorRT, or CUDA development toolkit.
-
-\section{Step 1: check the computer}
-Start with Ubuntu 24.04 installed. Open Terminal with Ctrl+Alt+T:
-\begin{lstlisting}
-cat /etc/os-release
-uname -m
-lspci | grep -Ei 'nvidia|vga|3d'
-df -h "$HOME"
-\end{lstlisting}
-Look for version 24.04, architecture \code{x86_64}, and NVIDIA hardware. Install \code{pciutils} if needed. TensorRT 10.x lists capability 7.5 or newer as a hardware floor [S4]. This is necessary, but not proof that every such GPU works with this model and its legacy plugins.
-
-Plan for at least 40 GB free for source-build downloads, extraction, and Docker layers. This is an allowance, not a measured minimum. Docker images and cache use Docker's storage filesystem even when the source folder is moved to another drive. The current automatic image reports about 4.7 GB; building needs extra space. An earlier attempt filled the disk; the final Dockerfile installs only needed CUDA components.
-
-For another operating system, install Ubuntu normally and arrange backups before partition changes. OS installation is not automated here. Windows/WSL2, macOS, ARM, and Jetson have not been validated with this recipe.
-
-\section{Step 2: download and install the NVIDIA driver}
-Try \code{nvidia-smi} first. Keep an existing suitable working driver. A conservative target is 575.57.08 or newer, the corresponding Linux driver for CUDA 12.9 Update 1 [S5]. Older drivers may work through compatibility modes, but that path has not been validated here.
-
-On fresh Ubuntu, download the suitable driver through Ubuntu packages [S1]:
-\begin{lstlisting}
-sudo apt update
-sudo apt upgrade
-sudo apt install ubuntu-drivers-common pciutils
-ubuntu-drivers devices
-sudo ubuntu-drivers install
-sudo reboot
-\end{lstlisting}
-Save work before rebooting. If prompted for a Secure Boot key, follow enrollment prompts at restart. Log in and run \code{nvidia-smi}. If the recommended branch is too old, select a newer supported branch using Ubuntu's guide. Do not assume the original computer's driver number is correct for every GPU.
-
-The CUDA Version field in \code{nvidia-smi} describes driver capability, not an installed host CUDA development toolkit.
-
-\section{Step 3: install Docker}
-If \code{sudo docker version} already works, use that installation. Otherwise, on fresh Ubuntu 24.04, add Docker's official repository [S2]:
-\begin{lstlisting}
-sudo apt update
-sudo apt install ca-certificates curl
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
-  -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-sudo tee /etc/apt/sources.list.d/docker.sources <<'EOF'
-Types: deb
-URIs: https://download.docker.com/linux/ubuntu
-Suites: noble
-Components: stable
-Architectures: amd64
-Signed-By: /etc/apt/keyrings/docker.asc
-EOF
-sudo apt update
-sudo apt install docker-ce docker-ce-cli containerd.io \
-  docker-buildx-plugin docker-compose-plugin
-sudo systemctl enable --now docker
-sudo docker run --rm hello-world
-\end{lstlisting}
-The last command should print success. For conflicts with an existing container installation, review [S2]. These commands assume a fresh host. We use sudo so a new user needs no group-permission changes.
-
-\section{Step 4: connect Docker to the GPU}
-Install NVIDIA Container Toolkit [S3]:
-\begin{lstlisting}
-sudo apt install ca-certificates curl gnupg
-curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
-  sudo gpg --dearmor \
-  -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
-curl -fsSL \
-  https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
-  sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-  sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
-sudo apt update
-sudo apt install nvidia-container-toolkit
-sudo nvidia-ctk runtime configure --runtime=docker
-sudo systemctl restart docker
-nvidia-ctk --version
-sudo docker info --format '{{json .Runtimes}}'
-\end{lstlisting}
-Look for NVIDIA in the runtime list. Restarting Docker can affect existing containers. Skip repeated setup if integration already works. Step 8 checks GPU access with the project image.
-
-\section{Step 5: get the deployment files}
-\label{sec:assets}
-Install the small host utilities and clone the project. Local history includes deployment and validation changes through \code{ee6b36c}; verify the selected published revision before rebuilding:
-\begin{lstlisting}
-sudo apt install python3 git dpkg tar
-git clone https://github.com/AhmedAliMohammed1/MasterThesis.git "$HOME/pointpillars"
-PROJECT_DIR="$HOME/pointpillars"
-cd "$PROJECT_DIR"
-test -f Dockerfile
-test -f tools/deploy.sh
-\end{lstlisting}
-An existing checkout needs no second clone: preserve local edits and use \code{git pull --ff-only} when appropriate. The original project has moved to another drive:
-\begin{lstlisting}
-PROJECT_DIR='/media/ae/New Volume/MasterThesis'
-cd "$PROJECT_DIR"
-\end{lstlisting}
-Quote paths containing spaces. Set \code{PROJECT_DIR} again in new terminals. Successful test commands print nothing.
-
-The deployment wrapper builds local source by default, including uncommitted runtime edits. Direct Dockerfile builds retain remote Git source [S9]. The image records its source revision and local runtime-input checksum in \path{/opt/pp_infer/source-revision.txt}. To select a fixed remote release, replace the example value with its full commit SHA:
-\begin{lstlisting}
-sudo env PP_GIT_REF='YOUR_FULL_COMMIT_SHA' bash tools/deploy.sh
-\end{lstlisting}
-A fresh build needs internet access. Retain a built image for offline deployment. No registry image has been published.
-
-\section{Step 6: automatic model and SDK downloads}
-There is no manual model or SDK preparation on the Docker route. Docker downloads NVIDIA NGC PointPillarNet \code{deployable_v1.1} ONNX and verifies its SHA-256:
-\begin{lstlisting}
-2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1
-\end{lstlisting}
-The public download needs no account token. The tested export is \path{pointpillars_deployable.onnx}. Another export needs separate shape, plugin, and accuracy checks. Keep licensing information. The trainable \code{.tlt} is not required.
-
-Inputs: \code{points} FLOAT32 [batch, 204800, 4], \code{num_points} INT32 [batch]. Outputs: \code{output_boxes} FLOAT32 [batch, 393216, 9], \code{num_boxes} INT32 [batch].
-
-The build installs TensorRT \code{10.16.1.11-1+cuda12.9} runtime libraries, plugins, ONNX parser, \code{trtexec}, and headers from NVIDIA's signed apt repository. Every related TensorRT dependency uses that exact version. Headers and shared libraries suffice here; large unused static development archives are omitted. ROS Jazzy, CUDA 12.9 components, PCL, compiler tools, and colcon are installed automatically.
-
-No downloaded DEB, SDK directory, model, engine, or local build tree is sent to Docker. The build context allows only the Dockerfile and ignore file. A Dockerfile copy therefore suffices to build the image. TensorRT 11 is not a drop-in replacement for this runtime and its legacy plugins. Optional native preparation is in Section~\ref{sec:native-sdk}.
-
-\section{Step 7: build and run with one command}
-From the prepared project folder:
-\begin{lstlisting}
-cd "$PROJECT_DIR"
-sudo bash tools/deploy.sh
-\end{lstlisting}
-The command builds the image and starts the node in the foreground. The build downloads dependencies, compiles with colcon, runs four test modes, and packages the image. It needs internet access but no GPU. Startup checks the selected GPU, builds a batch-one FP32 engine when needed, then starts \code{/pointpillars}. Wait for startup; another GPU may take longer. Open a second terminal for inspection.
-
-\code{docker build} creates an image. It cannot leave a persistent ROS node running after its build container exits. The wrapper performs build and run in sequence; a failed build never launches an incomplete image. Host drivers, Docker, and NVIDIA Container Toolkit must already work. Engine generation happens at startup because it needs the actual deployment GPU and driver.
-
-For an image-only build, even with just a Dockerfile available:
-\begin{lstlisting}
-sudo docker build -t pp-infer:jazzy-trt10 - < Dockerfile
-\end{lstlisting}
-To launch that image directly:
-\begin{lstlisting}
-sudo docker run --rm --init --name pointpillars \
-  --gpus all --network host --ipc host \
-  -v pp-engines:/var/lib/pp_infer pp-infer:jazzy-trt10
-\end{lstlisting}
-The \code{pp-engines} volume retains engines after removal. Matching launches reuse them. Stop with Ctrl+C or \code{sudo docker stop pointpillars}. The wrapper refuses to replace an existing container of that name; stop/remove the intended old instance or choose another \code{PP_CONTAINER_NAME}. Stop any previous inference instance on the same topics first.
-
-\subsection{Engine recovery and portability}
-The same CUDA selection is used for preflight, builder, and inference. The recipe is FP32, batch one, no TF32, and 1024 MiB default workspace. Cache identity includes model hash, GPU UUID/capability, driver, CUDA API versions, TensorRT, and recipe. A lock serializes builds. Temporary output is renamed only on success, so interruption does not accept partial engines.
-
-The image moves between compatible machines; the engine is rebuilt for each GPU/software identity. NVIDIA documents engine portability limits [S4]. Do not assume the old GPU engine is portable. A subsequently corrupted cache file can still fail to load: identify it, back it up, and remove only that file before retrying. This startup mechanism is separate from source checkpoints.
-
-\section{Step 8: see images, nodes, and topics}
-In another terminal:
-\begin{lstlisting}
-sudo docker ps
-sudo docker image ls pp-infer
-sudo docker logs --tail 80 pointpillars
-sudo docker exec pointpillars /entrypoint.sh nvidia-smi
-sudo docker exec pointpillars /entrypoint.sh ros2 pkg executables pp_infer
-sudo docker exec pointpillars /entrypoint.sh ros2 node list
-sudo docker exec pointpillars /entrypoint.sh ros2 node info /pointpillars
-sudo docker exec pointpillars /entrypoint.sh ros2 topic list -t
-\end{lstlisting}
-Look for executable \code{pp_infer}, helper \code{pp_device_info}, node \code{/pointpillars}, input \code{/point_cloud}, and output \code{/bbox}. Types are \code{sensor_msgs/msg/PointCloud2} and \code{vision_msgs/msg/Detection3DArray}.
-
-The command is \code{ros2 run PACKAGE EXECUTABLE}: \code{ros2 run pp_infer pp_infer}. There is no \code{ros2 node run}. Docker adds engine/configuration and sets the name. Direct native startup without an override retains \code{/minimal_publisher}.
-
-The entrypoint utility commands load ROS without another inference instance. If using \code{docker exec -it pointpillars bash}, source \path{/opt/ros/jazzy/setup.bash} and \path{/workspace/install/setup.bash} first.
-
-\section{Step 9: connect a sensor or replay a bag}
-The container does not generate LiDAR measurements. Start the manufacturer-specific driver separately or replay a compatible bag. There is no universal command for every LiDAR.
-
-Stop the earlier instance, then select your topic:
-\begin{lstlisting}
-sudo docker run --rm --init --name pointpillars \
-  --gpus all --network host --ipc host \
-  -e POINT_CLOUD_TOPIC=/lidar/points -e ROS_DOMAIN_ID=0 \
-  -v pp-engines:/var/lib/pp_infer pp-infer:jazzy-trt10
-\end{lstlisting}
-Match the publisher's domain, middleware, and discovery settings. Host networking does not bypass network restrictions between computers. Inspect in another terminal:
-\begin{lstlisting}
-sudo docker exec pointpillars /entrypoint.sh \
-  ros2 topic info /lidar/points --verbose
-sudo docker exec pointpillars /entrypoint.sh ros2 topic echo /bbox --once
-\end{lstlisting}
-An empty array may be valid. No message can mean missing input, QoS mismatch, or runtime failure.
-
-Each point needs scalar little-endian FLOAT32 \code{x}, \code{y}, \code{z}, and \code{intensity}. Valid organized clouds with padding work; malformed/oversized/capacity-exceeding clouds are rejected. Engine capacity is 204800 points; Docker's byte limit defaults to 64 MiB.
-
-The subscription requests reliable delivery. Best-effort-only publishers can appear in the topic list without matching. Configure publisher/playback for reliable delivery; configurable sensor QoS remains unfinished.
-
-\subsection{Bag playback}
-Inspect a complete bag directory, then replace the recorded topic:
-\begin{lstlisting}
-sudo docker run --rm -v "$HOME/bags/example:/bag:ro" \
-  pp-infer:jazzy-trt10 ros2 bag info /bag
-sudo docker run --rm --network host --ipc host \
-  -e ROS_DOMAIN_ID=0 -v "$HOME/bags/example:/bag:ro" \
-  pp-infer:jazzy-trt10 ros2 bag play /bag \
-  --remap /recorded/points:=/point_cloud
-\end{lstlisting}
-Run playback alongside inference. Mount metadata and data files together. For recorded best-effort QoS, use an override [S7] keyed by the original topic:
-\begin{lstlisting}
-cat > "$HOME/bags/playback_qos.yaml" <<'EOF'
-/recorded/points:
-  reliability: reliable
-  durability: volatile
-  history: keep_last
-  depth: 5
-EOF
-sudo docker run --rm --network host --ipc host \
-  -e ROS_DOMAIN_ID=0 -v "$HOME/bags/example:/bag:ro" \
-  -v "$HOME/bags/playback_qos.yaml:/qos.yaml:ro" \
-  pp-infer:jazzy-trt10 ros2 bag play /bag \
-  --qos-profile-overrides-path /qos.yaml \
-  --remap /recorded/points:=/point_cloud
-\end{lstlisting}
-These examples assume one Linux host. Verify layout and model settings before judging detections. The earlier bag has no object annotations. Labeled KITTI object frames and a diagnostic accuracy baseline are now available in the section on KITTI measurement.
-
-\subsection{Download and initialize the tested bag and camera clip}
-With Docker working and the inference image already built, run this from another terminal while inference continues:
-\begin{lstlisting}
-cd "$PROJECT_DIR"
-bash tools/rosbag_demo.sh
-\end{lstlisting}
-The helper downloads and verifies the tested KITTI sequence04 ROS2 bag, extracts it, prepares reliable playback settings, and starts looping \code{/velodyne_points} remapped to \code{/point_cloud}. It also retrieves the left-color camera frames from original drive \code{2011_09_30_drive_0016} and creates \path{kitti04_left_camera.mp4}. A separate Ubuntu preparation image installs Python and FFmpeg inside Docker; no host installation of those tools or ROS is needed for this helper. Run as your normal user. It uses sudo for Docker only when required, while retaining your file ownership.
-
-Assets default to \path{../rosbags/kitti04} beside the checkout, with a generated ignore file. Allow roughly 3 GB of asset space, plus Docker storage for the helper image. The bag is pinned by repository revision and SHA-256. Camera ZIP reads use byte ranges and an object ETag; individual frame CRCs are checked. Partial bag downloads resume, completed frames are reused, and only a successfully encoded/probed video is promoted. Interrupted work can be continued by repeating the command. Changed or corrupt completed assets are reported rather than silently overwritten.
-
-A matching running bag player is reused. A different or stopped same-name container causes a clear conflict; inspect it before stopping or removing it. Ctrl+C stops a player newly started in this terminal. Other modes/settings are:
-\begin{lstlisting}
-bash tools/rosbag_demo.sh prepare
-bash tools/rosbag_demo.sh stop
-PP_DEMO_DIR="$HOME/rosbags/kitti04" PP_BAG_RATE=1 \
-  bash tools/rosbag_demo.sh
-bash tools/rosbag_demo.sh --help
-\end{lstlisting}
-Prepare downloads data/video without playback and does not need the inference image. Stop affects only a player created and labeled by this helper; manually started players require an explicit Docker stop after inspection. Match \code{ROS_DOMAIN_ID} and \code{POINT_CLOUD_TOPIC} to inference. Default playback is half speed, domain0 and topic \code{/point_cloud}.
-
-Open the MP4 in a video player for the underlying camera view. The tested clip contains 285 camera frames, about 29.72 seconds at recorded speed, and the bag contains 283 LiDAR frames. Its first camera frame is about 0.210 seconds before the first LiDAR scan. Original camera timestamps are retained in \path{camera/image_02/timestamps.txt}. The raw camera is unsynchronized/unrectified: frame indices do not imply alignment with LiDAR. Independent video playback is not automatically synchronized with ROS playback, and the video is not annotated ground truth. Camera publishing and detection-box projection into the video are not provided by this helper.
-
-The converter and ready-bag links are \url{https://github.com/Jakubach/kitti_to_ros} and \url{https://huggingface.co/datasets/kubchud/kitti_to_ros}. KITTI's official sensor/data description is \url{https://www.cvlibs.net/datasets/kitti/raw_data.php}. Keep dataset attribution and applicable terms with shared assets. Exact provenance, integrity checks and preparation/playback evidence are in \path{config/demo_inventory.json}.
-
-Docker images are packaged programs, not pictures. This node handles points and detections, not camera pictures. Its container remains headless. The project now provides a saved RViz view and launcher on the host desktop, using the official \code{vision_msgs_rviz_plugins/Detection3DArray} display directly; no marker converter is required.
-
-\subsection{Show the point cloud and detection boxes in RViz}
-Keep the inference container and bag playback or LiDAR driver running. The optional viewer needs a graphical desktop with host ROS Jazzy and RViz. A computer used only for Docker inference does not need these packages. If host ROS is missing, follow the native ROS installation subsection later in this guide, then install:
-\begin{lstlisting}
-sudo apt install ros-jazzy-rviz2 ros-jazzy-vision-msgs-rviz-plugins
-cd "$PROJECT_DIR"
-bash tools/visualize.sh
-\end{lstlisting}
-Run the viewer as your normal desktop user, without sudo. On the tested computer, RViz was already installed. The missing official vision display plugin was downloaded through the configured ROS apt index and extracted locally under ignored \path{.recovery/rviz}; no system package installation was performed. The launcher reuses a system plugin when available, or prepares this local plugin when RViz and its dependencies already exist. Missing dependencies need the apt installation above.
-
-The saved \path{rviz/pointpillars.rviz} view displays \code{/point_cloud} and \code{/bbox}, with reliable QoS and fixed frame \code{velodyne}. That frame matches the tested KITTI bag. Mouse-wheel scrolling zooms; dragging rotates. Expand Detections to inspect status or enable Show Score. Box colors mean numeric model IDs: orange 0, blue 1, yellow 2. The exact export label file now verifies IDs 0 Vehicle, 1 Pedestrian and 2 Cyclist; the viewer colors still identify numeric IDs. Point colors represent intensity. All published boxes are displayed; no extra confidence filter is applied.
-
-For a different sensor frame and ROS domain, match the source:
-\begin{lstlisting}
-ROS_DOMAIN_ID=7 bash tools/visualize.sh -f your_lidar_frame
-\end{lstlisting}
-The launcher defaults Fast DDS to UDPv4. In the tested host/container setup, default shared-memory transport prevented delivery to the desktop viewer; UDP restored it. An explicit \code{FASTDDS_BUILTIN_TRANSPORTS} setting overrides this default. Network and firewall restrictions can still prevent discovery on other computers. A bag containing only the sensor frame may produce a global TF warning because there is no transform tree; points and boxes can still render in their shared sensor frame. A different fixed frame requires a valid transform.
-
-Verification matched 25 input/output frames inside Docker and another 25 through the host transport, checking headers, input capacity/layout, finite positive-size boxes, normalized quaternions, and class/score ranges. The live RViz window rendered both points and boxes. This confirms integration and display support, not real-data detection accuracy. A later labeled KITTI baseline is recorded below; independent inference parity and accuracy acceptance remain unfinished. See \path{config/visualization_inventory.json} and the recovery record for exact evidence.
-
-\section{Step 10: check the full path without a sensor}
-Use default topics with no other sensor/bag publishing. Wait for engine/node startup. In a second terminal:
-\begin{lstlisting}
-sudo docker exec -i pointpillars /entrypoint.sh python3 - <<'PY'
-import struct
-import time
-import rclpy
-from sensor_msgs.msg import PointCloud2, PointField
-from vision_msgs.msg import Detection3DArray
-
-rclpy.init()
-node = rclpy.create_node('pointpillars_reproduction_check')
-received = []
-sub = node.create_subscription(Detection3DArray, '/bbox', received.append, 10)
-pub = node.create_publisher(PointCloud2, '/point_cloud', 10)
-msg = PointCloud2()
-msg.header.frame_id = 'synthetic_reproduction_check'
-msg.height, msg.width = 1, 128
-msg.point_step, msg.row_step = 16, 2048
-msg.fields = [PointField(name=name, offset=i * 4,
-    datatype=PointField.FLOAT32, count=1)
-    for i, name in enumerate(['x', 'y', 'z', 'intensity'])]
-msg.data = b''.join(struct.pack('<ffff', 5 + (i % 16) * .1,
-    (i // 16) * .1, 0, .5) for i in range(128))
-msg.is_dense = True
-sent = False
-ready = None
-deadline = time.monotonic() + 30
-while time.monotonic() < deadline:
-    rclpy.spin_once(node, timeout_sec=.1)
-    if sent and any(item.header == msg.header for item in received):
-        break
-    if pub.get_subscription_count() and node.count_publishers('/bbox'):
-        if ready is None:
-            ready = time.monotonic()
-        if not sent and time.monotonic() - ready > 1:
-            msg.header.stamp = node.get_clock().now().to_msg()
-            pub.publish(msg)
-            sent = True
-matches = [item for item in received if item.header == msg.header]
-assert sent and matches, 'No matching output; check startup, topics and QoS'
-print('PASS: ROS -> TensorRT -> detections; header preserved;',
-      len(matches[0].detections), 'detections')
-node.destroy_node()
-rclpy.shutdown()
-PY
-\end{lstlisting}
-The count is diagnostic, not an accuracy expectation. The recorded test returned one box. Success means matching output arrived through the full path.
-
-For cache verification, stop the container, repeat Step 7's run command, inspect logs, and repeat this check. Cache reuse skips builder output. Recorded validation passed twice with one engine generation across a restart.
-
-\section{Step 11: move the image to another computer}
-\label{sec:transfer}
-On the sender:
-\begin{lstlisting}
-sudo docker image inspect pp-infer:jazzy-trt10 \
-  --format '{{.Id}} {{.Os}}/{{.Architecture}}'
-sudo docker save -o "$HOME/pp-infer-jazzy-trt10.tar" pp-infer:jazzy-trt10
-sha256sum "$HOME/pp-infer-jazzy-trt10.tar" \
-  > "$HOME/pp-infer-jazzy-trt10.tar.sha256"
-\end{lstlisting}
-Copy the tar and checksum. On the receiver, run sha256sum and compare digests; the sender's path in the checksum file may differ.
-
-After driver, Docker, and toolkit setup, the receiver uses two commands:
-\begin{lstlisting}
-sudo docker load -i "$HOME/pp-infer-jazzy-trt10.tar"
-sudo docker run --rm --init --name pointpillars \
-  --gpus all --network host --ipc host \
-  -v pp-engines:/var/lib/pp_infer pp-infer:jazzy-trt10
-\end{lstlisting}
-The ONNX generates a target engine. Do not transfer the old GPU engine as the deployment artifact. Retain the archive or use an authorized registry. No image publication occurred. Check SDK/model redistribution terms before sharing.
-
-\subsection{Source handover}
-Package changed source explicitly:
-\begin{lstlisting}
-cd "$PROJECT_DIR"
-tar --exclude='docker/assets' --exclude='__pycache__' \
-  -czf "$HOME/pp-infer-source.tar.gz" \
-  Dockerfile .dockerignore .gitignore CMakeLists.txt package.xml \
-  include src tests launch docker docs tools config recovery \
-  README.md IMPLEMENTATION_ARCHITECTURE.md PROJECT_REVIEW_AND_UPDATE_PLAN.md \
-  LICENSE CLA.md
-\end{lstlisting}
-On the receiver:
-\begin{lstlisting}
-mkdir -p "$HOME/pointpillars"
-tar -xzf "$HOME/pp-infer-source.tar.gz" -C "$HOME/pointpillars"
-\end{lstlisting}
-Use an empty destination. This excludes SDK/model, Git history, and checkpoints. Docker downloads its own SDK and model. Transfer downloads separately only for native development or offline backups. For checkpoint development from the archive, run \code{git init}, review source, and establish a new baseline commit. Alternatively provide reviewed Git history and the working tree separately. A new baseline differs from the original checkpoint base.
-
-\section{Step 12: adjust deployment settings}
-For the single-command wrapper, pass settings through \code{sudo env}:
-\begin{lstlisting}
-sudo env POINT_CLOUD_TOPIC=/lidar/points ROS_DOMAIN_ID=7 \
-  PP_GPU_INDEX=0 PP_WORKSPACE_MIB=256 bash tools/deploy.sh
-\end{lstlisting}
-For direct \code{docker run}, add options before the image name:
-\begin{longtable}{p{0.46\textwidth}p{0.47\textwidth}}
-\toprule Option & Purpose \\ \midrule
-\code{-e POINT_CLOUD_TOPIC=/lidar/points} & Input topic. \\
-\code{-e DETECTIONS_TOPIC=/detections} & Output topic. \\
-\code{-e ROS_DOMAIN_ID=7} & Publisher's domain. \\
-\code{-e PP_GPU_INDEX=1} & GPU within the container-visible CUDA set. \\
-\code{-e PP_WORKSPACE_MIB=256} & Builder workspace limit; changes cache key, not total GPU memory. \\
-\bottomrule
-\end{longtable}
-Invalid GPU selection fails before startup. Supported GPUs can still lack memory.
-
-The YAML uses \code{class_0}, \code{class_1}, \code{class_2}, and intensity scale 1.0. The label artifact verifies Vehicle/Pedestrian/Cyclist order and source supports center-based boxes. The YAML names remain generic; training/input conventions and independent numerical acceptance remain unresolved. Obtain export/training specifications and a known reference first. The scale divides input intensity; do not assume 255 is correct because old instructions used it.
-
-Edit a copy, then mount it:
-\begin{lstlisting}
-cp docker/node.yaml deployment.yaml
-nano deployment.yaml
-sudo docker run --rm --init --name pointpillars \
-  --gpus all --network host --ipc host \
-  -v pp-engines:/var/lib/pp_infer \
-  -v "$PWD/deployment.yaml:/opt/pp_infer/node.yaml:ro" \
-  pp-infer:jazzy-trt10
-\end{lstlisting}
-Startup supplies the engine path. Parameters are read-only after startup; restart after editing. Other precision modes need matching recipes and validation.
-
-\section{Optional: native development with colcon}
-Docker is the recommended deployment route. Native development needs host Jazzy, C++/CUDA development files, and a local SDK. The following subsections prepare them.
-
-\subsection{Download the model for native development}
-Docker does this automatically. For the native commands below:
-\begin{lstlisting}
-cd "$PROJECT_DIR"
-mkdir -p docker/assets
-PP_MODEL_URL='https://api.ngc.nvidia.com/v2/models/nvidia/tao/pointpillarnet/versions/deployable_v1.1/files/pointpillars_deployable.onnx'
-curl -fL --retry 3 "$PP_MODEL_URL" -o docker/assets/pointpillars.onnx
-printf '%s  %s\n' \
-  '2dcabddc3a365e9608a112d7bbbb7db769a6dddeeaa59aa03611a83113326da1' \
-  'docker/assets/pointpillars.onnx' | sha256sum --check
-python3 tools/inspect_onnx_metadata.py docker/assets/pointpillars.onnx
-\end{lstlisting}
-The hash should say \code{OK}. Metadata reading is not a full ONNX validator.
-
-\subsection{Prepare TensorRT for native development}
-\label{sec:native-sdk}
-Skip this subsection for Docker deployment. The original machine already has the SDK; verify it rather than extracting again.
-
-Download the Ubuntu 24.04, CUDA 12.9, TensorRT 10.16.1 local repository DEB, approximately 5.17 GB, using a browser or:
-\begin{lstlisting}
-mkdir -p "$HOME/Downloads"
-TRT_DEB="$HOME/Downloads/nv-tensorrt-local-repo-ubuntu2404-10.16.1-cuda-12.9_1.0-1_amd64.deb"
-TRT_URL='https://developer.download.nvidia.com/compute/tensorrt/10.16.1/local_installers'
-curl -fL -C - \
-  "$TRT_URL/nv-tensorrt-local-repo-ubuntu2404-10.16.1-cuda-12.9_1.0-1_amd64.deb" \
-  -o "$TRT_DEB"
-printf '%s  %s\n' \
-  '9f465423f47e739c1db159cb9dd2c8991cbff13380e1a358476c40321bff07fe' \
-  "$TRT_DEB" | sha256sum --check
-\end{lstlisting}
-If the hash differs, compare release/inventory before proceeding. Do not mix SDK versions. TensorRT 11 is not a drop-in replacement for this runtime and its legacy plugins.
-
-\subsubsection{Extract locally without system installation}
-The outer DEB contains component DEBs. Extract selected headers and shared libraries together, without maintainer scripts or apt registration. Static libraries are omitted because this project uses shared libraries.
-
-Copy the complete block into Bash. It stops on errors and leaves temporary repository files on failure for inspection. Use a clean destination or the already verified SDK, not mixed versions:
-\begin{lstlisting}
-cd "$PROJECT_DIR"
-(
-  set -euo pipefail
-  shopt -s nullglob
-  sdk_root="$PWD/.recovery/sdk/tensorrt-10.16.1"
-  mkdir -p "$sdk_root"
-  sdk_repo_dir=$(mktemp -d "$PWD/.recovery/sdk/repository.XXXXXX")
-  dpkg-deb --extract "$TRT_DEB" "$sdk_repo_dir"
-  sdk_version='10.16.1.11-1+cuda12.9'
-  components=(
-    libnvinfer10 libnvinfer-dev libnvinfer-headers-dev
-    libnvinfer-plugin10 libnvinfer-plugin-dev
-    libnvinfer-headers-plugin-dev
-    libnvonnxparsers10 libnvonnxparsers-dev libnvinfer-bin
-    python3-libnvinfer libnvinfer-safe-headers-dev
-    libnvinfer-lean10 libnvinfer-vc-plugin10 libnvinfer-dispatch10
-  )
-  for component in "${components[@]}"; do
-    packages=( "$sdk_repo_dir"/var/nv-tensorrt-local-repo-*/"${component}_${sdk_version}"_*.deb )
-    if (( ${#packages[@]} != 1 )); then
-      printf 'Expected one package for %s; found %s\n' \
-        "$component" "${#packages[@]}" >&2
-      exit 1
-    fi
-    dpkg-deb --fsys-tarfile "${packages[0]}" | \
-      tar --exclude='*.a' -xf - -C "$sdk_root"
-  done
-  test -f "$sdk_root/usr/include/x86_64-linux-gnu/NvInfer.h"
-  test -f "$sdk_root/usr/bin/trtexec"
-  test -e "$sdk_root/usr/lib/x86_64-linux-gnu/libnvinfer.so"
-  test -e "$sdk_root/usr/lib/x86_64-linux-gnu/libnvinfer_plugin.so"
-  rm -r -- "$sdk_repo_dir"
-)
-\end{lstlisting}
-The removal affects only the temporary repository made by this block. It retains the original DEB and local SDK. Do not substitute another path. Resolve failures before continuing.
-
-Verify inputs:
-\begin{lstlisting}
-cd "$PROJECT_DIR"
-test -s docker/assets/pointpillars.onnx
-test -f .recovery/sdk/tensorrt-10.16.1/usr/include/x86_64-linux-gnu/NvInfer.h
-ls .recovery/sdk/tensorrt-10.16.1/usr/lib/x86_64-linux-gnu/libnvinfer*.so*
-\end{lstlisting}
-These files serve the native compiler and environment helper. Docker downloads its own dependencies and does not read this local SDK. Git/source checkpoints exclude SDK/model directories; retain independent backups.
-
-
-
-\subsection{Install ROS Jazzy if the native host does not have it}
-Skip this subsection on the Docker route or an already configured ROS host. These commands configure a fresh Ubuntu 24.04 native development host using the ROS repository package [S8]. A different existing UTF-8 locale is also acceptable.
-\begin{lstlisting}
-sudo apt update
-sudo apt install locales software-properties-common curl python3
-sudo locale-gen en_US en_US.UTF-8
-sudo update-locale LANG=en_US.UTF-8
-export LANG=en_US.UTF-8
-sudo add-apt-repository universe
-pp_ros_source_version=$(curl -fsSL \
-  https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | \
-  python3 -c 'import json,sys; print(json.load(sys.stdin)["tag_name"])')
-curl -fL \
-  "https://github.com/ros-infrastructure/ros-apt-source/releases/download/$pp_ros_source_version/ros2-apt-source_$pp_ros_source_version.noble_all.deb" \
-  -o /tmp/pp-ros2-apt-source.deb
-sudo dpkg -i /tmp/pp-ros2-apt-source.deb
-sudo apt update
-sudo apt upgrade
-sudo apt install ros-jazzy-ros-base
-source /opt/ros/jazzy/setup.bash
-ros2 --help
-\end{lstlisting}
-Review normal apt prompts and restart if a kernel/driver update requires it. The repository package version above is resolved at installation time; record it for your deployment. Use the official instructions if an existing repository conflicts. Continue below for the compiler, message packages, CUDA, and project build.
-
-
-With the ROS repository configured:
-\begin{lstlisting}
-sudo apt update
-sudo apt install build-essential cmake python3-colcon-common-extensions \
-  ros-jazzy-vision-msgs ros-jazzy-pcl-conversions libpcl-dev
-\end{lstlisting}
-Keep a suitable existing toolkit; the original host used 12.0.140. To match the container recipe on a new native host:
-\begin{lstlisting}
-curl -fsSL \
-  https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb \
-  -o /tmp/pp-cuda-keyring.deb
-sudo dpkg -i /tmp/pp-cuda-keyring.deb
-sudo apt update
-sudo apt install \
-  cuda-cudart-dev-12-9=12.9.79-1 cuda-nvcc-12-9=12.9.86-1 \
-  cuda-nvrtc-12-9=12.9.86-1 libcublas-12-9=12.9.1.4-1 \
-  libnvjitlink-12-9=12.9.86-1
-export CUDAToolkit_ROOT=/usr/local/cuda-12.9
-export LD_LIBRARY_PATH="/usr/local/cuda-12.9/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-\end{lstlisting}
-These components do not request a replacement driver. Review changes if pinned versions disappear. Optional native installation is unnecessary for image use.
-
-If this checkout was moved, select fresh build and install directories: old CMake caches and generated ROS setup files can retain the previous absolute path. Use the same selected bases for building, testing, and sourcing the overlay. The commands below assume fresh default directories. Docker always builds at its own fixed container path and avoids these host artifacts.
-
-Build and test:
-\begin{lstlisting}
-cd "$PROJECT_DIR"
-source /opt/ros/jazzy/setup.bash
-source tools/env_tensorrt.sh
-colcon build --packages-select pp_infer --cmake-args \
-  -DCMAKE_BUILD_TYPE=Release -DPython3_EXECUTABLE=/usr/bin/python3
-source install/setup.bash
-colcon test --packages-select pp_infer
-colcon test-result --verbose
-\end{lstlisting}
-Source ROS, the SDK helper, and overlay in every new terminal. The helper exposes paths; it does not install packages.
-
-\subsection{Native engine and configuration}
-Build on the target GPU and promote only on success:
-\begin{lstlisting}
-mkdir -p .recovery/engines .recovery/run
-trtexec --onnx=docker/assets/pointpillars.onnx \
-  --minShapes=points:1x204800x4,num_points:1 \
-  --optShapes=points:1x204800x4,num_points:1 \
-  --maxShapes=points:1x204800x4,num_points:1 \
-  --device=0 --memPoolSize=workspace:1024 --noTF32 --skipInference \
-  --saveEngine=.recovery/engines/pointpillars-fp32.pending.engine && \
-  mv .recovery/engines/pointpillars-fp32.pending.engine \
-     .recovery/engines/pointpillars-fp32.engine
-python3 - <<'PY'
-from pathlib import Path
-engine = Path('.recovery/engines/pointpillars-fp32.engine').resolve()
-assert engine.is_file(), 'Build the engine successfully first'
-text = Path('docker/node.yaml').read_text()
-Path('.recovery/run/node.yaml').write_text(
-    text + '    engine_path: ' + str(engine) + '\n')
-PY
-ros2 run pp_infer pp_infer --ros-args \
-  --params-file .recovery/run/node.yaml -r __node:=pointpillars
-\end{lstlisting}
-This retains provisional smoke settings; real data needs verified settings. The original host used \path{.recovery/engines/pointpillars-fp32.smoke.engine}; new machines build their own.
-
-The old \path{launch/pp_infer_launch.py} contains historical absolute paths and unverified labels/scaling. It is not the validated startup method.
-
-\section{Repeat development checks with colcon}
-Run these commands from the project folder. Each reduced build uses its own build and install directories so its options do not change your normal runtime build. CPU checks do not prove GPU execution or model accuracy.
-
-Colcon is the command you run. The package still uses CMake internally, so \code{--cmake-args} passes configuration options to that backend; you do not need separate CMake or CTest commands.
-
-\subsection{CPU-only checks}
-These need colcon and a C++ compiler, but not ROS libraries, CUDA, or TensorRT:
-\begin{lstlisting}
-cd "$PROJECT_DIR"
-colcon build --packages-select pp_infer \
-  --build-base .recovery/colcon-doc/core/build \
-  --install-base .recovery/colcon-doc/core/install \
-  --cmake-args -DPP_BUILD_RUNTIME=OFF -DPP_BUILD_ROS_ADAPTER=OFF \
-  -DCMAKE_BUILD_TYPE=Debug
-colcon test --packages-select pp_infer \
-  --build-base .recovery/colcon-doc/core/build \
-  --install-base .recovery/colcon-doc/core/install \
-  --ctest-args --output-on-failure
-colcon test-result \
-  --test-result-base .recovery/colcon-doc/core/build --verbose
-\end{lstlisting}
-This reduced configuration builds test executables without an install target. Colcon may warn that installation was skipped; that is expected here. Do not source its install directory to run the inference node. Check the test-result command: a successful build alone does not mean the tests passed.
-
-\subsection{CPU address and undefined-behavior checks}
-Use a separate configuration:
-\begin{lstlisting}
-colcon build --packages-select pp_infer \
-  --build-base .recovery/colcon-doc/core-sanitized/build \
-  --install-base .recovery/colcon-doc/core-sanitized/install \
-  --cmake-args -DPP_BUILD_RUNTIME=OFF -DPP_BUILD_ROS_ADAPTER=OFF \
-  -DPP_ENABLE_SANITIZERS=ON -DCMAKE_BUILD_TYPE=Debug
-ASAN_OPTIONS=detect_leaks=0 colcon test --packages-select pp_infer \
-  --build-base .recovery/colcon-doc/core-sanitized/build \
-  --install-base .recovery/colcon-doc/core-sanitized/install \
-  --ctest-args --output-on-failure
-colcon test-result \
-  --test-result-base .recovery/colcon-doc/core-sanitized/build --verbose
-\end{lstlisting}
-Recorded CPU checks cover 15 geometry cases, 2000 random comparisons, and output contracts. LeakSanitizer is disabled in the traced environment; leak checking is not established. The same installation warning applies to this CPU-only configuration.
-
-\subsection{ROS adapters without GPU inference}
-Source Jazzy first. This build tests message handling without loading an engine:
-\begin{lstlisting}
-source /opt/ros/jazzy/setup.bash
-colcon build --packages-select pp_infer \
-  --build-base .recovery/colcon-doc/ros/build \
-  --install-base .recovery/colcon-doc/ros/install \
-  --cmake-args -DPP_BUILD_RUNTIME=OFF -DPP_BUILD_ROS_ADAPTER=ON \
-  -DCMAKE_BUILD_TYPE=Debug -DPython3_EXECUTABLE=/usr/bin/python3
-colcon test --packages-select pp_infer \
-  --build-base .recovery/colcon-doc/ros/build \
-  --install-base .recovery/colcon-doc/ros/install \
-  --ctest-args --output-on-failure
-colcon test-result \
-  --test-result-base .recovery/colcon-doc/ros/build --verbose
-\end{lstlisting}
-Four normal modes cover geometry, output contract, adapter data, and parameters. Fixtures include 11 data and two parameter cases. An installed ROS allocator produced an ASan type mismatch during node creation. Parameter checks run in the normal build; instrumented data tests exclude node construction rather than suppressing the error globally.
-
-\subsection{Repeated GPU inference after the normal colcon build}
-With native dependencies and a target engine ready, use the normal runtime build:
-\begin{lstlisting}
-source /opt/ros/jazzy/setup.bash
-source tools/env_tensorrt.sh
-colcon build --packages-select pp_infer --cmake-args \
-  -DPP_BUILD_RUNTIME=ON -DPP_BUILD_ROS_ADAPTER=ON \
-  -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release \
-  -DPython3_EXECUTABLE=/usr/bin/python3
-source install/setup.bash
-colcon test --packages-select pp_infer --ctest-args --output-on-failure
-colcon test-result --verbose
-./build/pp_infer/runtime_smoke \
-  .recovery/engines/pointpillars-fp32.engine
-\end{lstlisting}
-The smoke executable is a build artifact, not an installed ROS node. Its path above follows colcon's default build directory. If using a custom build base, use that base followed by \path{pp_infer/runtime_smoke}. Select the engine you successfully generated on this GPU.
-
-Recorded GPU checks exercised capacity rejection, ten frames, profiling, empty output, and destruction. Compute Sanitizer 12.0 initially failed before meaningful instrumentation. Later CUDA 12.9 allocation probes reported zero errors on two executions, as detailed below; full GPU memory/tensor-bounds validation remains incomplete.
-
-
-\section{Recovery after credits or session interruption}
-Recovery cannot buy credits or continue an unavailable model. It preserves development state for a person or later session.
-
-With Python 3 and Git:
-\begin{lstlisting}
-cd "$PROJECT_DIR"
-python3 tools/recovery.py status
-git status --short
-git diff
-git diff --cached
-\end{lstlisting}
-Read \path{recovery/RESUME.md}, \path{recovery/PROGRESS.md}, and \path{recovery/tasks.json}. Check for running interrupted builds/containers before retrying. Preserve changes; continue the interrupted substep or earliest ready task.
-
-Checkpoint before edits or long commands:
-\begin{lstlisting}
-python3 tools/recovery.py checkpoint \
-  --task W09 --state in-progress \
-  --next 'Build the image, record results, then run the GPU/ROS check.' \
-  --evidence 'Not tested after the current change.'
-\end{lstlisting}
-After edits, run affected checks, record exact commands, exit codes, and logs, then checkpoint. Mark a task verified only when its acceptance criteria pass. The helper records assertions, not tests. W09 remains in progress because CI/operational acceptance remain.
-
-Immutable checkpoints under \path{.recovery/checkpoints} save eligible source, patches, Git identity, and hashes. Status checks integrity/drift. No reset, restore, staging, or commit occurs. Manually recover selected content after comparing differences.
-
-Caps: 1 MiB per text file, 16 MiB total, 32 MiB per patch. SDKs, engines, models, bags, generated files, likely credentials, and oversized files are excluded. Symlinks are recorded, not followed. Logs under \path{.recovery} are not recursively copied. Independently back up DEB, ONNX, image archives, logs, and bags. Local checkpoints do not protect against disk loss.
-
-Helper checks:
-\begin{lstlisting}
-python3 -m unittest discover -s tests -p 'test_recovery.py' -v
-\end{lstlisting}
-Twelve tests passed in the recorded work. Give a later session this instruction:
-\begin{quote}
-Continue this project. Read recovery/RESUME.md, recovery/PROGRESS.md, and recovery/tasks.json. Run recovery status, reconcile current files with the last checkpoint, preserve changes, and resume unfinished work. Checkpoint before and after edits and record actual test evidence.
-\end{quote}
-
-\section{Troubleshooting}
-\begin{longtable}{p{0.31\textwidth}p{0.62\textwidth}}
-\toprule Symptom & Next action \\ \midrule
-Host GPU check fails & Resolve driver/kernel/Secure Boot setup. Docker cannot supply the kernel driver. \\
-Docker permission denied & Use sudo; check \code{sudo systemctl status docker}. \\
-GPU runtime missing & Check toolkit/configuration; restart Docker appropriately. \\
-Download or Git failure at build & Check internet, repository/ref, NVIDIA URLs, and checksum. Do not bypass verification. \\
-Disk full & Inspect \code{df -h} and \code{sudo docker system df}. Remove only identified disposable outputs, not unrelated images/volumes. \\
-Unsupported GPU & Check selection/support. Older GPUs or ARM/Jetson need another stack/image. \\
-GPU out of memory & Reduce other workloads appropriately; try smaller builder workspace. Runtime memory remains uncapped. \\
-Plugin missing & Confirm SDK/model. Required version-1 creators: VoxelGeneratorPlugin, PillarScatterPlugin, DecodeBbox3DPlugin, with empty namespace. Do not substitute TensorRT 8 libraries. \\
-Name already in use & Inspect \code{sudo docker ps -a}; stop the intended previous instance. \\
-No output & Check input/topic/domain/QoS/layout/logs; supply a source or smoke check. \\
-Incorrect detections & Verify labels, normalization, units, coordinates, and reference data before thresholds. \\
-Bad cached engine & Identify, back up, and remove only that cache file; restart. \\
-Native package missing & Source ROS/overlay, SDK helper, and needed CUDA libraries. \\
-\bottomrule
-\end{longtable}
-
-\section{Labeled KITTI accuracy and live ground truth: 3 October 2026}
-The current published node was measured on 32 frozen labeled KITTI frames, with 16 tuning and 16 test frames from different original recording drives. Original XYZI values, scale 1.0, FP32, NMS 0.01 and top-N 4096 were retained. The first detections were saved and hashed. This is a deliberately varied diagnostic sample, not a population score or public KITTI leaderboard result.
-
-The 16-frame test split at moderate difficulty produced the following results. Model Vehicle is explicitly evaluated as KITTI Car compatibility; other original vehicle annotations are not merged into Car. KITTI's pinned development-kit overlap, difficulty and matching routines are used, with a local file/JSON adapter and declared camera-visibility filtering.
-\begin{longtable}{p{0.20\textwidth}p{0.17\textwidth}p{0.16\textwidth}p{0.20\textwidth}p{0.16\textwidth}}
-\toprule Class & Valid GT & 3D matches & BEV matches & BEV AP R40 \\ \midrule
-Car & 54 & 0 & 12 & 5.75\% \\
-Pedestrian & 31 & 0 & 0 & 0\% \\
-Cyclist & 19 & 0 & 2 & 0.0258\% \\
-\bottomrule
-\end{longtable}
-All three moderate 3D AP values are zero. Moderate BEV precision/recall are 8.57\%/22.22\% for Car, zero for Pedestrian and 0.98\%/10.53\% for Cyclist. Small class populations make AP discretization sparse. This is a poor baseline; accuracy acceptance has not been achieved.
-
-For 12 BEV-matched test cars, the median predicted center is about 1.53 m above the annotation. A separate one-frame NVIDIA trtexec execution also emitted elevated centers. That is a limited candidate-consistency probe, not full independent inference parity: it shares the engine/plugins and does not verify complete pre/post-NMS behavior. Repeated live counts varied for 31 of 32 observed frames, by up to seven boxes. The measured first pass remains frozen. No guessed coordinate shift or score tuning was applied.
-
-Six evaluator controls passed, including exact boxes scoring 100\%, all missing boxes counting as misses and duplicate boxes counting as false positives. All 41 Python tests passed. The frozen report reproduced. Read \path{docs/KITTI_ACCURACY_RESULTS.md} and \path{config/kitti_accuracy_inventory.json} for full per-class/difficulty/scenario counts, exact policy, source/runtime identities, hashes and limits.
-
-\subsection{Prepare, collect and report}
-The host player needs Jazzy Python/messages; the evaluator needs g++ and Boost headers. These dependencies already existed on the tested computer. On another configured ROS host:
-\begin{lstlisting}
-sudo apt install build-essential libboost-dev ros-jazzy-vision-msgs \
-  ros-jazzy-visualization-msgs
-cd "$PROJECT_DIR"
-bash tools/kitti_accuracy.sh prepare
-bash tools/kitti_accuracy.sh collect
-bash tools/kitti_accuracy.sh report
-\end{lstlisting}
-The wrapper uses the existing inference image. It starts an isolated validation container on domain 42 and checks its identity/model/settings. Data defaults to \path{../datasets/kitti_object_diagnostic_v1}; outputs go under ignored \path{.recovery/accuracy/kitti-baseline-v1}. Use \code{PP_KITTI_DATASET} and \code{PP_KITTI_OUTPUT} for other locations. Changed runtime/exporter/policy identities require a new result folder. Stop another validation player before collecting; completed frame observations are preserved after interruption.
-
-Across 32 frames, 2876 final predictions were exported: 862 intersected the labeled camera view and 2014 were excluded from camera-labeled evaluation. RViz continues to show all predictions. Camera projection uses full calibrated corners with near-plane clipping. The KITTI output format fits a camera-upright yaw representation, which approximates small calibration tilt; ground-truth corner reports retain full orientation. No extra model-range filter discards annotations.
-
-\subsection{Watch ground truth and predictions together}
-In one terminal:
-\begin{lstlisting}
-bash tools/kitti_accuracy.sh live
-\end{lstlisting}
-In another:
-\begin{lstlisting}
-bash tools/kitti_accuracy.sh view
-\end{lstlisting}
-Green edges are calibrated ground truth. Orange, blue and yellow identify model Vehicle, Pedestrian and Cyclist predictions. Point colors show intensity. White text names the current frame and split. Playback loops at three seconds per frame; its repeated outputs do not overwrite the first scored observations. The shared frame is velodyne. A global TF warning can remain without a world transform.
-
-The actual RViz window rendered points, predictions and green boxes during implementation and was left running. Stop the owned validation detector/player/viewer with:
-\begin{lstlisting}
-bash tools/kitti_accuracy.sh stop
-\end{lstlisting}
-The helper checks container identity and process start times before stopping its resources. It preserves unrelated containers and applications. The ordinary bag/video viewer is a separate workflow. Dataset/results/screenshots/logs are outside Git and source checkpoints; keep independent backups. Original-model parity, repeatability, training/input-domain investigation, a larger untouched evaluation split and agreed accuracy targets remain.
-
-\section{Independent reference and capacity investigation: 3 October 2026}
-The exact ONNX was run in separate TensorRT 8.6.1.6 and 10.16.1.11 environments on the same GPU, using identical original input bytes and three repeats per frame. That produced 192 raw observations. The older environment builds its own FP32/no-TF32 engine and carries its own CUDA 12.0 and plugin libraries. The production image and frozen baseline were preserved.
-
-The diagnostic adapter calls TensorRT directly, with enqueueV2 for the older runtime and enqueueV3 for the current one. It is independent of ROS inference code. NVIDIA's sample NMS was compiled unchanged at a pinned revision. On all 192 identical-candidate observations, it and our existing CPU NMS selected the same boxes at a 0.000001 component tolerance. This compatibility reference is not an original training-framework fixture; both versions can share plugin behavior.
-
-\begin{longtable}{p{0.42\textwidth}p{0.22\textwidth}p{0.27\textwidth}}
-\toprule Pipeline, first test pass & Car BEV AP R40 & Moderate 3D matches \\ \midrule
-Frozen ROS baseline & 5.7516\% & Zero for all classes \\
-TRT8 with NVIDIA NMS & 5.8349\% & Zero for all classes \\
-TRT10 with NVIDIA NMS & 5.5349\% & Zero for all classes \\
-TRT10 with our NMS & 5.5349\% & Zero for all classes \\
-\bottomrule
-\end{longtable}
-All three repeats have zero moderate 3D matches on tuning and test. The first TRT8 pass's 12 BEV-matched cars have median vertical error 1.5288 m upward. TRT10 matches 11 cars, with median upward error 1.5195 m. The failure therefore exists in the older pipeline too. Do not infer that the pretrained weights alone are faulty or install a global z shift.
-
-Unique same-class matching compares XYZ, dimensions, wrapped yaw and score at 0.001 per component. Cross-version raw matching has median 78.00\%; within-version repeated raw matching is 79.41\% for TRT8 and 78.30\% for TRT10. Numerical parity is not accepted. The similar medians are descriptive, not a statistical equivalence test. TRT8 consistently matches one additional test car in BEV; that difference also needs investigation.
-
-The export permits 10,000 voxels and 32 points per voxel. A descriptive audit found 12 frames above the voxel limit, up to 15,180 occupied voxels; every frame has crowded voxels. Published NVIDIA source uses atomic point/pillar selection and raises an internal coordinate-tensor bounds concern above the pillar limit. Source inspection does not prove the exact packaged instructions. Two tuning-only controls preserve retained XYZI bits while selecting the first 10,000 voxels and first 32 points per voxel. Their repeated raw matching improved to roughly 99.6--100\%. This supports a preprocessing/capacity contribution to variation, not an accuracy improvement or a production fix.
-
-CUDA 12.9 allocation memcheck actually ran on original and capped tuning frame 004804, one execution each, and reported zero errors. Internal TensorRT tensors may share allocations: this does not clear the source-level tensor-bounds concern, establish race freedom, or complete GPU memory validation. The earlier CUDA 12.0 instrumentation failure remains historical.
-
-With a prepared dataset, frozen baseline and running validation detector:
-\begin{lstlisting}
-python3 tools/kitti_reference.py build
-python3 tools/kitti_reference.py collect
-python3 tools/kitti_reference.py report
-python3 tools/kitti_reference_repeat.py
-python3 tools/kitti_voxel_control.py
-python3 tools/kitti_reference_memcheck.py
-\end{lstlisting}
-Host Python 3, Docker/GPU integration and g++ are needed; reference SDKs live inside diagnostic images. Outputs default to ignored \path{.recovery/accuracy/kitti-reference-v1}. Inputs, images, source and engine identities are frozen. Hash-verified completed raw observations are reused; partial unindexed observations are preserved separately. A new identity requires a fresh result directory. The existing deployment continues to build with colcon.
-
-While the labeled player runs on domain 42, open the reference overlay and RViz in separate terminals:
-\begin{lstlisting}
-source /opt/ros/jazzy/setup.bash
-ROS_DOMAIN_ID=42 FASTDDS_BUILTIN_TRANSPORTS=UDPv4 \
-  python3 tools/kitti_reference_view.py
-\end{lstlisting}
-\begin{lstlisting}
-ROS_DOMAIN_ID=42 RVIZ_CONFIG="$PWD/rviz/kitti_reference.rviz" \
-  bash tools/visualize.sh
-\end{lstlisting}
-Cyan means frozen first-pass TRT8 predictions, green means calibrated ground truth, and the original Detections display shows live TRT10 boxes. The overlay selects by exact cloud bytes and copies its current header; it does not overwrite measurements. The actual window rendered successfully and was left running. Stop each terminal with Ctrl+C, or stop the owned overlay with \code{python3 tools/kitti_reference_view.py --stop}; close RViz separately.
-
-Nine focused reference/capacity controls and 50 total Python tests passed. Read \path{docs/MODEL_REFERENCE_COMPARISON.md} and \path{config/kitti_reference_inventory.json} for exact results, hashes, repeat ranges, source evidence, commands and recovery limits. W01 remains in progress. Next verify bounded voxelization, the original input/training contract and decoder behavior, then evaluate a justified correction or suitable model on untouched data with agreed targets.
-
-
-\section{Ouster feature results: 13 October 2026}
-Two OS1-32 calibration recordings have 291 and 265 source clouds, each with
-32,768 entries. They have no object-detection ground truth. The original
-FLOAT32 intensity is signal, reaching 9,059; it is different from the separate
-reflectivity channel. A scale of 1.0 passed this signal directly into a model
-whose fourth feature is documented in the range 0--1.
-
-The controlled experiment froze 16 scans, four feature encodings and three
-repeats: 192 raw observations. Only the fourth feature changed; XYZ bits,
-point count/order and zero returns were retained. Existing FP32 engine, NMS
-IoU 0.01 and top-N 4096 were fixed. Any invalid candidate rejected the whole
-observation, matching production behavior.
-\begin{longtable}{p{.33\textwidth}rrrr}
-\toprule Fourth feature & Rejected & Invalid rows & Median boxes & Score median \\
-\midrule
-Original signal & 15/48 & 33 & 590 & 1.000 \\
-Signal / 65,535 & 0/48 & 0 & 15 & 0.164 \\
-Reflectivity / 255 & 0/48 & 0 & 18.5 & 0.166 \\
-min(reflectivity / 100, 1) & 0/48 & 0 & 26 & 0.173 \\
-\bottomrule
-\end{longtable}
-Box-count medians use accepted observations; score values are medians of
-per-observation final-score medians. All 33 invalid rows had nonfinite length.
-There were no invalid rows in the 144 normalized observations. Full
-\code{reflectivity_div255} replay then matched 291/291 and 265/265 input/output
-occurrences with no recorded invalid message fields or detector log errors.
-Duplicate source headers were counted as separate occurrences.
-
-This establishes a contribution from the unscaled fourth feature to numerical
-failure on these recordings. It does not establish precision/recall, correct box
-placement or training calibration. Reflectivity/255 is a bounded code encoding,
-not proven linear physical reflectance. The general helper still defaults to
-\code{raw_signal}. No weights, confidence threshold or production voxelization
-were changed. See \path{docs/OUSTER_FEATURE_COMPARISON.md} and
-\path{config/ouster_feature_inventory.json}.
-
-\section{Camera playback and original Ouster detail: 13--14 October}
-Both recordings contain original 2448$\times$2048 BGR8 camera images.
-The 58- and 53-image sequences produce 1280$\times$1070 MP4 previews lasting
-29.000 s and 26.433 s. Source rate is approximately 2 Hz; a 30 fps video holds
-images rather than creating additional observations. Merged ROS playback
-preserved 111 image payloads, 111 CameraInfo payloads and 556 normalized clouds.
-
-Camera and LiDAR header clocks differ. Playback coordinates bag-record times,
-not proven acquisition-time synchronization. The RViz Image panel is separate
-from the cloud/detection display; no calibrated image overlay is implemented.
-Attribution: Kenji Koide, AIST, calibration dataset v3,
-DOI \code{10.5281/zenodo.7780490}, CC-BY-4.0.
-
-The detail workflow adds the original serialized cloud on
-\code{/ouster/raw_points}, retaining original signal and all auxiliary fields,
-alongside normalized inference. Five live pairs passed byte comparisons of all
-non-intensity bytes. In the selected experiment, 13,206--15,775 of 32,768 entries
-per scan had zero range and zero XYZ. They overlap at the origin and do not
-represent additional scene surfaces. Closer/brighter rendering does not create
-points. Original bags remain intact.
-
-With inference already running, stop the intended earlier Ouster player, then
-run the player and viewer in separate terminals:
-\begin{lstlisting}
-bash tools/rosbag_ouster.sh stop
-bash tools/rosbag_ouster_detail.sh
-# Separate terminal, same ROS_DOMAIN_ID:
-RVIZ_CONFIG="$PWD/rviz/ouster_detail.rviz" bash tools/visualize.sh
-# Export/reuse camera-only MP4 previews:
-bash tools/rosbag_ouster.sh videos
-\end{lstlisting}
-The detail wrapper explicitly selects \code{reflectivity_div255}, original-data
-view and camera playback. Run it only after stopping conflicting playback.
-Preparation needs host ROS Jazzy Python packages, NumPy/Pillow as used by the
-helpers; encoding uses FFmpeg or the separate demo-tools image. See
-\path{docs/OUSTER_CAMERA_VISUALS.md} and
-\path{docs/FRONTAL_COMPARISON_AND_RVIZ_DETAIL.md} for complete prerequisites.
-
-\section{Frontal KITTI recording: 14 October 2026}
-A separate official raw drive, \code{2011_09_26_drive_0005_sync}, provides a
-forward-facing left color camera and full 360-degree HDL-64E clouds. This differs
-from the sequence04/drive0016 demo and from the labeled object diagnostic set.
-No object labels are published by this raw-data helper.
-\begin{longtable}{p{.45\textwidth}p{.46\textwidth}}
-\toprule Property & Recorded result \\ \midrule
-Clouds / images / CameraInfo & 154 / 154 / 154 \\
-Points per scan & 98,532--124,122; median 122,651 \\
-Matched detections & 154/154; no recorded detector log errors \\
-Published boxes per frame & 83--132; median 106 \\
-Original cloud timeline & 15.7996 s \\
-Camera image / MP4 & 1242$\times$375 / 1242$\times$376, 15.900 s \\
-Paired image minus cloud header & 9.99--10.61 ms \\
-\bottomrule
-\end{longtable}
-All published XYZI hashes and all decoded camera pixel arrays matched source
-data. No point crop, sampling or scaling was added; the video has one padding
-row. Source calibration is retained without an invented world TF or image-box
-overlay. Box counts do not establish accuracy. Attribution: Andreas Geiger,
-Philip Lenz, Christoph Stiller and Raquel Urtasun, KIT/TTI-C, CC-BY-NC-SA-3.0.
-
-Stop conflicting playback before starting this helper. With the detector running:
-\begin{lstlisting}
-bash tools/rosbag_kitti_front.sh prepare
-bash tools/rosbag_kitti_front.sh
-# Separate terminal:
-RVIZ_CONFIG="$PWD/rviz/kitti_front.rviz" bash tools/visualize.sh
-# Stop only this helper's owned player:
-bash tools/rosbag_kitti_front.sh stop
-\end{lstlisting}
-Default playback is half recorded speed and looping. Match ROS domains across
-all processes. Assets are ignored under
-\path{.recovery/rosbags/kitti_front_0005}; see
-\path{config/kitti_front_inventory.json} for the source identities and evidence.
-
-\section{Visual examples from supplied recordings: 20 October filenames}
-Two frames were extracted from local WebM screencasts in
-\path{/media/ae/New Volume/datasets/vedios}. They are full 1920$\times$1080 PNGs
-without crop, scaling or annotations. Source and image SHA256 values, offsets
-and extraction details are retained in \path{docs/figures/provenance.json}.
-\begin{figure}[htbp]
-\centering
-\projectshot{rviz-screencast-1.png}{.94\linewidth}
-\caption{First screencast at 32.035 s: RViz shows LiDAR geometry, candidate boxes
-and score labels. This is a visual illustration, not an accuracy measurement.}
-\end{figure}
-\begin{figure}[htbp]
-\centering
-\projectshot{rviz-screencast-2.png}{.94\linewidth}
-\caption{Second screencast at 16.023 s: a wider road view with points and boxes.
-The screenshot alone does not identify the underlying bag, engine or feature recipe.}
-\end{figure}
-The filename date is not independently verified acquisition provenance.
-Neither selected frame shows reviewed ground truth or a calibrated camera
-projection. Earlier actual KITTI RViz rendering and later profile configuration
-checks retain their original scopes; these screenshots are not a retrospective
-validation of every saved profile.
-\clearpage
-
-\section{Documentation verification: 23 October 2026}
-All 64 existing Python tests passed. Six HTTP-fixture tests initially lacked
-permission to bind loopback sockets in the sandbox; the complete rerun with
-local socket access passed. The review rehashed 8 baseline, 11 reference and
-9 Ouster feature JSON artifacts against inventories, all matching. The complete
-frontal observation file matched its recorded hash and summary; the Ouster
-raw-view observation matched its inventory. These checks do not rerun GPU tests.
-
-Review began at local \code{ee6b36c} with only untracked \code{prompt.md}; that
-user file was preserved. \code{CLA.md} retains its legal text. Runtime sources,
-thresholds, frozen datasets and measured results were not modified. Logs are
-under \path{.recovery/verification/docs-2026-10-23/}. Final compiler diagnostics
-are recorded in \path{recovery/PROGRESS.md}; older PDF renditions are historical.
-
-\section{Confidence filtering and box-count monitoring: 23 October 2026}
-The updated publication layer keeps boxes with score at least
-\code{confidence_threshold}, default 0.5. Below-threshold boxes are absent from
-the detection topic and RViz; kept boxes retain their full original information,
-order and cloud header. This extra gate runs after NMS and does not change the
-engine or NMS thresholds. It reduces low-score clutter but cannot eliminate
-incorrect high-confidence boxes. The previous accuracy tables remain frozen
-measurements of the earlier unfiltered publication policy.
-
-The threshold is a finite double in [0,1], adjustable for subsequent scans:
-\begin{lstlisting}
-ros2 param set /pointpillars confidence_threshold 0.7
-ros2 topic echo /bbox/stats
-# Initial Docker override, after publishing/building the updated source:
-sudo env PP_CONFIDENCE_THRESHOLD=0.7 bash tools/deploy.sh
-\end{lstlisting}
-An unset Docker environment override uses the YAML setting. Use 0.0 to disable
-this additional score gate. Existing containers require the new executable/image;
-the remote-source Docker build still excludes unpushed changes. No existing
-container was replaced while implementing this feature.
-
-\code{/bbox} remains a standard Detection3DArray. Its array length is the
-published count. \code{/bbox/stats} is a DiagnosticArray with post-NMS count,
-removed count, published count, effective threshold, cumulative detection events
-and frame-error counters. A valid empty/all-filtered scan publishes an empty
-array with a zero count; a dropped frame reports count unavailable and leaves
-successful totals unchanged. Totals reset at startup and are not unique-object
-counts. Monitoring topics follow detection-topic remapping.
-
-All seven saved RViz profiles now enable score labels and a MarkerArray display
-on \code{/bbox/count} (or \code{/kitti/predictions/count}). It shows the latest
-scan's published count, count before the score gate, threshold and removed count.
-The label is retained until another update; inspect header stamps/topic rate for
-freshness. The cloud frame is preserved, without a new world transform.
-
-New KITTI baseline collection explicitly disables the gate and checks matching
-per-frame statistics so changed filtering cannot silently alter the recorded
-policy. Changed identities require a new output directory; saved results were
-not overwritten. The full TensorRT-enabled package built, five C++/ROS tests and
-67 Python tests passed, with a focused rerun of the stricter baseline check.
-Actual ROS output/statistics/marker publication was tested without GPU inference.
-New GPU replay and desktop count rendering remain unverified because this
-session could not communicate with the NVIDIA driver. See
-\path{docs/CONFIDENCE_FILTER_AND_MONITORING.md} and the dated progress entry.
-
-\section{Evidence and remaining work}
-\begin{longtable}{p{0.13\textwidth}p{0.20\textwidth}p{0.58\textwidth}}
-\toprule Task & State & Meaning \\ \midrule
-W00 & Verified & Architecture and local recovery checked. \\
-W01 & In progress & TRT8 compatibility baseline also poor; capacity, training parity and accuracy acceptance remain. \\
-W02 & Verified & CPU boundary/geometry and focused sanitizer checks passed. \\
-W03 & Verified & Local adapter checks passed; allocator limitation recorded. \\
-W04/W05 & In progress & Runtime/buffers/build/link and synthetic checks passed; reference/memory/failure checks remain. \\
-W06 & Pending & Bounded worker and pending-frame policy. \\
-W07 & In progress & RViz viewer provided; launch configuration, sensor QoS, and metrics remain. \\
-W08 & Pending & Acceptance targets and benchmark. \\
-W09 & In progress & Docker/checks and this guide provided; CI/full operational acceptance remain. \\
-\bottomrule
-\end{longtable}
-The automatic Docker build cloned published source, installed pinned SDK packages, verified the downloaded ONNX, and passed four colcon modes. Fresh engine generation and two synthetic GPU/ROS round trips passed on the RTX 4060. One engine was generated across the restart. Invalid GPU selection failed clearly. Inventories/log hashes are in config and recovery records; logs remain under \path{.recovery/verification}.
-
-Next investigate vertical errors and repeatability using the original-model input/reference contract, then evaluate a documented correction or suitable model on a larger untouched split. Complete memory/failure checks, worker/configuration, latency/rate/drops/memory benchmarks, agreed accuracy targets and CI. Repeat relevant checks on each target GPU before calling it validated.
-
-\section{Project records}
-\begin{longtable}{p{0.48\textwidth}p{0.45\textwidth}}
-\toprule File & Purpose \\ \midrule
-\path{README.md} & Current quick start/status. \\
-\path{Dockerfile}, \path{.dockerignore} & Automatic Git/model/SDK inputs, packaging, and minimal context. \\
-\path{tools/deploy.sh} & One-command build and launch. \\
-\path{docker/entrypoint.sh} & GPU/cache/node startup. \\
-\path{docker/node.yaml} & Provisional settings. \\
-\path{IMPLEMENTATION_ARCHITECTURE.md} & Staged design. \\
-\path{docs/local_runtime.md} & Original SDK/native record. \\
-\path{config/*_inventory.json} & Environment/model/runtime/image records. \\
-\path{tools/env_tensorrt.sh} & Local SDK environment. \\
-\path{tools/inspect_onnx_metadata.py} & Metadata reader. \\
-\path{tools/recovery.py} & Checkpoint/status helper. \\
-\path{recovery/RESUME.md} & Continuation procedure. \\
-\path{recovery/PROGRESS.md} & Work/evidence. \\
-\path{recovery/tasks.json} & Milestones/dependencies. \\
-\bottomrule
-\end{longtable}
-
-\section{Official references}
-Ubuntu, Docker, NVIDIA Toolkit, CUDA, and TensorRT guidance were checked on 2 October 2026. Availability can change. Project-specific commands come from source/inventories. ROS links provide additional native-install/playback details.
-\begin{description}[style=nextline]
-\item[S1: Ubuntu NVIDIA drivers]
-\url{https://ubuntu.com/server/docs/how-to/graphics/install-nvidia-drivers/}
-\item[S2: Docker Engine on Ubuntu]
-\url{https://docs.docker.com/engine/install/ubuntu/}
-\item[S3: NVIDIA Container Toolkit]
-\url{https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html}
-\item[S4: TensorRT 10.x support/portability]
-\url{https://docs.nvidia.com/deeplearning/tensorrt/10.x.x/getting-started/support-matrix.html}
-\item[S5: CUDA 12.9 Update 1 release notes]
-\url{https://docs.nvidia.com/cuda/archive/12.9.1/cuda-toolkit-release-notes/index.html}
-\item[S6: PointPillarNet catalog]
-\url{https://catalog.ngc.nvidia.com/orgs/nvidia/teams/tao/models/pointpillarnet}
-\item[S7: ROS Jazzy bag QoS overrides]
-\url{https://docs.ros.org/en/jazzy/How-To-Guides/Overriding-QoS-Policies-For-Recording-And-Playback.html}
-\item[S8: ROS Jazzy Ubuntu installation]
-\url{https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html}
-\item[S9: Dockerfile Git inputs]
-\url{https://docs.docker.com/reference/dockerfile/#adding-files-from-a-git-repository}
-\end{description}
-
-\section{Published filtering trial and shutdown: 23 October 2026}
-Feature source \texttt{8a87a73} was pushed to main, rebuilt through the Docker
-wrapper and verified on the RTX 4060 Laptop GPU. All 73 Python tests and five
-Docker-build C++/ROS tests passed. Native GPU smoke passed. Native and deployed
-KITTI replay each verified 60 matched frames: 20 at each threshold 0.0, 0.5 and
-0.95. Published scores, headers, detection lengths, diagnostic arithmetic and
-actual marker totals agreed. Different thresholds sampled different scans;
-these checks do not establish detection accuracy.
-
-The publication gate keeps scores greater than or equal to
-\texttt{confidence\_threshold}, a finite double in $[0,1]$, default 0.5.
-Below-threshold boxes publish no individual detection information. The unchanged
-Detection3DArray contains accepted boxes; \texttt{/bbox/stats} reports per-frame
-and cumulative counters and \texttt{/bbox/count} carries RViz text.
-Published totals are after filtering and count repeated detection events across
-scans, not unique tracked objects. The before-filter count is after NMS.
-
-\subsection{Which shell file opens RViz?}
-The last trial used the following command from the project root:
-\begin{lstlisting}
-RVIZ_CONFIG="$PWD/rviz/kitti_front.rviz" bash tools/monitor_detections.sh rviz
-\end{lstlisting}
-The monitor's \texttt{rviz} mode calls \texttt{tools/visualize.sh} and opens a
-\textbf{new RViz process/window}. It does not reconfigure an existing window or
-start inference/playback. In an existing RViz window, choose
-\textbf{File / Open Config} and select \texttt{rviz/kitti\_front.rviz} to load the
-complete profile. To preserve your layout, add only a MarkerArray display on
-\texttt{/bbox/count}, using Reliable and Transient Local QoS and the cloud frame.
-The monitor's other modes stream statistics (default), read one snapshot
-(\texttt{once}), or query the live threshold (\texttt{threshold}); they do not
-change the threshold or reset counters.
-
-\subsection{Deployment behavior and stopped state}
-\texttt{tools/deploy.sh} first refuses an existing same-name container; otherwise
-it reuses a matching local runtime-input image or invokes a cached build.
-Base-image pulls require \texttt{\detokenize{PP_PULL_BASE=1}}. Optional
-\texttt{\detokenize{PP_BUILD_ONLY=1}} prepares the image without launching.
-Otherwise it creates a fresh
-foreground \texttt{docker run --rm} container. The image and named engine volume
-persist when the container exits; this trial reused the existing cached engine.
-
-At the user's request, the recorded detector and KITTI front-drive player
-containers were stopped and the exact trial RViz process was closed at
-\textbf{19:47 UTC / 21:47 Europe/Berlin on 23 October 2026}. Follow-up inspection
-confirmed their exit. The last live threshold was \textbf{0.5}; no live parameter
-is available while inference is stopped. The image, engine volume, datasets and
-frozen reports were preserved. Restart in three separate terminals:
-\begin{lstlisting}
-# Terminal 1: inference, including the normal build check
-PP_CONFIDENCE_THRESHOLD=0.5 bash tools/deploy.sh
-# Terminal 2: prepared KITTI front-drive replay
-bash tools/rosbag_kitti_front.sh
-# Terminal 3: a new RViz window
-RVIZ_CONFIG="$PWD/rviz/kitti_front.rviz" bash tools/monitor_detections.sh rviz
-\end{lstlisting}
-Use Docker permissions appropriate to the host and one cloud player per domain/topic.
-Local test/deployment/shutdown logs remain under
-\texttt{\detokenize{.recovery/verification/published-deployment/}}.
-W07 remains in progress for worker, launch, QoS, timing and operational acceptance;
-the frozen accuracy baseline and unresolved input/training contract are unchanged.
-
-\begin{figure}[htbp]
-\centering
-\projectshot{rviz-filter-counters-2026-10-23.png}{.97\linewidth}
-\caption{Actual RViz capture before shutdown: 3 published boxes from 94 post-NMS
-boxes, with 91 removed at threshold 0.5. Cumulative counts are detection events.
-The front camera is a separate panel, not a calibrated detection projection.
-KITTI raw drive 0005; Geiger, Lenz, Stiller and Urtasun, KIT/TTI-C,
-CC-BY-NC-SA-3.0. Capture hash and deployment identity:
-\texttt{\detokenize{docs/figures/filter-counters-provenance.json}}.}
-\end{figure}
-
-
-\section*{Current Ouster startup --- 8 November 2026}
-The deployment wrapper uses local runtime source and skips Docker build when the
-saved runtime-input checksum matches. Documentation-only edits do not trigger a
-build. Missing cache or changed dependency recipes can still require downloads.
-Host NVIDIA drivers, Docker and the NVIDIA Container Toolkit must already work.
-\texttt{\detokenize{PP_BUILD_ONLY=1}} is optional: it prepares the image and exits;
-without it, deployment starts the detector only. Stop that detector before
-starting the combined adapter/detector launcher.
+\end{tabularx}
+
+\section{Clone and prepare the image}
+If the repository already exists, use that checkout and preserve local changes.
+For a new checkout:
 \begin{verbatim}
+git clone https://github.com/AhmedAliMohammed1/MasterThesis.git
+cd MasterThesis
+nvidia-smi
+sudo docker version
 sudo env PP_BUILD_ONLY=1 bash tools/deploy.sh
-# Terminal 1: adapter and detector
+\end{verbatim}
+The last command prepares the image and exits. \code{PP_BUILD_ONLY=1} is optional:
+without it, \code{deploy.sh} also starts the detector alone. For the Ouster route,
+preparing the image first avoids starting a detector that must then be stopped
+before the combined adapter/detector launcher.
+
+\subsection{What is downloaded and what is reused}
+The default deployment uses local source, including uncommitted runtime edits.
+A matching runtime-input checksum skips Docker build entirely. Documentation-only
+edits do not require a new image. Changed runtime files trigger a build that can
+reuse independent dependency and model layers. A first build, removed cache or a
+changed dependency recipe can require downloads. Driver installation is separate.
+\begin{verbatim}
+# Explicit options; normally unnecessary:
+sudo env PP_FORCE_BUILD=1 PP_BUILD_ONLY=1 bash tools/deploy.sh
+sudo env PP_PULL_BASE=1 PP_BUILD_ONLY=1 bash tools/deploy.sh
+\end{verbatim}
+A direct Dockerfile build retains its remote-source default. Use the deployment
+wrapper for local development; a push is not required to test local runtime edits.
+A fixed remote build can be selected with \code{PP_GIT_REF} and the full commit SHA.
+
+\subsection{Engine lifecycle}
+\begin{center}
+\begin{tikzpicture}[node distance=7mm,font=\small,
+ box/.style={draw=accent,align=center,text width=10cm,minimum height=8mm},
+ arr/.style={->,>=Stealth,accent}]
+\node[box] (model) {Image build: download ONNX and verify its checksum};
+\node[box,below=of model] (check) {Startup: inspect GPU, model and engine-cache identity};
+\node[box,below=of check] (engine) {Reuse matching engine; otherwise build with trtexec};
+\node[box,below=of engine] (runtime) {Load engine once; reuse context, stream and GPU buffers};
+\draw[arr] (model)--(check);\draw[arr] (check)--(engine);\draw[arr] (engine)--(runtime);
+\end{tikzpicture}
+\end{center}
+The ONNX is stored at \path{/opt/models/pointpillars.onnx}; engines are under
+\path{/var/lib/pp_infer} in the named volume \code{pp-engines}. Cache identity
+includes model, GPU, driver, software and build recipe. Partial builds use a
+pending file and are not promoted on failure. An engine from another GPU or stack
+should not be assumed portable. The host image and engine volume remain after
+normal container shutdown.
+
+\section{Replay the original Ouster recording}
+The commands below use three terminals, all opened in the project root.
+The downloaded originals must already be present; the player does not download
+them. Their manifest and exact paths are recorded in
+\path{docs/FRESH_OUSTER_VISUAL_TEST.md}.
+\subsection{Terminal 1: adapter and detector}
+\begin{verbatim}
 sudo bash tools/start_ouster.sh bag
-# Terminal 2: unchanged original recording
+\end{verbatim}
+This starts both processes in one container. The bag profile uses Fast DDS,
+domain 99 and original input \code{/sensing/lidar/points}. It maps
+reflectivity/255 into intensity on \code{/point_cloud}; the detector publishes
+\code{/bbox}. The operating confidence threshold defaults to 0.4.
+\subsection{Terminal 2: unchanged original bag}
+\begin{verbatim}
 sudo bash tools/start_ouster_bag.sh
-# Terminal 3: graphical desktop, without sudo
+# Alternative weather recordings:
+# sudo bash tools/start_ouster_bag.sh rain30
+# sudo bash tools/start_ouster_bag.sh rain100
+\end{verbatim}
+Default dry playback loops at half speed. The source bag is mounted read-only.
+A warning about missing MCAP serialized metadata was observed during successful
+playback; it did not prevent message delivery in the recorded test.
+\subsection{Terminal 3: RViz on the desktop, without sudo}
+\begin{verbatim}
 ROS_DOMAIN_ID=99 RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
   RVIZ_CONFIG="$PWD/rviz/ouster.rviz" \
   bash tools/visualize.sh -f lidar/os_lidar
 \end{verbatim}
-The bag profile shares Fast DDS, domain 99 and input
-\texttt{/sensing/lidar/points}; output is \texttt{/point\_cloud}, then
-\texttt{/bbox}. It maps reflectivity divided by 255 to intensity. The unchanged
-bag calls its signal channel intensity, so selecting signal is unsupported for
-that recording. Bare \texttt{start\_ouster.sh} retains the live Zenoh/domain 0
-profile and requires a working driver/router. One Ctrl+C stops each launcher;
-allow up to eight seconds. The image and engine volume persist.
+The fixed frame is the recording's \code{lidar/os_lidar}. A different sensor
+requires its actual frame or a valid transform. The viewer starts only RViz;
+it does not start playback or detection. To update an already open RViz window,
+use File / Open Config instead of opening another process.
+\subsection{Stop and restart}
+Press Ctrl+C once in each launcher terminal and allow up to eight seconds for
+cleanup. Close RViz separately. The launcher stops its own container and
+preserves unrelated containers. If a name is already occupied, inspect
+\code{sudo docker ps -a} before stopping the intended instance. Use one point-cloud
+source per detector input and ROS domain.
 
-Validation passed 91 Python tests and seven C++/ROS tests. Actual GPU replay
-observed 20 raw clouds, 20 adapted clouds and 19 detection arrays with sampled
-error counters zero; each launcher stopped with one SIGINT in under 0.5 seconds.
-These are integration results, not detection-accuracy validation. Full commands
-and evidence are in \texttt{docs/STARTUP\_AND\_REPLAY.md} and
-\texttt{config/launcher\_fix\_validation.json}.
+\section{Use a working live Ouster driver}
+The project consumes driver output; it does not power the sensor, configure its
+network, start scanning or install a driver. Inspect the driver's topic, schema,
+frame, domain, middleware and QoS before launching.
+\begin{verbatim}
+# Live defaults: /ouster1/points, domain 0, rmw_zenoh_cpp.
+sudo bash tools/start_ouster.sh
+# Example when the existing driver uses Fast DDS:
+sudo env RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
+  OUSTER_POINT_CLOUD_TOPIC=/ouster/points \
+  bash tools/start_ouster.sh reflectivity
+\end{verbatim}
+The live Zenoh profile requires a reachable router. Match the actual driver's
+settings; do not mix the live and bag profiles accidentally.
 
+The adapter always converts the selected channel. It does not automatically
+choose the best channel or bypass itself when an intensity field exists.
+\code{start_ouster.sh signal} selects a literal field named \code{signal} and
+uses divisor 65,535. The downloaded MOSEP and Dur360 files instead name that
+measurement \code{intensity}. A verified field alias is proposed, not implemented
+in the live adapter. The research preparation handles the documented recording
+schema explicitly; selecting signal in the bag launcher is not an equivalent
+reproduction of that experiment.
+
+\section{Understand the data path}
+\begin{center}
+\begin{tikzpicture}[node distance=6mm,font=\small,
+ box/.style={draw=accent,align=center,text width=10.5cm,minimum height=9mm},
+ arr/.style={->,>=Stealth,accent}]
+\node[box] (raw) {Driver or player: original PointCloud2};
+\node[box,below=of raw] (adapt) {Ouster adapter: validate fields; intensity = selected field / divisor};
+\node[box,below=of adapt] (pack) {Detector CPU: validate and pack FLOAT32 XYZI};
+\node[box,below=of pack] (gpu) {GPU: pillar features, PointPillars network and box decoder};
+\node[box,below=of gpu] (out) {CPU: validate boxes, run NMS and apply publication threshold};
+\node[box,below=of out] (ros) {ROS: accepted boxes, diagnostics and count text; RViz consumes them};
+\draw[arr] (raw)--(adapt);\draw[arr] (adapt)--(pack);\draw[arr] (pack)--(gpu);
+\draw[arr] (gpu)--(out);\draw[arr] (out)--(ros);
+\end{tikzpicture}
+\end{center}
+The direct detector expects scalar little-endian FLOAT32 x, y, z and intensity.
+The Ouster adapter additionally accepts supported uint8/uint16/FLOAT32 selected
+channels, preserves XYZ and the source header, and creates a new compact XYZI
+message. It does not edit the original bag. Keep detector intensity scale 1.0
+when feeding already converted points; another division would change the recipe.
+
+Malformed or oversized clouds are rejected. Valid row padding is supported;
+nonfinite points are removed by the detector packer. Engine capacity is 204,800
+points and the default cloud byte limit is 64 MiB. The detector callback remains
+synchronous with reliable depth 700. The adapter uses sensor-compatible best-effort
+input and reliable output. A bounded worker and general detector QoS configuration
+remain open work; a large queue can accumulate delayed scans under load.
+
+\begin{longtable}{@{}p{.32\linewidth}p{.61\linewidth}@{}}
+\toprule Implementation & Responsibility \\ \midrule
+\path{src/ouster_adapter.cpp} & Field conversion, layout checks and selected-channel scaling. \\
+\path{src/ouster_adapter_node.cpp} & ROS subscription, output and input-health diagnostics. \\
+\path{src/pointcloud_adapter.cpp} & Detector XYZI validation and packing. \\
+\path{src/pp_inference_node.cpp} & Synchronous inference callback and ROS parameters. \\
+\path{src/pointpillar.cpp} & TensorRT loading, reusable GPU resources and inference. \\
+\path{src/postprocess.cpp} & CPU rotated-overlap NMS. \\
+\path{src/detection_output.cpp} & Confidence gate, ROS boxes and monitoring counters. \\
+\path{docker/entrypoint.sh} & GPU/model checks, engine-cache lifecycle and node start. \\
+\bottomrule
+\end{longtable}
+
+\section{Read boxes, counters and timestamps}
+\code{/bbox} is a Detection3DArray of accepted boxes. \code{/bbox/stats} is a
+DiagnosticArray; \code{/bbox/count} is an RViz MarkerArray with count text.
+\begin{verbatim}
+PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh once
+PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh threshold
+sudo docker exec pointpillars /entrypoint.sh \
+  ros2 param set /pointpillars confidence_threshold 0.7
+\end{verbatim}
+The node/YAML default threshold is 0.5; launchers set 0.4 unless overridden.
+Query the running parameter instead of assuming which default applies. Changing
+this publication gate needs no engine rebuild. NMS runs first, so ``before filter''
+means after NMS. Totals count repeated detection events, not unique tracked objects;
+they reset on node restart. A dropped frame has unavailable output counts, while
+a valid empty scan can publish zero. Retained diagnostic text may be old.
+
+Detection timestamps and coordinate frames are copied from the input scan.
+They describe the measurement reference, not the completion time. Camera and
+LiDAR clock alignment is a separate problem. The pipeline does not implement
+motion compensation, hardware clock synchronization or calibrated image overlays.
+
+\section{Latest experiment and practical decision}
+The 8 November study ran 1,120 measured GPU inferences plus 18 excluded warmups
+through unchanged production C++ inference and NMS. It compared signal/65,535
+with reflectivity/255 at a reporting threshold of 0.4. The study used 480 MOSEP
+weather observations, 320 labeled Dur360 observations and 320 separate
+capacity-control observations. Five repeated runs are not five independent scenes.
+\begin{table}[htbp]\centering
+\begin{tabular}{@{}lrr@{}}
+\toprule Test vehicles, 16 scans & Signal/65,535 & Reflectivity/255 \\ \midrule
+BEV matches per run, out of 60 & 0 & 4 \\
+Mean BEV precision & 0\% & 27.81\% \\
+BEV recall & 0\% & 6.67\% \\
+Qualifying 3D matches & 0 & 0 \\
+Recorded inference failures, all runs per channel & 0/560 & 0/560 \\
+\bottomrule
+\end{tabular}
+\caption{A development preference, not an accurate 3D operating configuration.}
+\end{table}
+There are also zero qualifying pedestrian matches; no cyclists occur in the
+selection. Labels are publisher annotations, described in the original paper as
+model-assisted and human-reviewed. The published splits have disjoint frame
+indices but are not established as independent drives. MOSEP is unlabeled.
+
+Dur360 originally has 262,144 points per scan, beyond engine capacity. Identical
+model-region filtering and zero-return removal reduced both channel variants to
+65,238--175,559 points. This preparation differs from unchanged full-cloud
+production playback and is documented explicitly. Twenty of 32 primary scans
+still exceed 10,000 occupied pillars. A separate bounded-pillar control preserved
+the four-versus-zero BEV result, with zero qualifying 3D matches for both channels.
+
+\begin{figure}[htbp]\centering
+\projectshot{ouster-channel-ground-truth-2026-11-08.png}{.98\linewidth}
+\caption{Frozen middle test frame: actual predictions and independent publisher
+annotations. Green denotes labels; orange/purple denote the compared predictions.
+The XZ row exposes vertical displacement. Dur360BEV-Extended, CC-BY-4.0;
+exact frame, colors and source identity are in the figure provenance file.}
+\end{figure}
+The four first-repeat reflectivity vehicle BEV matches have centers
+0.60--1.14 m too high. Their 3D overlaps are below the declared 0.7 criterion.
+An arbitrary z shift is not justified. Use reflectivity/255 as the experimental
+baseline while investigating valid returns, pillar capacity and model/input
+conventions. Freeze a justified correction before testing on new, recording-disjoint
+annotated data. If needed, select or fine-tune an Ouster-compatible model.
+
+\section{Verification and recovery}
+The comparison release records 119 passing Python tests. The earlier launcher
+fix additionally records seven C++/ROS tests and actual GPU replay: 20 raw clouds,
+20 adapted clouds and 19 detection arrays, with sampled error counters zero.
+Each launcher stopped after one SIGINT in under half a second in that test.
+These counts describe specific runs; they do not establish sustained reliability.
+The new direct GPU comparison does not retest ROS transport. Its first ROS A/B
+attempt was excluded after large-cloud UDP delivery loss.
+\begin{verbatim}
+python3 -m unittest discover -s tests -p 'test_*.py'
+python3 tools/recovery.py status
+git status --short
+\end{verbatim}
+For native work, use separate colcon build/install directories for CPU-only,
+ROS-adapter and full-runtime configurations. Read \path{docs/local_runtime.md}
+and the CMake options before building. Reduced adapter tests can run without a
+GPU; inference requires the target-GPU engine. Do not reuse stale absolute-path
+build caches after moving the checkout.
+
+Large bags, models, engines and observations remain under ignored local storage.
+A Git push does not back them up. Preserve originals, manifests and hashes
+independently. Do not overwrite a completed experiment directory when changing
+source, model, selection or evaluation policy.
+
+\section{Troubleshooting and further reading}
+\begin{longtable}{@{}p{.30\linewidth}p{.63\linewidth}@{}}
+\toprule Symptom & First check \\ \midrule
+No recent clouds & Topic name/type, domain, middleware, router and publisher QoS. \\
+Adapter rejects fields & Inspect actual schema; a field called intensity is not automatically a supported signal alias. \\
+Name already occupied & Inspect existing container; preserve unrelated work. \\
+Repeated installs & Confirm matching local image/cache; inspect changed Docker recipe or explicit pull flags. \\
+No RViz boxes & Plugin, fixed frame, topic, graph discovery and selected threshold. \\
+Boxes appear but are wrong & Check annotations and input/model conventions; visible rendering is not accuracy evidence. \\
+GPU or Docker unavailable & Repair host prerequisites using current official guidance. \\
+LaTeX illustration placeholder & Include project assets for a full build; standalone editor compilation may omit them. \\
+\bottomrule
+\end{longtable}
+
+\begin{itemize}
+\item \path{docs/STARTUP_AND_REPLAY.md}: concise operating commands.
+\item \path{docs/OUSTER_CHANNEL_DECISION.md} and
+\path{config/ouster_channel_decision.json}: measurements, policy, hashes and proposal.
+\item \path{docs/CURRENT_STATUS_AND_RESULTS.md}: consolidated experiment status.
+\item \path{docs/CHAT_FILTERING_RVIZ_AND_TIMESTAMPS.tex}: explanation of filtering, time and evaluation.
+\item \path{recovery/RESUME.md}, \path{recovery/PROGRESS.md}: continuation records.
+\end{itemize}
+For fresh-host prerequisites, consult the official
+\href{https://docs.docker.com/engine/install/ubuntu/}{Docker Ubuntu guide},
+\href{https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html}{NVIDIA Container Toolkit guide}
+and \href{https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html}{ROS Jazzy installation guide}.
+Install only missing prerequisites; a working driver does not need reinstallation.
+For scientific interpretation, cite the
+\href{https://arxiv.org/html/2503.00675v2}{Dur360BEV paper},
+\href{https://huggingface.co/datasets/TomEeee/Dur360BEV-Extended}{Extended dataset}
+and \href{https://zenodo.org/records/19353314}{MOSEP release} with their applicable terms.
 \end{document}

@@ -1,0 +1,45 @@
+{
+  "review_date_local": "2026-11-09",
+  "assets": [
+    {
+      "source": ".recovery/verification/kitti-rviz-live.png",
+      "path": "docs/figures/thesis/original-kitti-ground-truth-rviz.png",
+      "sha256": "32e1fe9ef18abaf4c2a99caee72c09a8dc4bc702d1221d7f0cca2dab7d5117d1",
+      "kind": "original_saved_screenshot",
+      "pixel_editing": "None. Byte-identical copy of the original capture.",
+      "caption": "Actual original RViz capture, 3 October 2026. Green calibrated annotations and predicted boxes; one tuning scan, not a new accuracy experiment.",
+      "evidence_inventory": "config/kitti_accuracy_inventory.json",
+      "credit": "KITTI: Geiger et al., KIT/TTI-C, CC-BY-NC-SA-3.0."
+    },
+    {
+      "source": ".recovery/verification/reference-rviz-live.png",
+      "path": "docs/figures/thesis/original-trt-reference-rviz.png",
+      "sha256": "06333629c188a2d3a38559b24075f1c8445a04d3cc66d564916075c3ae8481ce",
+      "kind": "original_saved_screenshot",
+      "pixel_editing": "None. Byte-identical copy of the original capture.",
+      "caption": "Actual original RViz capture, 3 October 2026. Cyan frozen TensorRT8 reference boxes with live predictions and green annotations. Appearance does not prove exact numerical parity.",
+      "evidence_inventory": "config/kitti_reference_inventory.json",
+      "credit": "KITTI: Geiger et al., KIT/TTI-C, CC-BY-NC-SA-3.0."
+    },
+    {
+      "source": ".recovery/ouster-fresh-test/rviz-detections.png",
+      "path": "docs/figures/thesis/original-fresh-ouster-rviz.png",
+      "sha256": "abc0fc129735a5ea485c0400bd52aa36be75e1f80ad2558452276e2be26837ae",
+      "kind": "original_saved_screenshot",
+      "pixel_editing": "None. Byte-identical copy of the original capture.",
+      "caption": "Actual original RViz capture, 7 November 2026. Fresh MOSEP input, adapted cloud and count display. This screen shows an earlier loop snapshot than the separately reported 103-frame counter snapshot.",
+      "evidence_inventory": "config/ouster_fresh_visual_validation.json",
+      "credit": "MOSEP: C. Gaisberger and B. Schlager, Zenodo record19353314, preserve publisher terms."
+    },
+    {
+      "source": ".recovery/verification/rviz-current.png",
+      "path": "docs/figures/thesis/original-first-rviz.png",
+      "sha256": "7748fd832d54a7bdede2748accc467daa7ec75dcede925a94482a14a841eb28f",
+      "kind": "original_saved_screenshot",
+      "pixel_editing": "None. Byte-identical copy of the original capture.",
+      "caption": "Actual original RViz capture, 2 October 2026. Points and predicted boxes after display/plugin and host transport checks; no ground-truth accuracy claim.",
+      "evidence_inventory": "config/visualization_inventory.json",
+      "credit": "KITTI: Geiger et al., KIT/TTI-C, CC-BY-NC-SA-3.0."
+    }
+  ]
+}

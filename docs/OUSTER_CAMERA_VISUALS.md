@@ -1,14 +1,12 @@
 # Camera reference for the Ouster bags
 
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
-
-> **Status reviewed 23 October 2026.** Both exported previews and merged playback are recorded: 111 image payloads, 111 CameraInfo payloads and 556 normalized clouds were preserved. Sensor header clocks remain unaligned; there is no calibrated detection overlay. New screencast figures illustrate RViz rendering without proving camera synchronization. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
+Reviewed 8 November 2026. Use this guide to view the **older Koide calibration recordings** alongside their original camera images. It explains replay and timing, not detection accuracy. The images are unannotated scene references; the current [channel decision](OUSTER_CHANNEL_DECISION.md) uses separate Dur360 publisher annotations. Fresh MOSEP startup is described in [startup and replay](STARTUP_AND_REPLAY.md).
 
 Both source recordings contain `/image` and `/camera_info`. The images are original 2448×2048 BGR8 camera frames from Kenji Koide's AIST [LiDAR-camera calibration dataset v3](https://zenodo.org/records/7780490), DOI `10.5281/zenodo.7780490`, licensed **CC-BY-4.0**. Preserve that attribution with shared videos/data.
 
 ## Extracted videos
 
-The project now provides H.264 MP4 previews, each 1280×1070:
+The project provides H.264 MP4 previews, each 1280×1070:
 
 | Recording | Original camera frames | Preview duration | Local path relative to project |
 | --- | ---: | ---: | --- |
@@ -39,7 +37,7 @@ PP_OUSTER_CAMERA=1 PP_OUSTER_FEATURE=reflectivity_div255 bash tools/rosbag_ouste
 RVIZ_CONFIG="$PWD/rviz/ouster_camera.rviz" bash tools/visualize.sh
 ```
 
-If no Ouster player is running, omit the stop command. Keep the inference node running separately. Match `ROS_DOMAIN_ID` across the player, inference and RViz. The new saved view contains the point cloud, detections with scores, and a **separate Camera image panel** on `/image`. It uses the ordinary RViz Image display, which requires no invented camera-to-LiDAR transform. Boxes are not projected onto the camera image.
+If no Ouster player is running, omit the stop command. Keep the inference node running separately. Match `ROS_DOMAIN_ID` across the player, inference and RViz. The saved view contains the point cloud, detections with scores, and a **separate Camera image panel** on `/image`. It uses the ordinary RViz Image display, which requires no invented camera-to-LiDAR transform. Boxes are not projected onto the camera image.
 
 Select the second recording with:
 
@@ -61,3 +59,7 @@ Both MP4s passed codec/resolution/duration checks. The first PNG from each recor
 Implementation: `tools/export_ouster_camera.py` extracts/encodes videos; `tools/prepare_ouster_visual.py` builds combined replay bags; `tools/rosbag_ouster.sh` selects camera/video modes; `rviz/ouster_camera.rviz` adds the Image display. Camera timeline/payload controls are in `tests/test_ouster_camera.py`. Actual host camera/cloud reception is checked separately; no new actual desktop RViz rendering claim is made by the configuration file alone.
 
 Host transport checks passed separately for each combined bag on isolated ROS domain 99: each received at least 20 normalized clouds, four original camera images and four CameraInfo messages with no validation errors. Twelve focused controls passed, along with Python compilation, Bash syntax and source whitespace checks. Short test players exited; the existing main-domain player was preserved.
+
+## Using camera material in the thesis
+
+Use original camera previews as scene context, with Koide/AIST attribution and the recorded timing limits in the caption. Do not call the view a calibrated overlay, synchronized fusion result or ground truth. The committed RViz screenshots have their own provenance; their underlying experiment identity is not established by the picture alone.

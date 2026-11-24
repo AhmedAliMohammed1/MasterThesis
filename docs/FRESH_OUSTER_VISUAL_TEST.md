@@ -1,10 +1,16 @@
 # Fresh, unchanged Ouster recording: live GPU and RViz test
 
+Reviewed 8 November 2026. This page records the **7 November original-bag integration test**: adapter conversion, GPU inference and actual RViz rendering. The later [channel comparison](OUSTER_CHANNEL_DECISION.md) adds labeled accuracy evidence and recommends reflectivity/255 for development, while neither tested encoding achieves acceptable 3D matches. The current restart commands are in [startup and replay](STARTUP_AND_REPLAY.md); the isolated-image commands below preserve the original experiment.
+
 On 7 November 2026, a new download of the different MOSEP dataset was used for
 an actual GPU/RViz test. Earlier sandbox-only tests did not have Docker/GPU
 access; an approved host execution outside that sandbox provided access to
 Docker, the RTX 4060 Laptop GPU and the desktop. No original dataset file was
 modified or rewritten for this test.
+
+## Later live session, 9 November
+
+The current user-requested replay was subsequently set to confidence **0.2**, with normal-speed playback and the tested larger shared-memory player buffer. See [the live session report and actual RViz screenshots](OUSTER_LIVE_VIEW_20261109.md). The 7 November experiment below retains its original settings and results.
 
 ## Fresh source and integrity
 
@@ -83,12 +89,12 @@ Local logs, source manifest, observer and screenshot are under
 `.recovery/ouster-fresh-test/` and the fresh download folder. These ignored
 artifacts need an independent backup if they must be retained.
 
-## Restart the same visual test
+## Reconstruct the original isolated visual test
 
 For the current default scripts, see [startup and replay](STARTUP_AND_REPLAY.md).
 The commands below also preserve the original 7 November isolated-image setup;
 the bag helper below explicitly selects the same test image.
-Do not start duplicates while these test processes are running. Terminal 1,
+Check current processes before starting duplicate players or detectors. The original session state is historical. Terminal 1,
 from the checkout:
 
 ```bash
@@ -105,8 +111,7 @@ Terminal 2 (the helper starts only the unchanged bag player):
 PP_IMAGE=pp-infer:ouster-fresh-test bash tools/start_ouster_bag.sh
 ```
 
-It defaults to the dry recording, half-speed loop, Fast DDS, domain 99 and the
-saved `pp-infer:jazzy-trt10` image (updated 8 November). Use `rain30` or `rain100` to select
+Without the explicit `PP_IMAGE` override shown here, the current helper defaults to the saved `pp-infer:jazzy-trt10` image. Its playback defaults are the dry recording, half-speed loop, Fast DDS and domain 99. Use `rain30` or `rain100` to select
 another downloaded recording. Set `PP_BAG_LOOP=0` for a single pass, and see
 `bash tools/start_ouster_bag.sh --help` for source directory, topic, domain and
 image overrides. An existing player is preserved and reported rather than
@@ -139,3 +144,7 @@ docker stop pointpillars-ouster-fresh-bag pointpillars-ouster-fresh
 
 Close the test RViz window normally. The downloaded bags, saved images and engine
 cache remain available.
+
+## Using this test in the thesis
+
+Describe it as an end-to-end integration check with unchanged source bags and independently verified conversion. Quote the 40 sampled pairs and later counter snapshot separately. Do not reinterpret 103 processed loop frames as 103 independent labeled scenes or complete lossless delivery. The subsequent channel-decision report supplies the distinct accuracy experiment.

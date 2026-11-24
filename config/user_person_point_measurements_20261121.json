@@ -1,0 +1,127 @@
+{
+  "coordinate_units": "meters",
+  "measurements": [
+    {
+      "user_label": "head",
+      "selection_point_index": 37772,
+      "xyz": [
+        -2.6843,
+        -1.0541,
+        0.45051
+      ],
+      "intensity": 0.01,
+      "screenshot_sha256": "fc223a88abf0975de9d763b8e6d1ee1c669333590eb0a873a478406232aedfa6",
+      "archived_screenshot": "originals/fc223a88abf0975de9d763b8e6d1ee1c669333590eb0a873a478406232aedfa6.png",
+      "provenance": "XYZ transcribed from user RViz screenshot; user corrected association to head. Exact bag frame/time not established.",
+      "warning": "Selected point association supplied by user. Head and later feet are at different positions, not a verified matched body-height measurement.",
+      "label_correction": "User corrected earlier feet label to head."
+    },
+    {
+      "user_label": "feet",
+      "selection_point_index": 104689,
+      "xyz": [
+        -4.2768,
+        0.92987,
+        -1.1585
+      ],
+      "intensity": 0.01,
+      "screenshot_sha256": "e8ca38769be36a30e192a0ce37aec63b7e7c7072916dac9586f607ffda5c3b63",
+      "archived_screenshot": "originals/e8ca38769be36a30e192a0ce37aec63b7e7c7072916dac9586f607ffda5c3b63.png",
+      "provenance": "User identifies feet, explicitly at a different position than prior head selection. Exact frame/time unknown.",
+      "paired_with_prior_head": false
+    },
+    {
+      "user_label": "head",
+      "selection_point_index": 37750,
+      "xyz": [
+        -15.797,
+        -7.1147,
+        2.7198
+      ],
+      "intensity": 0.01,
+      "screenshot_sha256": "81a10d8494a863ef90d18a3a6892110604ecc96568fe6c14cecb148ec21b6d6d",
+      "archived_screenshot": "originals/81a10d8494a863ef90d18a3a6892110604ecc96568fe6c14cecb148ec21b6d6d.png",
+      "provenance": "Transcribed screenshot/user XYZ. Head association geometrically inconsistent with feet: likely background return; not verified same scan/person."
+    },
+    {
+      "user_label": "feet",
+      "selection_point_index": 121346,
+      "xyz": [
+        -2.6137,
+        -0.9821,
+        -1.0674
+      ],
+      "intensity": 0.1,
+      "screenshot_sha256": "05b38e01af1e134758dbf0356530a2cb42fdd47f77c44f12856954dd6a6bf8b4",
+      "archived_screenshot": "originals/05b38e01af1e134758dbf0356530a2cb42fdd47f77c44f12856954dd6a6bf8b4.png",
+      "provenance": "Transcribed screenshot/user XYZ. Head association geometrically inconsistent with feet: likely background return; not verified same scan/person."
+    },
+    {
+      "user_label": "head",
+      "selection_point_index": 39860,
+      "xyz": [
+        -2.5729,
+        0.28832,
+        0.37343
+      ],
+      "intensity": 0.23,
+      "screenshot_sha256": "520739be0feedfa658845b7090e057dbc71d5aea15fd20fc269d25b2ff9a4639",
+      "archived_screenshot": "originals/520739be0feedfa658845b7090e057dbc71d5aea15fd20fc269d25b2ff9a4639.png",
+      "provenance": "User identifies head/partial lower body. Subsequent exhaustive coordinate matching verifies both belong to sourceframe1403. Lower point not full feet.",
+      "source_verification": {
+        "recording": "ouster1",
+        "zero_based_frame_index": 1403,
+        "record_ns": 1794397517854145698,
+        "offset_seconds": 70.05539416,
+        "source_cdr_sha256": "bc4b08c105662e570aa73923710874515c1833d6ccfa6b79c01fb409be260117",
+        "method": "Unique coordinate match in1841originalclouds within0.000055m/component; both selected points co-occur."
+      }
+    },
+    {
+      "user_label": "partial_lower_body",
+      "selection_point_index": 111712,
+      "xyz": [
+        -2.7426,
+        0.64956,
+        -0.88179
+      ],
+      "intensity": 0.26,
+      "screenshot_sha256": "fcf769a48bc4d7adf9039e9df2d31f206499f65e4763646ea48bf8d47adb7f19",
+      "archived_screenshot": "originals/fcf769a48bc4d7adf9039e9df2d31f206499f65e4763646ea48bf8d47adb7f19.png",
+      "provenance": "User identifies head/partial lower body. Subsequent exhaustive coordinate matching verifies both belong to sourceframe1403. Lower point not full feet.",
+      "source_verification": {
+        "recording": "ouster1",
+        "zero_based_frame_index": 1403,
+        "record_ns": 1794397517854145698,
+        "offset_seconds": 70.05539416,
+        "source_cdr_sha256": "bc4b08c105662e570aa73923710874515c1833d6ccfa6b79c01fb409be260117",
+        "method": "Unique coordinate match in1841originalclouds within0.000055m/component; both selected points co-occur."
+      }
+    }
+  ],
+  "cross_position_vertical_difference_m": 1.60901,
+  "vertical_difference_qualification": "1.60901m between user-selected head and feet at different positions; not a verified body-height or z-offset measurement.",
+  "latest_pair_diagnostic": {
+    "latest_head_feet_horizontal_distance_m": 14.539882449662377,
+    "latest_vertical_difference_m": 3.7872000000000003,
+    "earlier_head_latest_feet_horizontal_distance_m": 0.1008382863797277,
+    "earlier_head_latest_feet_vertical_difference_m": 1.5179099999999999,
+    "qualification": "Earlier head and latest feet are spatially consistent candidates but same-scan pairing and anatomical landmarks remain unverified. Latest head is not a plausible head-foot pair."
+  },
+  "partial_person_pair": {
+    "head_xyz": [
+      -2.5729,
+      0.28832,
+      0.37343
+    ],
+    "lower_body_xyz": [
+      -2.7426,
+      0.64956,
+      -0.88179
+    ],
+    "observed_z_span_m": 1.25522,
+    "horizontal_separation_m": 0.399114554482795,
+    "qualification": "Both points verified in ouster1sourceframe1403. Visible-point span1.25522m, not full body height, floor level or calibrated z correction."
+  },
+  "source_verification_update": "21November2026; preserves user label correction and rejects background selection. Screenshot capture timestamps do not independently establish prediction association."
+}

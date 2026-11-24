@@ -1,10 +1,8 @@
 # Original LiDAR detail and a forward-camera KITTI comparison
 
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+Reviewed 8 November 2026. This guide helps inspect original point geometry and compare two scene recordings. It preserves the **13–14 October integration checks**. The separate [labeled Ouster channel study](OUSTER_CHANNEL_DECISION.md) is the accuracy evidence; neither the Koide camera view nor this frontal KITTI clip supplies detection ground truth in these workflows.
 
-> **Status reviewed 23 October 2026.** The saved frontal KITTI check matched all 154 clouds/detections/images/CameraInfo messages, preserving original XYZI and camera pixels. Five Ouster raw/normalized cloud pairs passed non-intensity byte checks. The supplied later screencasts add visual examples, without establishing which bag/engine/feature variant they used. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
-
-This update addresses the sparse RViz scene and adds a different road recording. It does not change model weights, confidence thresholds, NMS or existing source recordings.
+These views make the original geometry easier to inspect and add a separate road recording. It does not change model weights, confidence thresholds, NMS or existing source recordings.
 
 ## Why the Ouster scene can look sparse
 
@@ -26,11 +24,11 @@ RVIZ_CONFIG="$PWD/rviz/ouster_detail.rviz" bash tools/visualize.sh
 
 The default **Original LiDAR geometry** display uses a light flat color. To inspect original return signal colors, disable that display and enable **Original signal colors (optional)**. Both use the original-data topic; the color limits are automatic, without clipping the source values. No new points are created, and zero-range entries are preserved. The second Ouster sequence remains selectable through `PP_OUSTER_SEQUENCE`.
 
-The detail wrapper selects the previously tested `reflectivity_div255` inference candidate, `PP_OUSTER_RAW_VIEW=1` and camera playback. Its new bag is stored separately under `.recovery/rosbags/ouster_calibration_v3/raw_view/reflectivity_div255/<sequence>/`. Existing raw, derived and visual bags remain intact. The raw-view builder checks source hashes and copies serialized records; it does not recompute the cloud. Five matching live clouds passed byte comparisons of **every non-intensity byte** across original and normalized streams, including UINT8 ring values, padding, XYZ and auxiliary channels.
+The detail wrapper selects the previously tested `reflectivity_div255` inference candidate, `PP_OUSTER_RAW_VIEW=1` and camera playback. Its separate bag is stored separately under `.recovery/rosbags/ouster_calibration_v3/raw_view/reflectivity_div255/<sequence>/`. Existing raw, derived and visual bags remain intact. The raw-view builder checks source hashes and copies serialized records; it does not recompute the cloud. Five matching live clouds passed byte comparisons of **every non-intensity byte** across original and normalized streams, including UINT8 ring values, padding, XYZ and auxiliary channels.
 
-## New forward-facing recording
+## Forward-facing KITTI recording
 
-The new recording is official **KITTI raw synced drive `2011_09_26_drive_0005_sync`**, different from the previously used drive 0016/odometry sequence04. The front left color camera looks along the road: the inspected frames show an urban intersection, a van, a cyclist, pedestrians and buildings.
+The comparison recording is official **KITTI raw synced drive `2011_09_26_drive_0005_sync`**, different from the previously used drive 0016/odometry sequence04. The front left color camera looks along the road: the inspected frames show an urban intersection, a van, a cyclist, pedestrians and buildings.
 
 Source: [KITTI raw data](https://www.cvlibs.net/datasets/kitti/raw_data.php) and [sensor setup](https://www.cvlibs.net/datasets/kitti/setup.php). KITTI describes synced/rectified streams and the HDL-64E scan rate/camera triggering. Attribution: Andreas Geiger, Philip Lenz, Christoph Stiller and Raquel Urtasun; KIT/TTI-C. Dataset license: **CC-BY-NC-SA-3.0**, as stated on [the KITTI site](https://www.cvlibs.net/datasets/kitti/). Preserve attribution/license with redistributed derivatives.
 
@@ -77,6 +75,10 @@ Match the domain across inference, player and viewer. Default playback is half r
 
 ## Checks and limits
 
-The full new bag ran through the unchanged deployment engine on isolated domain 99: **154 source clouds, 154 matching detections, 154 camera images and 154 CameraInfo messages** were received. Every published cloud's XYZI hash matched its original `.bin`, and all 154 camera pixel arrays matched the decoded source PNGs exactly; no invalid message fields or detector log errors were recorded. Published detections ranged 83–132 per frame (median 106). These counts do not establish accuracy. Neither reviewed detection labels nor an accuracy pass are claimed for this new clip.
+The complete comparison bag ran through the unchanged deployment engine on isolated domain 99: **154 source clouds, 154 matching detections, 154 camera images and 154 CameraInfo messages** were received. Every published cloud's XYZI hash matched its original `.bin`, and all 154 camera pixel arrays matched the decoded source PNGs exactly; no invalid message fields or detector log errors were recorded. Published detections ranged 83–132 per frame (median 106). These counts do not establish accuracy. Neither reviewed detection labels nor an accuracy pass are claimed for this clip.
 
-The raw Ouster view passed isolated live byte checks. Video codec/dimensions/timing checks passed, source and decoded frontal video frames were visually inspected, and existing inputs were retained. Focused projection/ownership tests and the Ouster input/feature/camera controls passed. The source archive, generated bag, native observations, helper hashes and visual-view settings are indexed by `config/kitti_front_inventory.json` and `config/ouster_detail_inventory.json`. Test players and the temporary KITTI detector were stopped; existing main-domain playback was retained. New saved RViz profiles were checked as configuration artifacts; actual desktop rendering of these new profiles is not claimed.
+The raw Ouster view passed isolated live byte checks. Video codec/dimensions/timing checks passed, source and decoded frontal video frames were visually inspected, and existing inputs were retained. Focused projection/ownership tests and the Ouster input/feature/camera controls passed. The source archive, generated bag, native observations, helper hashes and visual-view settings are indexed by `config/kitti_front_inventory.json` and `config/ouster_detail_inventory.json`. Test players and the temporary KITTI detector were stopped; existing main-domain playback was retained. The profiles were checked as configuration artifacts in this original run. A later 23 October trial verified actual RViz rendering of the KITTI points, filtered boxes and counters; see [current status](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026). Neither check establishes detection accuracy.
+
+## Using these views in the thesis
+
+Explain the distinction between retained source geometry and display appearance. The original/raw topic makes normalization inspectable without claiming extra points. Treat the frontal KITTI clip as an integration example; its successful 154-message comparison does not provide a labeled accuracy score.

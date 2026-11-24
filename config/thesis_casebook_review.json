@@ -1,0 +1,110 @@
+{
+  "review_date_local": "2026-11-09",
+  "author": {
+    "name": "Ahmed Elsaify",
+    "institution": "THI",
+    "degree": "Master of International Automotive Engineering",
+    "supervisor": "to be confirmed"
+  },
+  "scope": "Illustrated existing thesis; final native PDF remains unverified.",
+  "coverage": {
+    "problem_groups": 50,
+    "additional_subcases": 4,
+    "small_solution_steps": 257,
+    "browser_report_screenshots": 54,
+    "byte_identical_historical_rviz_captures": 4,
+    "new_actual_terminal_captures": 2,
+    "visual_classification": {
+      "source_explanation": 6,
+      "controlled_reproduction": 25,
+      "historical_evidence": 22,
+      "open_problem": 1
+    }
+  },
+  "evidence_policy": "Report screenshots explicitly state they are evidence reports, not original incident screenshots. Original captures and new reproductions have separate provenance. No destructive disk or driver failures were induced.",
+  "new_gpu_reproduction": {
+    "observations": 6,
+    "source_scans": 1,
+    "labels": false,
+    "raw_signal": {
+      "observations": 3,
+      "production_decoder_rejections": 3
+    },
+    "reflectivity_divided_by_255": {
+      "observations": 3,
+      "production_decoder_successes": 3
+    },
+    "order": "three raw then three normalized; no warmup or randomization",
+    "scope": "Numerical reproduction only, separate from unchanged frozen 1120-observation study. Historical diagnostic engine, not the primary Dur360 study engine.",
+    "provenance": ".recovery/verification/thesis-evidence-2026-11-09/research/gpu-pair/provenance.json"
+  },
+  "python_regression": {
+    "passed": 119,
+    "evidence": ".recovery/verification/thesis-evidence-2026-11-09/parent/python-regression.json",
+    "exit_code": 0
+  },
+  "static_checks": {
+    "errors": [],
+    "checked_case_records": 54,
+    "checked_steps": 257,
+    "latex_labels": 55,
+    "bibliography_entries": 11,
+    "linked_local_files": "manuscript, casebook and navigation links checked",
+    "frozen_tracked_config_files_unchanged": [
+      "config/demo_inventory.json",
+      "config/docker_inventory.json",
+      "config/environment_inventory.json",
+      "config/kitti_accuracy_inventory.json",
+      "config/kitti_front_inventory.json",
+      "config/kitti_reference_inventory.json",
+      "config/kitti_sources.json",
+      "config/kitti_validation_inventory.json",
+      "config/launcher_fix_validation.json",
+      "config/model_contract.json",
+      "config/model_inventory.json",
+      "config/ouster_adapter_bag_validation.json",
+      "config/ouster_camera_inventory.json",
+      "config/ouster_channel_decision.json",
+      "config/ouster_demo_inventory.json",
+      "config/ouster_detail_inventory.json",
+      "config/ouster_feature_inventory.json",
+      "config/ouster_fresh_visual_validation.json",
+      "config/runtime_inventory.json",
+      "config/visualization_inventory.json"
+    ],
+    "runtime_changes": [],
+    "git_diff_check_exit": 0
+  },
+  "native_compiler": {
+    "date_local": "2026-11-09",
+    "path": "/media/ae/New Volume1/MasterThesis/docs/THESIS_DRAFT.tex",
+    "source_sha256": "cda84f2cafc3ee1d6edb49c042678be9f97e3c3dafecb4a0e70ccbf3f5949f08",
+    "tool": "built-in compile_latex_document",
+    "kind": "compile-failed",
+    "missing_resource": "article.cls",
+    "dependency_url": "https://relay.fullyjustified.net/default_bundle_v33.tar",
+    "reported_cause": "DNS lookup failed repeatedly; dependency download failed before source compilation.",
+    "pdf_generated": false,
+    "page_layout_verified": false,
+    "source_modified_to_work_around_network_error": false
+  },
+  "publication": "Local edits remain uncommitted and unpushed.",
+  "source_hashes": {
+    "docs/THESIS_DRAFT.tex": "cda84f2cafc3ee1d6edb49c042678be9f97e3c3dafecb4a0e70ccbf3f5949f08",
+    "docs/THESIS_DRAFT.md": "33a012fea5d998384635e2446543559d442aeccb5a393cf8c5e31a2e19413eb1",
+    "docs/THESIS_CASEBOOK.md": "27d29eb309bf7bd474918a86dc66eaffc206e32dabc3f40cc09f1b7ecaa95c0e",
+    "docs/thesis_cases.json": "b2fd936cf85feafb15b118ba13724b108aae3b6ebe687beb2f47b2938a4d92f8"
+  },
+  "browser_report_layout": {
+    "measured": 54,
+    "bad": [],
+    "report": ".recovery/verification/thesis-evidence-2026-11-09/rendered/final-layout-check.json"
+  },
+  "visual_review": "New decoder terminal inspected visually; all 54 report layouts checked in Firefox with DOM clipping and footer-overlap detection. Complete PDF layout remains unverified.",
+  "reproduction_scripts": ".recovery/verification/thesis-evidence-2026-11-09/parent/finalization-scripts",
+  "native_tables_followup": {
+    "date_local": "2026-11-09",
+    "record": "config/thesis_native_panels_review.json",
+    "note": "Earlier capture counts and hashes describe the former report-image layout. Current thesis uses54 editable comparison tables and native flowcharts."
+  }
+}

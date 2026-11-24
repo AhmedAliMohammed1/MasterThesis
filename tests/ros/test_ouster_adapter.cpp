@@ -61,6 +61,18 @@ void data_tests() {
           "Missing FLOAT32 intensity");
   require(value(reflectivity, 0, 3) == 0 && value(reflectivity, 3, 3) == 1 &&
           value(reflectivity, 2, 0) == 2 && value(reflectivity, 3, 1) == -2, "Padding/conversion mismatch");
+  auto clip_input = msg;
+  clip_input.data[32] = 50;
+  const auto clipped = pp_infer::ouster_to_xyzi(clip_input, "reflectivity", {4, 208, 100}, 1.0);
+  require(value(clipped, 0, 3) == 0.5F && value(clipped, 3, 3) == 1.0F,
+          "Clipped reflectivity encoding failed");
+  require(clipped.header == msg.header && value(clipped, 2, 0) == 2,
+          "Clipping changed geometry/header");
+  require(value(pp_infer::ouster_to_xyzi(msg, "reflectivity", {4, 208, 100}), 3, 3) > 2.5F,
+          "Default conversion unexpectedly clipped");
+  for (double cap : {-1.0, std::numeric_limits<double>::infinity(),
+                     std::numeric_limits<double>::quiet_NaN()})
+    rejects([&] { pp_infer::ouster_to_xyzi(msg, "reflectivity", {4, 208, 100}, cap); });
   const auto signal = pp_infer::ouster_to_xyzi(msg, "signal", {4, 208, 65535});
   require(value(signal, 0, 3) == 0 && value(signal, 2, 3) == 1, "UINT16 signal conversion failed");
   require(value(pp_infer::ouster_to_xyzi(msg, "signal", {4, 208, 1}), 2, 3) == 65535,
@@ -115,6 +127,7 @@ void data_tests() {
   const float negative = -1;
   std::memcpy(bad.data.data() + 32, &negative, 4);
   rejects([&] { pp_infer::ouster_to_xyzi(bad, "reflectivity", {4, 208, 255}); });
+  rejects([&] { pp_infer::ouster_to_xyzi(bad, "reflectivity", {4, 208, 100}, 1.0); });
   auto empty = msg; empty.width = 0; empty.row_step = 0; empty.data.clear();
   require(pp_infer::ouster_to_xyzi(empty, "signal", {4, 208, 1}).data.empty(), "Empty cloud failed");
   std::cout << "PASS Ouster conversions, detector packing, preservation and rejection controls\n";
@@ -122,7 +135,9 @@ void data_tests() {
 void transport_tests() {
   rclcpp::NodeOptions options;
   options.parameter_overrides({rclcpp::Parameter("input_topic", "/ouster_adapter_test/raw"),
-                              rclcpp::Parameter("output_topic", "/ouster_adapter_test/xyzi")});
+                              rclcpp::Parameter("output_topic", "/ouster_adapter_test/xyzi"),
+                              rclcpp::Parameter("intensity_divisor", 100.0),
+                              rclcpp::Parameter("intensity_clip_max", 1.0)});
   auto adapter = pp_infer::make_ouster_adapter(options);
   auto probe = std::make_shared<rclcpp::Node>("ouster_probe");
   auto pub = probe->create_publisher<Cloud>("/ouster_adapter_test/raw", rclcpp::SensorDataQoS());
@@ -157,6 +172,10 @@ void transport_tests() {
   until([&] { return outputs == 2; });
   require(!adapter->set_parameter(rclcpp::Parameter("intensity_divisor", 1.0)).successful,
           "Conversion parameter changed at runtime");
+  require(!adapter->set_parameter(rclcpp::Parameter("intensity_clip_max", 0.0)).successful,
+          "Clipping parameter changed at runtime");
+  options.parameter_overrides({rclcpp::Parameter("intensity_clip_max", -1.0)});
+  rejects([&] { pp_infer::make_ouster_adapter(options); });
   options.parameter_overrides({rclcpp::Parameter("input_topic", "/same"),
                               rclcpp::Parameter("output_topic", "/same")});
   rejects([&] { pp_infer::make_ouster_adapter(options); });

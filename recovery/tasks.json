@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_local_date": "2026-10-23",
+  "updated_local_date": "2026-11-24",
   "timezone": "Europe/Berlin",
   "baseline_commit": "2301135",
   "target": {
@@ -21,7 +21,10 @@
     "2026-10-03: W01.4 TRT8 compatibility comparison measured poor, same-raw NMS agrees in192 observations; capacity controls improve repeatability. Accuracy, numerical/training parity and full memory acceptance remain unmet.",
     "2026-10-23: publication confidence gate (default 0.5, live configurable), derived statistics/count topics and RViz count displays implemented. Five native C++/ROS tests and 67 Python tests passed; TensorRT-enabled package builds. No new GPU replay or desktop rendering: NVIDIA driver inaccessible in this session. Frozen baseline collection explicitly disables and verifies the new gate.",
     "2026-10-23: Added read-only tools/monitor_detections.sh (watch/once/threshold/rviz), with host/Docker routing and bounded snapshot/parameter waits. Expanded RViz marker with cumulative published/filtered totals and frame-drop counts. Six helper tests, actual controlled ROS reads and all five C++/ROS tests passed. No existing deployment replaced or actual GPU/desktop rendering claimed.",
-    "2026-10-23: Feature 8a87a73 published and GPU-deployed; 73 Python/five Docker C++-ROS tests, native smoke, 60 native plus 60 deployed matched replay frames and actual RViz counters verified. Trial detector/player/RViz stopped at user request 19:47 UTC; image/engine/data preserved. Documentation updated; W07 remains in progress."
+    "2026-10-23: Feature 8a87a73 published and GPU-deployed; 73 Python/five Docker C++-ROS tests, native smoke, 60 native plus 60 deployed matched replay frames and actual RViz counters verified. Trial detector/player/RViz stopped at user request 19:47 UTC; image/engine/data preserved. Documentation updated; W07 remains in progress.",
+    "2026-11-08: Deployment caching, Ouster adapter/replay and channel evaluation are published through 15a82bc. The channel study records 1,120 measured GPU inferences and 119 passing Python tests. Reflectivity/255 is the experimental choice; both normalized encodings have zero qualifying 3D matches in the labeled subset. Capacity control remains an experiment, not production preprocessing. Documentation is being consolidated with a thesis draft; acceptance states below remain unchanged.",
+    "2026-11-23: Multi-agent source/evidence review found no accepted pedestrian accuracy fix in the preserved 78 height/sampling runs. Detector report_failure now publishes empty current-header boxes with WARN/unavailable diagnostics and unchanged success totals. Fresh CPU/ROS 8/8 and evaluator 12/12 pass; old-source/new-test control fails as expected. User requests improvement over current baseline; absolute accuracy targets remain undecided. Protocol and inventory: docs/POINTPILLARS_SOLUTION_PROTOCOL_20261123.md, config/solution_verification_20261123.json. No deployment, new GPU inference or model change.",
+    "2026-11-24: Independent PointPillars candidate completed96/96 Dur360 records, preserving67 and running29 missing. Paired test pedestrian 3D gate0.3 improves0TP/12.667FP/6FN to3TP/11FP/3FN; gate0.5 gives2TP/0FP/4FN on6GT. Vehicle FP regressions and exactperson1403 miss remain. KITTI split-list overlap14train18val disclosed. Experimental CPU runner added; independent10tests and7box frozen replay parity pass.192 Ouster core metric groups independently reproduced. No live replacement or accuracy acceptance. See config/candidate_model_comparison_20261124.json."
   ],
   "state_values": [
     "pending",
@@ -118,7 +121,7 @@
         "Known fixture matches reference",
         "Hardware/model requirements recorded"
       ],
-      "next_action": "Verify bounded voxelization/internal tensor bounds and original model input/training/decoder contract before blaming weights or installing a coordinate correction; larger untouched acceptance split and targets remain.",
+      "next_action": "Resolve original input/training and vertical geometry assumptions, then evaluate new recording-disjoint annotated Ouster data. Retain reflectivity/255 as the experimental baseline; do not claim accepted 3D accuracy or exact numerical parity.",
       "evidence": [
         {
           "command": "nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader (outside sandbox)",
@@ -186,6 +189,16 @@
           "exit_code": 0,
           "result": "192 raw observations plus12 tuning controls; both runtimes poor, NMS selection agrees. Limited allocation probes pass; no full parity/accuracy acceptance. 50 Python tests passed.",
           "inventory": "config/kitti_reference_inventory.json"
+        },
+        {
+          "result": "2026-11-08: Controlled Ouster study: 480 MOSEP, 320 primary labeled and 320 capacity-control observations, with five repeats. Reflectivity Vehicle BEV gives 4/60 test-annotation matches per run versus zero for signal; both have zero qualifying 3D matches. 119 Python tests passed.",
+          "summary": "config/ouster_channel_decision.json",
+          "documentation": "docs/OUSTER_CHANNEL_DECISION.md"
+        },
+        {
+          "result": "Independent checkpoint produces qualifying historical Ouster pedestrian 3D matches, but exact primarybag person remains missed. Experimental offline runner verified; final deployment acceptance pending.",
+          "inventory": "config/candidate_model_comparison_20261124.json",
+          "log": ".recovery/verification/candidate-eval-20261124/evaluation-report.md"
         }
       ]
     },
@@ -536,6 +549,13 @@
           "result": "Recorded trial detector/player/RViz stopped at user request; data and engine volume preserved.",
           "log": ".recovery/verification/published-deployment/shutdown.json",
           "log_sha256": "8c133eeaa8ef4dd8581b63f5e1cbae885a955a5cded8e5260f5e2dedebb79340"
+        },
+        {
+          "result": "Detector failure-output invalidation regression passed over actual ROS transport, including both failure types, consecutive failures and recovery. Eight CTests and twelve evaluator tests passed; old-source/new-test negative control failed. Accuracy and full freshness/latency acceptance remain open.",
+          "inventory": "config/solution_verification_20261123.json",
+          "log": ".recovery/verification/solution-20261123/ctest.log",
+          "log_sha256": "88ec8bc9fd0d2ee1978afd67112b8f81367fb84f4a2639cb5755b532e9f2971c",
+          "exit_code": 0
         }
       ]
     },
@@ -587,7 +607,7 @@
         "CPU/ROS/GPU validation reported distinctly",
         "Rollback and supervisor/fault handling exercised"
       ],
-      "next_action": "Automatic deployment and RViz/bag/video work published at dd687da; history documentation added locally. Retry built-in PDF compilation when available; obtain reference semantics and finish benchmark/operational/CI, clean-machine and additional-hardware acceptance.",
+      "next_action": "Review the current documentation index, thesis draft and built-in compilation status; complete CI and operational acceptance without confusing documentation completion with runtime accuracy acceptance.",
       "evidence": [
         {
           "result": "Portable multistage full image build and colcon test passed; final entrypoint subsequently fixed by small image update.",

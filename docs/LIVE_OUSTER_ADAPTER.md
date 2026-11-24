@@ -1,126 +1,111 @@
-# Live Ouster adapter
+# Ouster adapter: convert the cloud before inference
 
-> **New measured channel decision — 8 November 2026:** 1,120 current-production GPU observations now include independent Ouster object annotations. Reflectivity/255 has stronger vehicle BEV evidence than signal/65535 on the frozen subset; neither has qualifying 3D accuracy. Both complete the tested numerical runs. See [results, limitations and proposal](OUSTER_CHANNEL_DECISION.md). Older unlabeled Ouster observations below retain their original scope.
+Reviewed 8 November 2026. The adapter is a separate ROS 2 node between an Ouster publisher and PointPillars. It validates the cloud layout and writes a new FLOAT32 XYZI cloud using an explicitly selected channel. The original publisher and recording remain unchanged.
 
-**Fresh GPU/RViz test — 7 November 2026:** a separately downloaded MOSEP Ouster
-bag was replayed unchanged through the combined launcher and GPU detector, with
-RViz opened on the desktop. Publisher checksum and source hashes passed; live
-conversion and detection-header checks passed. See
-[the fresh visual test](FRESH_OUSTER_VISUAL_TEST.md) for results, provenance and
-restart commands. Earlier sandbox-only verification limits below describe those
-earlier checks, not this later host execution.
+**Use reflectivity/255 as the experimental baseline for this model.** Independent annotated testing supports a vehicle advantage from above over signal/65,535, but both encodings have zero qualifying 3D matches. Neither is accepted as accurate. [Full comparison and proposal](OUSTER_CHANNEL_DECISION.md).
 
-The `ouster_adapter` executable adds a separate, GPU-independent input layer:
+## What flows through the pipeline
 
-```text
-/ouster1/points (original Ouster PointCloud2)
-    -> ouster_adapter (validate + numeric channel conversion)
-    -> /point_cloud (FLOAT32 XYZI)
-    -> pointpillars -> /bbox
+```mermaid
+flowchart LR
+  A[Ouster driver or original bag] --> B[Adapter: validate schema]
+  B --> C[Copy XYZ and header; convert chosen channel]
+  C --> D[New FLOAT32 XYZI on /point_cloud]
+  D --> E[PointPillars detector]
+  E --> F[/bbox and monitoring]
+  B --> G[/ouster_adapter/stats]
 ```
 
-The Ouster driver and original topic are unchanged. Use the combined launcher
-below, or start the adapter and detector separately. The adapter subscribes only to the configured input, lists discovered
-PointCloud2 topics, and logs the actual accepted field layout. It does not
-automatically choose between sensors, merge clouds, or create transforms. Run
-`ros2 topic list -t` for the complete ROS graph, including IMU and other topics;
-only point-cloud topics are relevant to this adapter.
+An already compatible XYZI publisher can feed the detector directly using `start.sh`. The Ouster launcher always runs conversion; it does not automatically select passthrough, choose a feature, calibrate a sensor or fuse two sensors.
 
 ## Start the complete pipeline with one command
 
-With the Ouster driver already running and a saved GPU image containing the
-adapter, run from the checkout:
+With the driver already running and an image containing the adapter:
 
 ```bash
-sudo bash tools/start_ouster.sh                # reflectivity / 255.0
-# Or choose signal / 65535.0 instead:
-sudo bash tools/start_ouster.sh signal
+sudo bash tools/start_ouster.sh
 ```
 
-This starts one foreground container containing the adapter and detector, reusing
-the normal engine cache. Ctrl+C stops both and removes the container. If either
-process exits, the other and its child processes are stopped too. The launcher
-checks that the adapter executable exists in the image before GPU startup. It
-refuses an existing container with the same name and never replaces one.
-
-The defaults match the documented live host: Zenoh, domain 0, input
-`/ouster1/points`, adapted output `/point_cloud`, detections `/bbox`, confidence
-threshold 0.4, and builder workspace 512 MiB. Match your actual driver settings:
-
-```bash
-sudo env OUSTER_POINT_CLOUD_TOPIC=/ouster2/points \
-  RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=7 \
-  bash tools/start_ouster.sh reflectivity
-# Raw numeric conversion, with no division beyond 1.0:
-sudo env PP_OUSTER_INTENSITY_DIVISOR=1.0 bash tools/start_ouster.sh signal
-```
-
-`OUSTER_POINT_CLOUD_TOPIC` is the raw driver input; `POINT_CLOUD_TOPIC` is the
-adapted topic consumed by the detector. They must differ. `PP_IMAGE`,
-`PP_CONTAINER_NAME`, `PP_ENGINE_VOLUME`, `DETECTIONS_TOPIC`, `PP_GPU_INDEX`,
-`PP_WORKSPACE_MIB` and `PP_CONFIDENCE_THRESHOLD` work as with `tools/start.sh`.
-`PP_OUSTER_INTENSITY_SOURCE` selects the source when no positional source is given;
-`PP_OUSTER_INTENSITY_DIVISOR` overrides that source's default divisor. See
-`bash tools/start_ouster.sh --help` for all defaults.
-
-The launcher mounts `docker/ouster_stack.sh` read-only from this checkout to
-supervise both processes. Keep that file alongside the launcher. Host ROS is
-unnecessary. It does not build/pull an image or start/reconfigure the sensor
-driver. It always converts the explicitly selected channel; automatic XYZI
-passthrough and choosing a feature based on model accuracy are not implemented.
-
-**Existing images need an update to contain the adapter.** Build directly from
-the current checkout without starting a detector:
+The live defaults are Zenoh, ROS domain 0 and raw `/ouster1/points`. A reachable Zenoh router is required. Prepare/update the local image first if needed:
 
 ```bash
 sudo env PP_BUILD_ONLY=1 bash tools/deploy.sh
 ```
 
-Then use `start_ouster.sh` for live input or `start_ouster.sh bag` for the downloaded
-recording. The latter shares the bag player's Fast DDS/domain 99/raw-topic defaults.
-Local builds no longer require a Git push. Remote-source mode still requires
-publishing changes. The engine volume is retained across launches.
+Build-only mode is optional and avoids starting a second detector. The combined launcher starts adapter and detector in one foreground container. One Ctrl+C stops both; image and engine cache persist. It preserves an existing named container.
+
+For the primary raw01/ouster1 recordings, select the matching bag profile:
+
+```bash
+# Separate terminals:
+sudo bash tools/start_ouster.sh bag
+sudo bash tools/start_ouster_bag.sh
+```
+
+Both use Fast DDS/domain 99/raw `/ouster1/points`. The player defaults to `raw01`; pass `ouster1` for the second primary recording. [Complete startup and RViz guide](STARTUP_AND_REPLAY.md).
 
 ## Conversion choices
 
-One model intensity value can come from either source. The adapter never blends
-signal and reflectivity, falls back to a different field, or rescales each frame
-by its observed maximum. Select the source and divisor explicitly:
-
-| Configuration | Formula | Interpretation |
+| Choice | Command for a compatible live schema | New intensity |
 | --- | --- | --- |
-| Default: `reflectivity`, divisor `255.0` | `float(reflectivity) / 255.0` | Initial comparison setting for the documented UINT8 live reflectivity field |
-| `signal`, divisor `65535.0` | `float(signal) / 65535.0` | Numeric range normalization for the documented UINT16 signal field |
-| Either source, divisor `1.0` | Numeric conversion only | Preserves the channel's raw numeric values |
+| Reflectivity | `sudo bash tools/start_ouster.sh` | `reflectivity / 255.0` |
+| Signal | `sudo bash tools/start_ouster.sh signal` | `signal / 65535.0` |
+| Custom divisor | `sudo env PP_OUSTER_INTENSITY_DIVISOR=100.0 bash tools/start_ouster.sh` | Selected value divided by 100; no clipping |
 
-These settings establish message compatibility, **not validated model training
-parity or detection accuracy**. Signal and reflectivity have different meanings.
-Integer-to-float conversion reads the original value; it does not relabel its
-bytes. No clipping is applied. For older drivers with UINT16 reflectivity, the
-divisor remains explicit; its appropriate value must be established from that
-driver's data and the model contract. FLOAT32 source channels are also supported.
-Legacy recorded bags that call their signal field `intensity` should continue
-using the existing replay tools; this live adapter deliberately requires the
-selected `signal` or `reflectivity` field.
+The selected field must actually exist. In the unchanged MOSEP and studied Dur360 recordings, the signal channel is named **`intensity`**. The current adapter selects the literal field `signal`; it has no production alias parameter. Therefore selecting `signal` on those originals rejects the cloud. The direct comparison tools verified and handled that alias separately. A verified field alias identifies the recorded channel; changing a datatype label without converting its bytes is not a valid numerical conversion.
 
-Output has exactly four scalar FLOAT32 fields `x/y/z/intensity`, point_step 16,
-and compact rows. Header, frame ID, dimensions, point order and XYZ bytes are
-preserved. Input row padding is supported. Auxiliary fields remain available on
-the original input topic; they are omitted from the adapted cloud. Nonfinite XYZ
-is preserved with `is_dense=false` and removed by the existing detector's input
-adapter. Negative/nonfinite channel values or FLOAT32 overflow reject the entire
-cloud. Zero-range points are preserved; geometric filtering is a separate issue.
+Divisors are declared encodings, not proof of the model's training convention or sensor calibration. Reflectivity values from a UINT16 field can exceed 255; division does not automatically constrain output to [0,1]. The adapter does not blend signal and reflectivity or normalize by a per-scan maximum. Keep the detector's `intensity_scale=1.0` to avoid scaling twice.
 
-The adapter rejects missing/duplicate/nonscalar required fields, unsupported
-types/endian, overlapping selected fields, invalid offsets, inconsistent row/data
-lengths, and capacity violations before conversion. It rechecks every message.
-Defaults are 204800 points and 67108864 bytes, matching the current detector's
-documented limits. Match `max_points` to any future engine's actual capacity.
+### Parameters and overrides
+
+| Parameter / launcher variable | Default | Meaning |
+| --- | --- | --- |
+| `input_topic` / `OUSTER_POINT_CLOUD_TOPIC` | `/ouster1/points` (live and bag) | Raw source |
+| `output_topic` / `POINT_CLOUD_TOPIC` | `/point_cloud` | New XYZI cloud |
+| `intensity_source` / `PP_OUSTER_INTENSITY_SOURCE` | `reflectivity` | Literal selected field |
+| `intensity_divisor` / `PP_OUSTER_INTENSITY_DIVISOR` | `255.0`; signal launcher chooses `65535.0` | Positive numerical divisor |
+| `intensity_clip_max` / `PP_OUSTER_INTENSITY_CLIP_MAX` | `0.0` (disabled) | Optional cap after division; `1.0` with divisor `100.0` gives clipped reflectivity/100 |
+| `max_points` | 204800 | Maximum total points in the input message |
+| `max_cloud_bytes` | 67108864 | Cloud-size bound |
+
+Adapter parameters are read-only after startup. Restart to change the feature recipe. Input/output names must differ even after remapping. Topic discovery reports candidates but never switches input automatically.
+
+For another driver setup:
+
+```bash
+sudo env OUSTER_POINT_CLOUD_TOPIC=/ouster2/points \
+  ROS_DOMAIN_ID=7 RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
+  bash tools/start_ouster.sh
+```
+
+Use separate adapter node names/topics for multiple sensors. No coordinate transformation, time synchronization or fusion is implemented.
+
+## What the converter accepts and preserves
+
+XYZ must be scalar FLOAT32, little-endian. The selected channel may be UINT8, UINT16 or FLOAT32. Validation checks counts, duplicates, selected-field overlap and bounds, row stride, exact data length, point/byte capacities and a finite positive divisor. Organized rows and padding are supported.
+
+The output has 16 bytes per point: FLOAT32 `x`, `y`, `z`, `intensity`. It preserves the header, dimensions, point order and XYZ bits. Other channels remain in the source and are omitted from the new message. The selected channel is read numerically, divided in double precision and cast to FLOAT32. Negative/nonfinite/overflowing results reject the cloud. Nonfinite XYZ is preserved with `is_dense=false`; the detector subsequently removes nonfinite points.
+
+This adapter does not remove finite all-zero invalid returns, crop to the model ROI, subsample oversized clouds or impose the internal 10,000-pillar/32-points-per-pillar limits. A 262,144-point Dur360 cloud exceeds the adapter's default total-point bound; the research preparation used an explicitly recorded compatibility crop/filter. That preparation is not automatically deployed here.
+
+The raw subscription uses sensor-data best-effort QoS. Output requests reliable depth 5, matching the detector's reliable input. This bridges delivery policies; it does not guarantee every scan survives overload. The detector remains synchronous with depth 700.
+
+## Inspect reception and conversion
+
+```bash
+sudo docker exec pointpillars /entrypoint.sh ros2 topic list -t
+sudo docker exec pointpillars /entrypoint.sh ros2 topic info /ouster1/points --verbose
+sudo docker exec pointpillars /entrypoint.sh ros2 topic echo /ouster_adapter/stats --once
+sudo env PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh once
+```
+
+Use the actual raw topic for bag mode. The adapter publishes diagnostics every two seconds: selected topics/feature/divisor, publisher count, `received`, `converted`, `rejected`, accepted schema and discovered PointCloud2 candidates. An input schema is logged when it changes. No recent clouds produces a warning; the last conversion error produces error status until another valid cloud clears it. A paused bag can legitimately produce a no-recent-cloud warning.
+
+If raw input arrives but conversions fail, inspect the field error. If conversions increase but detector processing does not, inspect the detector log and its domain/topic/limits. [Troubleshooting](LIVE_OUSTER_TROUBLESHOOTING.md).
 
 ## Build and run without a GPU
 
-From the checkout, use a separate build/install folder so existing builds remain
-available:
+Only conversion needs ROS/PCL development dependencies; it needs no CUDA, TensorRT, model or engine:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
@@ -130,187 +115,34 @@ colcon --log-base .recovery/ouster-adapter-log build --packages-select pp_infer 
   --cmake-args -DPP_BUILD_RUNTIME=OFF -DPP_BUILD_ROS_ADAPTER=ON \
     -DBUILD_TESTING=ON -DPython3_EXECUTABLE=/usr/bin/python3
 source .recovery/ouster-adapter-install/setup.bash
-# Match the middleware and domain used by your Ouster drivers:
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp ROS_DOMAIN_ID=0
 ros2 launch pp_infer ouster_adapter_launch.py \
   input_topic:=/ouster1/points output_topic:=/point_cloud \
   intensity_source:=reflectivity intensity_divisor:=255.0
 ```
 
-This build needs installed ROS Jazzy development dependencies, including the
-project's existing PCL dependencies, but no CUDA, TensorRT, ONNX or engine. The
-launch file starts only the adapter. Stop it with Ctrl+C. To compare signal, stop
-that instance and repeat with `intensity_source:=signal intensity_divisor:=65535.0`.
-Conversion parameters are read-only after startup to keep an experiment stable.
+This launch file starts only the adapter. Start a detector separately with matching middleware/domain and `/point_cloud`, or use the combined container launcher instead. [Native full-runtime setup](local_runtime.md).
 
-The normal full GPU build also installs this executable. In an image rebuilt
-from source containing this change, the adapter can run in its own container:
+## Evidence and its limits
 
-```bash
-sudo docker run --rm --init --network host --name ouster-adapter \
-  -e RMW_IMPLEMENTATION=rmw_zenoh_cpp -e ROS_DOMAIN_ID=0 \
-  pp-infer:jazzy-trt10 ros2 run pp_infer ouster_adapter --ros-args \
-  -p input_topic:=/ouster1/points -p output_topic:=/point_cloud \
-  -p intensity_source:=reflectivity -p intensity_divisor:=255.0
-```
+Conversion tests cover layouts, numeric conversion, headers/XYZ, malformed inputs and ROS delivery. Offline verification exercised 556 original legacy scans in four declared cases, totaling 2,224 conversion observations; reconstructed live schemas were explicitly distinguished from original data. [Conversion inventory](../config/ouster_adapter_bag_validation.json).
 
-Older images may not contain the adapter. `deploy.sh` builds current local runtime
-source by default; use `PP_BUILD_ONLY=1` to prepare the image without starting.
-Direct remote-source Dockerfile builds still require a published change. No image rebuild or deployment is performed just by
-editing this checkout.
+A fresh unchanged MOSEP bag was also replayed through adapter, actual GPU detector and RViz with reflectivity/255. [Visual integration record](FRESH_OUSTER_VISUAL_TEST.md). The later 1,120-inference channel study uses unchanged production inference/NMS directly, with independently annotated scans, but bypasses this ROS adapter. [Accuracy and stability decision](OUSTER_CHANNEL_DECISION.md). These complementary checks do not establish a newly tested live-sensor A/B deployment.
 
-Start the detector using the adapted topic and the same middleware/domain:
+## Clipped-reflectivity visual preview — 21 November 2026
+
+The optional cap implements `min(reflectivity / 100, 1)` when divisor100 and cap1
+are explicitly selected. Source geometry and headers remain unchanged; the live
+point-selection policy is unchanged. This is a local experiment, not a verified
+NVIDIA recommendation or accepted accuracy configuration. See
+[NVIDIA model research](NVIDIA_EXACT_MODEL_CONFIDENCE_RESEARCH.md) and
+[publisher settings](NVIDIA_POINTPILLARS_SETTINGS_RESEARCH.md).
 
 ```bash
-sudo env RMW_IMPLEMENTATION=rmw_zenoh_cpp ROS_DOMAIN_ID=0 \
-  POINT_CLOUD_TOPIC=/point_cloud bash tools/start.sh
+sudo env PP_IMAGE=pp-infer:reflectivity-preview-overlay \
+  PP_OUSTER_INTENSITY_DIVISOR=100 PP_OUSTER_INTENSITY_CLIP_MAX=1 \
+  PP_CONFIDENCE_THRESHOLD=0.3 bash tools/start_ouster.sh bag
 ```
 
-The saved detector image can consume this standard XYZI output without a detector
-code update. Its `intensity_scale` should be `1.0` (the supplied node YAML's
-default) to avoid scaling twice. Do not simultaneously publish a bag or another
-adapter to the same output topic. For two sensors, use distinct adapter node names
-and output topics; no two-sensor fusion is implemented.
-
-## Inspect reception and conversion
-
-```bash
-ros2 node info /ouster_adapter
-ros2 topic info /ouster1/points --verbose
-ros2 topic echo /ouster_adapter/stats --once
-ros2 topic echo /point_cloud --field fields --once
-ros2 topic echo /bbox/stats --once
-```
-
-The adapter requests best-effort sensor QoS, compatible with best-effort or
-reliable publishers under DDS. It publishes reliable XYZI with depth 5 for the
-existing reliable detector subscription. Middleware implementations must match
-across drivers, adapter and detector; this does not bridge Zenoh and DDS.
-
-Diagnostics arrive every two seconds, including `received`, `converted`,
-`rejected`, selected channel/divisor, last accepted schema, input publisher count,
-and discovered PointCloud2 topics with publishers. A malformed latest cloud reports ERROR; an interval without
-incoming clouds reports WARN. Counters are cumulative for the adapter process.
-Accepted subsequent scans recover conversion. A topic visible in discovery does
-not prove that messages arrive, and an adapted cloud does not prove inference or
-accuracy; inspect detector counters separately.
-
-Implementation: `src/ouster_adapter.cpp` performs conversion;
-`src/ouster_adapter_node.cpp` owns subscriptions, discovery and diagnostics;
-`tests/ros/test_ouster_adapter.cpp` tests conversions, rejection controls,
-compatibility with the actual detector packer, and synthetic ROS transport.
-
-## Local verification — 7 November 2026
-
-The GPU-disabled ROS build passed all seven CTest entries, including the new
-conversion and synthetic ROS publication/subscription tests. The 12 existing
-Ouster Python tests passed. The conversion tests also passed AddressSanitizer
-and UndefinedBehaviorSanitizer; leak detection was disabled because LeakSanitizer
-cannot run under this environment's ptrace setup. The installed launch file's
-arguments were checked, and a bounded launch selected signal / 65535 correctly
-and shut down cleanly on SIGINT. This environment denied UDP socket/interface
-operations during that launch: the synthetic ROS test runs within one process
-and does not establish cross-process/host transport. Physical sensor reception,
-the host's Zenoh setup, GPU inference and detection accuracy remain unverified.
-No Docker image was rebuilt or deployed by these checks.
-
-The combined launcher is checked separately with mocked Docker calls and real
-local supervisor processes: source/divisor routing, custom settings, refusal of
-conflicting containers and old images, Ctrl+C, failures of either process, and
-cleanup of their descendants. These checks do not establish Docker/GPU or live
-sensor operation of the combined pipeline.
-
-## Recorded-bag conversion validation — 7 November 2026
-
-Both original pinned Ouster OS1-32 bags were read directly, without network
-playback or Docker. The actual C++ `ouster_to_xyzi` function and the detector's
-actual `pack_xyzi` function processed every scan. Each bag database matched its
-pinned SHA-256 before the test and remained unchanged afterward.
-
-| Case | First bag | Second bag | Result |
-| --- | ---: | ---: | --- |
-| Recorded UINT16 reflectivity / 255 | 291 | 265 | Passed |
-| Recorded FLOAT32 intensity explicitly mapped to `signal`, / 65535 | 291 | 265 | Passed |
-| Reconstructed live-layout UINT8 reflectivity / 255 | 291 | 265 | Passed |
-| Reconstructed live-layout UINT16 signal / 65535 | 291 | 265 | Passed |
-
-That is 556 original scans, each with 32768 entries, tested in four cases
-(2224 frame/case checks). All outputs preserved headers, organization, point order
-and XYZ bytes. Every output intensity matched an independent numeric conversion
-bit-for-bit, and the existing detector input packer accepted the outputs with the
-expected finite point count. Full results and source/code hashes are recorded in
-[`config/ouster_adapter_bag_validation.json`](../config/ouster_adapter_bag_validation.json).
-
-The original bags do not have the live driver's schema: their signal is named
-`intensity`, and reflectivity is UINT16. The legacy signal test maps that field
-name in memory explicitly. Additional in-memory fixtures reconstruct the
-documented 48-byte live layout, numerically converting the signal to UINT16 and
-reflectivity to UINT8 only after checking that every value fits exactly. Scan
-dimensions remain those of the recordings; these fixtures are not recordings
-from the physical 128-channel sensor. The source bags are never rewritten.
-
-To repeat the offline validation with installed ROS development dependencies:
-
-```bash
-source /opt/ros/jazzy/setup.bash
-cmake -S . -B .recovery/ouster-bag-check-build \
-  -DPP_BUILD_RUNTIME=OFF -DPP_BUILD_ROS_ADAPTER=ON -DBUILD_TESTING=ON \
-  -DPython3_EXECUTABLE=/usr/bin/python3
-cmake --build .recovery/ouster-bag-check-build --target ouster_adapter_probe -j 2
-python3 tools/check_ouster_adapter_bags.py \
-  --probe .recovery/ouster-bag-check-build/ouster_adapter_probe \
-  --output .recovery/verification/ouster-adapter-bags.json
-```
-
-The Python checker defaults to the prepared bags under
-`.recovery/rosbags/ouster_calibration_v3`; use `--data-dir` for a different root
-containing the same pinned source bags. It does not download files.
-
-### Full container replay on a GPU host (not executed here)
-
-Docker daemon access was denied and no NVIDIA devices were exposed in the test
-environment. Consequently, the recorded-bag checks above do not verify the
-combined launcher, cross-process/host transport, TensorRT inference, detection
-quality or throughput. On the GPU host, with an updated image containing the
-adapter, use an isolated domain and matching Fast DDS middleware for both the
-combined launcher and the existing bag-player container.
-
-Terminal 1:
-
-```bash
-sudo env PP_CONTAINER_NAME=pointpillars-ouster-test ROS_DOMAIN_ID=99 \
-  RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
-  OUSTER_POINT_CLOUD_TOPIC=/ouster_test/raw POINT_CLOUD_TOPIC=/ouster_test/xyzi \
-  DETECTIONS_TOPIC=/ouster_test/bbox bash tools/start_ouster.sh reflectivity
-```
-
-After the engine and detector are ready, terminal 2:
-
-```bash
-ROS_DOMAIN_ID=99 POINT_CLOUD_TOPIC=/ouster_test/raw \
-  PP_OUSTER_CONTAINER=pointpillars-ouster-test-bag \
-  PP_BAG_LOOP=0 PP_OUSTER_FEATURE=raw_signal bash tools/rosbag_ouster.sh
-```
-
-Here `raw_signal` tells the bag helper to replay the original cloud unchanged;
-the adapter still selects **reflectivity**. The helper remaps `/points` onto the
-adapter's raw input, rather than feeding the detector directly. Do not select
-`signal` in this full replay recipe: the original bag names that field
-`intensity`; only the offline fixture above explicitly maps it to `signal`.
-
-Inspect the adapter and detector separately in terminal 3:
-
-```bash
-sudo docker exec pointpillars-ouster-test /entrypoint.sh \
-  ros2 topic echo /ouster_adapter/stats --once
-sudo docker exec pointpillars-ouster-test /entrypoint.sh \
-  ros2 topic echo /ouster_test/bbox/stats --qos-durability transient_local --once
-```
-
-Adapter converted counts should rise without input rejections; inspect the
-detector's processed, invalid-cloud and inference-error counters independently.
-The historical model has known inference/accuracy issues, so successful conversion
-does not establish successful inference on every scan. The best-effort adapter
-subscription can also drop scans during timed playback; exact counts are checked
-by the offline validator, not promised for real-time playback. Ctrl+C in terminal
-1 stops the combined pipeline; the nonlooping player exits after the selected bag.
+This requires an image built with the new adapter parameter. Ordinary baseline
+defaults remain reflectivity/255, clipping disabled and launcher score gate0.4.

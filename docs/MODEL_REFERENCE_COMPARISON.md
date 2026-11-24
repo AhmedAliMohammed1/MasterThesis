@@ -1,8 +1,6 @@
 # What the independent model comparison found
 
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
-
-> **Status reviewed 23 October 2026.** The compatibility comparison below is delivered, but exact numerical/training parity and accuracy acceptance remain unmet. Later Ouster tests isolated the unscaled fourth feature as a contributor to numerical failure on those recordings; that finding does not explain away the KITTI vertical error. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
+Reviewed 8 November 2026. This page preserves the **3 October compatibility experiment** and its reproduction commands. It found shared poor accuracy in TensorRT 8 and 10, consistent NMS on identical candidates, and unresolved capacity/repeatability concerns. The newer [labeled Ouster study](OUSTER_CHANNEL_DECISION.md) supports reflectivity/255 for development but also fails 3D matching; it does not close original-training parity. For the next investigation, use the [validation plan](MODEL_VALIDATION_PLAN.md).
 
 Measured on 3 October 2026. The poor KITTI baseline is reproduced in an independent TensorRT 8.6 environment. The evidence does **not** support blaming the pretrained weights alone. We now have a shared preprocessing/capacity concern to investigate, as well as the model's input/training conventions. Accuracy acceptance and exact numerical parity remain unmet.
 
@@ -31,7 +29,7 @@ The table uses the first saved observation on the 16-frame test split at moderat
 
 All three repeats in both runtimes have zero moderate 3D matches on both tuning and test splits. Test Car BEV AP ranges from 5.8049–5.8349% in TRT8 and 5.5268–5.5638% in TRT10. TRT8 matches 12 test cars in BEV, while TRT10 matches 11; frame 000910 accounts for the first-pass difference. That difference remains worth investigating, even though it cannot explain the broad failure common to both pipelines.
 
-Twelve BEV-matched test cars in the first TRT8 pass have a median vertical error of **1.5288 m upward** and median 3D IoU about 0.0432. TRT10's 11 matched cars have a median upward error about1.5195 m. This reproduces the original ROS finding before ROS box conversion/display. It does not establish a universal shift: the matched subsets are small, and changing only displayed box heights would not fix poor horizontal detections or input voxelization.
+Twelve BEV-matched test cars in the first TRT8 pass have a median vertical error of **1.5288 m upward** and median 3D IoU about 0.0432. TRT10's 11 matched cars have a median upward error about 1.5195 m. This reproduces the original ROS finding before ROS box conversion/display. It does not establish a universal shift: the matched subsets are small, and changing only displayed box heights would not fix poor horizontal detections or input voxelization.
 
 ## Numerical equality is not established
 
@@ -49,15 +47,15 @@ We match boxes one-to-one by class and all eight float components: XYZ, length/w
 
 Within-runtime repeat rows compare repeat0 with repeats1/2, then take the median over 64 observations. Cross-runtime rows take the median over 32 frames. Fractions use the larger box count as denominator. Similar medians suggest shared variability, but they are not a statistical equivalence test or proof that the migration is numerically correct.
 
-Raw counts varied in all 32 frames in both environments. The largest raw-count span was27 in TRT8 and28 in TRT10. Final counts varied in 28 TRT8 frames (maximum span 5) and27 TRT10 frames (maximum span 3). These are separate observations from the earlier longer live run.
+Raw counts varied in all 32 frames in both environments. The largest raw-count span was 27 in TRT8 and 28 in TRT10. Final counts varied in 28 TRT8 frames (maximum span 5) and 27 TRT10 frames (maximum span 3). These are separate observations from the earlier longer live run.
 
 ## A shared capacity issue needs attention
 
 The ONNX declares 10,000 voxels and 32 points per voxel. An audit found 12/32 original clouds above the voxel limit, with up to 15,180 occupied voxels. Every frame has crowded voxels: 33–585 voxels per frame exceed 32 points, accounting for 702–35,584 excess points. The initial descriptive audit uses double arithmetic and can differ at grid boundaries; the control helper also audits using float32 XY subtraction/division matching the kernel.
 
-NVIDIA's published TRT8 and TRT10 voxel kernels select points using atomic counters. Their base-feature source writes coordinates using an incrementing pillar index without a visible check against the declared pillar limit. The plugin source declares the coordinate output for that limit. This raises an **internal tensor-bounds concern** when occupancy exceeds10,000. Source inspection is not proof of the exact machine instructions in the packaged libraries.
+NVIDIA's published TRT8 and TRT10 voxel kernels select points using atomic counters. Their base-feature source writes coordinates using an incrementing pillar index without a visible check against the declared pillar limit. The plugin source declares the coordinate output for that limit. This raises an **internal tensor-bounds concern** when occupancy exceeds 10,000. Source inspection is not proof of the exact machine instructions in the packaged libraries.
 
-We made two tuning-only controls, frames 004804 and 007075. We retained the first 10,000 encountered voxels and first 32 points in each, discarded out-of-range points, and preserved all retained XYZI bits. There was no translation, scaling, new training or held-out-test adaptation. Three repeats per runtime added12 controlled inferences. Unique raw matching improved to about 99.60–99.80% for 004804 and 100% for 007075 at the 0.001 tolerance. Some differences remain, and this is a changed-input experiment rather than an accuracy improvement claim. It supports capacity/point selection as a contributor to repeat variation; it does not isolate one kernel or resolve training compatibility.
+We made two tuning-only controls, frames 004804 and 007075. We retained the first 10,000 encountered voxels and first 32 points in each, discarded out-of-range points, and preserved all retained XYZI bits. There was no translation, scaling, new training or held-out-test adaptation. Three repeats per runtime added 12 controlled inferences. Unique raw matching improved to about 99.60–99.80% for 004804 and 100% for 007075 at the 0.001 tolerance. Some differences remain, and this is a changed-input experiment rather than an accuracy improvement claim. It supports capacity/point selection as a contributor to repeat variation; it does not isolate one kernel or resolve training compatibility.
 
 Compute Sanitizer 12.9 allocation memcheck actually ran on original and capped 004804 with TRT10, one execution each. Both exited 0 with zero reported allocation errors. Internal TensorRT tensors can share a larger allocation, so this does **not** establish tensor-bounds safety, race freedom, or complete GPU memory validation. The earlier CUDA 12.0 instrumentation failure remains a historical result.
 
@@ -103,13 +101,13 @@ ROS_DOMAIN_ID=42 RVIZ_CONFIG="$PWD/rviz/kitti_reference.rviz" \
 
 Cyan boxes are frozen first-pass TRT8 reference predictions; green boxes are calibrated annotations; the Detections display shows current live TRT10 results with its existing class colors. The overlay selects saved results by exact cloud bytes and copies the current cloud header. It does not run another detector or alter measurements. Toggle displays to see overlap. A global TF warning can remain on this sensor-only stream; points/boxes share `velodyne` and rendered successfully.
 
-Ctrl+C stops the overlay or viewer in its terminal. `python3 tools/kitti_reference_view.py --stop` signals only the overlay whose PID/start identity it recorded; close the RViz window separately. Existing `kitti_accuracy.sh stop` handles its validation detector/player. Unrelated containers are preserved. The overlay, original live player/detector and reference RViz window were left running after verification.
+Ctrl+C stops the overlay or viewer in its terminal. `python3 tools/kitti_reference_view.py --stop` signals only the overlay whose PID/start identity it recorded; close the RViz window separately. Existing `kitti_accuracy.sh stop` handles its validation detector/player. Unrelated containers are preserved. Those resources were left running at the end of that historical verification. This does not assert their current state; inspect live resources before restarting or stopping anything.
 
 ## Files and recovery
 
 | File | Purpose |
 | --- | --- |
-| `docker/reference/Dockerfile` | Independent Ubuntu22.04/TRT8.6/CUDA 12.0 image and pinned unchanged NVIDIA NMS |
+| `docker/reference/Dockerfile` | Independent Ubuntu 22.04 / TRT8.6 / CUDA 12.0 image and pinned unchanged NVIDIA NMS |
 | `docker/reference/Dockerfile.trt10` | Separate V3 adapter using the deployment libraries |
 | `docker/reference/runner.cpp` | Count-checked lossless candidate collection, reusable buffers, V2/V3 paths |
 | `docker/reference/nms_driver.cpp` | Identical-candidate adapter for either NMS implementation |
@@ -122,6 +120,10 @@ Ctrl+C stops the overlay or viewer in its terminal. `python3 tools/kitti_referen
 | `tests/test_kitti_reference.py` | Unique matching, float output rejection and deterministic-cap fixtures |
 | `config/kitti_reference_inventory.json` | Exact measured identities, results and immutable evidence hashes |
 
-Nine focused controls and 50 total Python tests passed. Exact collection hashes, comparisons, all-repeat scores, controls, logs and actual RViz screenshot are indexed by the inventory. Dataset, engines, outputs, downloaded source and images are ignored and excluded from source checkpoints; retain independent backups. These source changes are present in local commit `29ef404`; inspect the selected remote revision before a Git-source deployment rebuild. No application runtime rebuild, registry publication or retraining occurred.
+Nine focused controls and 50 total Python tests passed. Exact collection hashes, comparisons, all-repeat scores, controls, logs and actual RViz screenshot are indexed by the inventory. Dataset, engines, outputs, downloaded source and images are ignored and excluded from source checkpoints; retain independent backups. The original source changes were recorded in `29ef404`. That investigation did not replace the production runtime or retrain the model. Current deployment builds local source by default; remote Git builds are an explicit option.
 
 Primary sources: [NVIDIA sample](https://github.com/NVIDIA-TAO/tao_toolkit_recipes/tree/a540badc47812a17a94e924b537d49ad3969b5a8/tao_pointpillars/tensorrt_sample), [TRT8 voxel kernel](https://github.com/NVIDIA/TensorRT/blob/a0215c1a16c6413c7ac566a498871a4fa36f6f62/plugin/common/kernels/voxelGeneratorKernels.cu), [TRT8 voxel plugin](https://github.com/NVIDIA/TensorRT/blob/a0215c1a16c6413c7ac566a498871a4fa36f6f62/plugin/voxelGeneratorPlugin/voxelGenerator.cpp), [TRT10 voxel kernel](https://github.com/NVIDIA/TensorRT/blob/d0faf303ba766f20cd9fd8c413a112fc2e5a397b/plugin/common/kernels/voxelGeneratorKernels.cu), [NVIDIA input-domain guidance](https://github.com/NVIDIA-AI-IOT/ros2_tao_pointpillars), [KITTI protocol](https://www.cvlibs.net/datasets/kitti/eval_object.php?obj_benchmark=3d).
+
+## Using this comparison in the thesis
+
+Separate the two conclusions: both runtimes reproduce poor accuracy, and both NMS implementations agree when candidates are held identical. Neither result proves exact original-training parity. Keep the tuning-only capacity controls and allocation probes in a diagnostic subsection, with their limits next to their outcomes.

@@ -1,4 +1,4 @@
-"""Fresh original-bag playback routing without starting real Docker containers."""
+"""Primary and historical bag routing without starting real Docker containers."""
 import json
 import os
 from pathlib import Path
@@ -14,6 +14,12 @@ class FreshBagLauncherTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='ouster bag ') as folder:
             root = Path(folder)
             data = root / 'original'
+            for name, filename in (('raw01', 'ouster1_raw_01_0-001.mcap'),
+                                   ('ouster1', 'ouster1_raw_02_0-001.mcap')):
+                bag = data / name
+                bag.mkdir(parents=True)
+                if not missing_bag:
+                    (bag / filename).write_bytes(b'original bytes')
             for name in ('dry', '30mmh', '100mmh'):
                 bag = data / ('digitrans_40kmh_' + name)
                 bag.mkdir(parents=True)
@@ -33,18 +39,19 @@ if args[0] not in ('info','run'):sys.exit('Unexpected mutation')
             docker.chmod(0o755)
             env = dict(os.environ)
             for key in ('PP_IMAGE', 'PP_OUSTER_CONTAINER', 'PP_BAG_RATE', 'PP_BAG_LOOP',
-                        'PP_BAG_DELAY', 'ROS_DOMAIN_ID', 'RMW_IMPLEMENTATION', 'OUSTER_POINT_CLOUD_TOPIC'):
+                        'PP_BAG_DELAY', 'PP_ROSBAGS_DIR', 'PP_OUSTER_FRESH_DIR', 'ROS_DOMAIN_ID',
+                        'RMW_IMPLEMENTATION', 'OUSTER_POINT_CLOUD_TOPIC'):
                 env.pop(key, None)
             env.update(PATH=str(root) + ':' + env['PATH'], BAG_TEST_CALLS=str(capture),
-                       PP_OUSTER_FRESH_DIR=str(data), **settings)
+                       PP_OUSTER_FRESH_DIR=str(data), PP_ROSBAGS_DIR=str(data), **settings)
             result = subprocess.run(['bash', str(SCRIPT), *args], env=env,
                                     text=True, capture_output=True, timeout=5)
             calls = [json.loads(line) for line in capture.read_text().splitlines()] if capture.exists() else []
-            for path in data.rglob('original.mcap'):
+            for path in data.rglob('*.mcap'):
                 self.assertEqual(path.read_bytes(), b'original bytes')
             return result, calls
 
-    def test_default_matches_visual_test_and_mounts_original_readonly(self):
+    def test_default_mounts_primary_raw01_readonly_without_metadata(self):
         result, calls = self.launch()
         self.assertEqual(result.returncode, 0, result.stderr)
         run = calls[-1]
@@ -56,9 +63,26 @@ if args[0] not in ('info','run'):sys.exit('Unexpected mutation')
         self.assertIn('--loop', run)
         self.assertNotIn('--remap', run)
         mount = run[run.index('--mount') + 1]
-        self.assertIn('/digitrans_40kmh_dry,target=/bag,readonly', mount)
+        self.assertIn('/raw01/ouster1_raw_01_0-001.mcap,target=/bag.mcap,readonly', mount)
         self.assertIn('ouster bag ', mount)
-        self.assertEqual(run[run.index('--topics') + 1], '/sensing/lidar/points')
+        self.assertEqual(run[run.index('--topics') + 1], '/ouster1/points')
+        self.assertEqual(run[run.index('--storage') + 1], 'mcap')
+        self.assertIn('/bag.mcap', run)
+
+    def test_second_primary_and_topic_override(self):
+        result, calls = self.launch(('ouster1',), OUSTER_POINT_CLOUD_TOPIC='/experiment/points')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        run = calls[-1]
+        self.assertIn('/ouster1/ouster1_raw_02_0-001.mcap,target=/bag.mcap,readonly',
+                      run[run.index('--mount') + 1])
+        self.assertEqual(run[run.index('--topics') + 1], '/ouster1/points')
+        self.assertIn('/ouster1/points:=/experiment/points', run)
+
+    def test_historical_default_remaps_to_shared_adapter_topic(self):
+        result, calls = self.launch(('dry',))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('/sensing/lidar/points:=/ouster1/points', calls[-1])
+        self.assertNotIn('--storage', calls[-1])
 
     def test_other_recordings_and_custom_routing(self):
         for selection, suffix in [('rain30', '30mmh'), ('rain100', '100mmh')]:
@@ -88,6 +112,9 @@ if args[0] not in ('info','run'):sys.exit('Unexpected mutation')
             self.assertEqual(calls, [])
         result, calls = self.launch(missing_bag=True)
         self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(calls, [])
+        result, calls = self.launch(('unknown',))
+        self.assertEqual(result.returncode, 2)
         self.assertEqual(calls, [])
         result, calls = self.launch(('--help',), missing_bag=True)
         self.assertEqual(result.returncode, 0)

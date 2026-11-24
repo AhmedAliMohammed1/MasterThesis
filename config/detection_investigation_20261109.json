@@ -1,0 +1,119 @@
+{
+  "date_local": "2026-11-09",
+  "status": "Root cause narrowed; repeatability control implemented and tested offline; accurate 3D detection remains unresolved.",
+  "roles": [
+    "development",
+    "independent testing",
+    "minimal code review",
+    "documentation",
+    "pretrained-model investigation"
+  ],
+  "model_provenance": "Exact v1.1 ONNX/label identities match. Shared model-level card describes proprietary solid-state data; exact-version training metadata absent. Do not infer exact target-sensor compatibility.",
+  "model_identity_evidence": ".recovery/verification/detection-investigation-2026-11-09/model/verified-model-identity.json",
+  "fresh_tests": {
+    "python_regression": 119,
+    "cpp_ctest_executables": 3,
+    "additional_focused_tests": "12 ground-truth +5 existing point-policy Python tests, overlap the full119 suite and are not additive independent counts.",
+    "packaged_decoder_gpu_controls": 3,
+    "tiny_voxel_gpu_controls": 2,
+    "production_gpu_inferences": 18,
+    "unlabeled_input_scenes": 2,
+    "accuracy_evaluation_performed": false,
+    "new_cpp_preparation_matches_python_on_both_real_inputs": true
+  },
+  "production_control_result": "Bounded outputs match all compared repeats on both scans at component tolerance0.001; raw outputs vary and zero-return removal alone is not consistently better. Not byte-identical outputs or proven accuracy.",
+  "roi_tuning_audit": {
+    "frames": 16,
+    "scope": "Read-only tuning-only input coverage audit. Counts may include background/overlapping boxes; not accuracy, causation or a proposed coordinate correction.",
+    "summary": {
+      "Car": {
+        "boxes_with_source_points": 44,
+        "all_counted_box_points": 41329,
+        "retained_counted_box_points": 34698,
+        "point_weighted_retained_fraction": 0.8395557598780518,
+        "removed_only_lower_z_within_xy": 6618,
+        "boxes_losing_more_than_half_their_points": 3
+      },
+      "Pedestrian": {
+        "boxes_with_source_points": 67,
+        "all_counted_box_points": 9288,
+        "retained_counted_box_points": 8706,
+        "point_weighted_retained_fraction": 0.9373385012919897,
+        "removed_only_lower_z_within_xy": 582,
+        "boxes_losing_more_than_half_their_points": 0
+      },
+      "Cyclist": {
+        "boxes_with_source_points": 26,
+        "all_counted_box_points": 5162,
+        "retained_counted_box_points": 5092,
+        "point_weighted_retained_fraction": 0.9864393645873692,
+        "removed_only_lower_z_within_xy": 70,
+        "boxes_losing_more_than_half_their_points": 0
+      }
+    }
+  },
+  "implemented": {
+    "tool": "pp_prepare_points",
+    "build_flag": "PP_BUILD_POINT_DIAGNOSTICS=ON; defaultsOFF",
+    "status": "offline only, no ROS/infer caller/default change",
+    "policy": "explicit finite grid, half-open ROI, zero/nonfinite removal, stable first pillars/points/total capacity; retained bits/order preserved",
+    "limits": "Does not prove original CUDA encounter order, choose a field/divisor automatically or repair learned box geometry."
+  },
+  "review_correction": "Caught and fixed unconditional CLI target requiring tools absent from Docker context. DefaultOFF guard verified in no-tools copied context.",
+  "review": "Independent final source review approved offline implementation, no blocking issue or overengineering finding.",
+  "frozen_results_preserved": [
+    "config/demo_inventory.json",
+    "config/docker_inventory.json",
+    "config/environment_inventory.json",
+    "config/kitti_accuracy_inventory.json",
+    "config/kitti_front_inventory.json",
+    "config/kitti_reference_inventory.json",
+    "config/kitti_sources.json",
+    "config/kitti_validation_inventory.json",
+    "config/launcher_fix_validation.json",
+    "config/model_contract.json",
+    "config/model_inventory.json",
+    "config/ouster_adapter_bag_validation.json",
+    "config/ouster_camera_inventory.json",
+    "config/ouster_channel_decision.json",
+    "config/ouster_demo_inventory.json",
+    "config/ouster_detail_inventory.json",
+    "config/ouster_feature_inventory.json",
+    "config/ouster_fresh_visual_validation.json",
+    "config/runtime_inventory.json",
+    "config/visualization_inventory.json"
+  ],
+  "local_thesis": {
+    "exit_code": 0,
+    "pages": 94,
+    "source_sha256": "278036a77ec7417578cb3ab326ae06aab1e4a96a3006c502fafce44c3c53d45e",
+    "pdf_sha256": "1cce156ab0732d05884c7f1f514b040d94cb2fe85d9fbfc122b05e32cb3716f0",
+    "visual_review": [
+      30
+    ],
+    "full_layout_acceptance": false,
+    "built_in_compiler": "Still DNS-blocked fetching article.cls; local VS Code XeLaTeX toolchain succeeded."
+  },
+  "remaining": [
+    "Trusted original-framework/in-domain reference and exact training/export conventions",
+    "Target-sensor-compatible model or fine-tuning if shared implementation parity passes",
+    "Explicit reviewed live preprocessing integration and load/failure validation",
+    "Fresh recording-disjoint labeled acceptance evaluation; old inspected test set remains diagnostic"
+  ],
+  "source_sha256": {
+    "CMakeLists.txt": "21cc0b92e6fa822afe5f53a0e1395daad0d2297cf9148691d9dc124d91a5f39e",
+    "include/pp_infer/point_policy.hpp": "f5a2d2e7c78154f38c762eec47aa2f4f54b688caa995776da2a94be671084ba4",
+    "src/point_policy.cpp": "f9d28da13ae5c634f318a241e7883e97f16167dde6bb09d71efeaa52035ca105",
+    "tools/prepare_points.cpp": "f638e99950cd75192ee2967adb9d22ffedab24a3329945bc7ad19fcffcfdf5df",
+    "tests/core/test_point_policy.cpp": "38af024421f729cdfde706fa9ebe0df58aa68feb9b06fd3836a570d030a61d16",
+    "docs/DETECTION_INVESTIGATION_AND_PLAN.md": "c304d9b4856e302e40a0ecaad4bc577340cb49d364455b907ba82be8519685aa",
+    "docs/DETECTION_TEST_RESULTS.md": "e58322fc950db81f258ca84e7b44ef5ccf104ba17932185788ec562b2b2091bf",
+    "docs/DETECTION_MODEL_INVESTIGATION.md": "2215f4efd9e33b197ace2784cc0b6fbf41df0e5874e480ff876c75f10cad6e1e",
+    "docs/DETECTION_CODE_REVIEW.md": "231db44ccb74fd400dd6896ffd8fe0c6c1ba19a4689905f812770ccd4c45561e",
+    "docs/THESIS_DRAFT.tex": "278036a77ec7417578cb3ab326ae06aab1e4a96a3006c502fafce44c3c53d45e",
+    "docs/THESIS_DRAFT.md": "265c67735bfcb13240bbb9bc1d24da85b8737e9034a68840872f28270d35bdd0"
+  },
+  "static_errors": [],
+  "evidence_directory": ".recovery/verification/detection-investigation-2026-11-09",
+  "publication": "Local uncommitted edits; no push."
+}

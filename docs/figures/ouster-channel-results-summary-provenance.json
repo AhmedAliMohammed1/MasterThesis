@@ -1,0 +1,9 @@
+{
+  "title": "Ouster channel results summary",
+  "source": "config/ouster_channel_decision.json",
+  "source_sha256": "0805ebe99720d502d810d4d27605debc9dae97279714a89feebf3f6fb3086e0d",
+  "image_sha256": "1725d1375748effcaaf4cd2abfcb33a997e4d879cdb0ab398a3dd444ab053fc5",
+  "scope": "Frozen Dur360 primary test: 16 scans, 60 in-region Vehicle annotations and five repeats. Panel (a) shows the mean of per-run ratios; panel (b) shows the four qualifying BEV matches in the first repeat. No new inference was performed.",
+  "attribution": "Underlying original Dur360BEV-Extended data: TomEeee / Durham University, CC-BY-4.0 as declared by publisher; project-produced diagnostic plot.",
+  "limitations": "Not an official benchmark or independent-drive acceptance result. Four matches are annotations across scans, not necessarily unique physical vehicles."
+}

@@ -1,217 +1,109 @@
-# pp_infer implementation architecture and recovery plan
+# How the implementation fits together
 
-> **Current startup — 8 November 2026:** deployment uses local source and reuses matching images; base pulls are explicit. `PP_BUILD_ONLY=1` is optional and prepares the image without starting the detector. For the unchanged MOSEP bag, use `start_ouster.sh bag` with `start_ouster_bag.sh`; both use Fast DDS/domain 99 and the same raw topic. One Ctrl+C stops each launcher. See [current startup, replay, RViz and validation](docs/STARTUP_AND_REPLAY.md). Earlier dated observations and quoted conversations retain their historical context.
+Reviewed 8 November 2026. This page describes the code that exists today. The final section describes proposed work; it is not part of the deployed pipeline.
 
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](docs/CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+The project takes a LiDAR point cloud, runs a pretrained PointPillars network and publishes 3D object boxes through ROS 2. It has two input routes: a source that already supplies the expected XYZI layout, and an Ouster source that needs an explicit channel conversion. Neither route trains the model.
 
-> **Status reviewed 23 October 2026.** The CPU core, ROS adapter, TensorRT 10 runtime and Docker deployment are implemented. The latest-frame worker diagram below is a proposed architecture: the current node still performs synchronous inference with reliable depth 700. Labeled accuracy remains unaccepted; later Ouster/frontal replay results establish integration only. [Current results and evidence](docs/CURRENT_STATUS_AND_RESULTS.md).
+For setup, use [the startup guide](docs/STARTUP_AND_REPLAY.md). For measured quality, read [the channel decision](docs/OUSTER_CHANNEL_DECISION.md). For a research narrative, start with [the thesis draft](docs/THESIS_DRAFT.md).
 
-Prepared 2026-10-01. Target confirmed by the user: **Ubuntu 24.04 / ROS 2 Jazzy on an NVIDIA GPU**.
-
-Implementation update, 23 October 2026: W02/W03 foundations are verified; W04/W05 runtime migration and Docker integration have recorded GPU/ROS checks but remain in progress for full acceptance. Labeled KITTI scoring and a TensorRT8/10 compatibility comparison are delivered; accuracy and original-training parity remain unaccepted. Ouster normalized replay, camera export and frontal KITTI integration were added on 13–14 October. See [current results](docs/CURRENT_STATUS_AND_RESULTS.md).
-
-This document retains the original staged design and baseline review. Proposed worker, QoS and metric interfaces are not implemented unless explicitly identified below.
 ## Current implemented layers after confidence filtering
-
-The following diagram describes the current executable, rather than the proposed worker design later in this document. Processing is still synchronous with reliable depth 700; confidence filtering does not add an inference thread or change the engine.
 
 ```mermaid
 flowchart TD
-    A[LiDAR driver or bag] --> B[PointCloud2 /point_cloud]
-    B --> C[CPU callback: validate and pack finite XYZI]
-    C --> D[GPU: PointPillars inference and candidate decoding]
-    D --> E[CPU: candidate validation and rotated BEV NMS]
-    E --> F[DetectionOutput: validate candidates and apply score gate]
-    P[Live confidence_threshold parameter] --> F
-    F --> G[Accepted Detection3DArray /bbox]
-    F --> H[Per-frame counts and cumulative state]
-    H --> I[DiagnosticArray /bbox/stats]
-    H --> J[MarkerArray text /bbox/count]
-    B --> K[RViz points]
-    G --> L[RViz boxes or another subscriber]
-    J --> M[RViz count label]
-    I --> N[Terminal monitor or diagnostic subscriber]
-    C -. invalid input .-> X[Failure status and drop counter]
-    D -. inference failure .-> X
-    X --> H
+    O[Ouster driver or recorded cloud] --> A[Separate Ouster adapter: selected channel / divisor]
+    X[Compatible FLOAT32 XYZI source] --> C[CPU callback: validate and pack points]
+    A --> P[PointCloud2 on /point_cloud]
+    P --> C
+    C --> G[GPU: pillar features, PointPillars and candidate decoding]
+    G --> N[CPU: validate candidates and rotated BEV NMS]
+    N --> F[CPU: confidence gate]
+    F --> B[Detection3DArray /bbox]
+    F --> S[DiagnosticArray /bbox/stats]
+    F --> M[MarkerArray /bbox/count]
+    P --> R[RViz]
+    B --> R
+    M --> R
+    C -. invalid input .-> E[Failure status; count unavailable]
+    G -. inference failure .-> E
+    E --> S
 ```
 
-`src/pp_inference_node.cpp` orchestrates input/runtime/output. `src/pointpillar.cpp` executes inference and postprocessing; `src/postprocess.cpp` implements CPU NMS. `src/detection_output.cpp` owns the live score parameter, publishers and cumulative counters, delegating message validation/filtering to `make_detections` in `src/pointcloud_adapter.cpp`. Individual below-threshold detections are not published on any output topic. The counter branch exposes aggregate information only. Errors report counts as unavailable and leave successful totals unchanged.
+The direct XYZI route is a configuration choice. The launchers do not automatically inspect an arbitrary source and decide whether to bypass the adapter. The Ouster adapter always converts the explicitly selected field.
 
-For each successful scan, `post_nms_count = filtered_count + published_count`; `published_count` also equals `/bbox.detections.size()`. `published_detections_total` sums accepted detection events since node startup, including repeated observations of the same object. Totals reset on restart. An empty/all-filtered valid scan publishes an empty detection array with a zero count. Statistics and marker messages carry the input header and use Reliable / Transient Local QoS; retained data may be old. Monitor topic names follow the resolved detection topic.
+| Component | What it does | Main implementation |
+| --- | --- | --- |
+| ROS inference node | Receives a cloud, calls the runtime and publishes results | `src/pp_inference_node.cpp` |
+| Input validation and packing | Checks layout, capacity and intensity scale; packs finite XYZI points | `src/pointcloud_adapter.cpp`, `include/pp_infer/ros_adapter.hpp` |
+| Ouster conversion | Builds a separate FLOAT32 XYZI message from signal or reflectivity | `src/ouster_adapter.cpp`, `src/ouster_adapter_node.cpp` |
+| TensorRT runtime | Inspects the engine, owns its execution context and GPU buffers, runs inference | `src/pointpillar.cpp`, `include/pp_infer/cuda_resources.hpp` |
+| Box geometry and NMS | Computes rotated overlap and suppresses duplicate candidates | `src/postprocess.cpp` |
+| Output and monitoring | Applies the live confidence threshold and publishes boxes, statistics and count text | `src/detection_output.cpp` |
+| Deployment | Builds/reuses the image, prepares/reuses an engine and supervises foreground containers | `Dockerfile`, `docker/entrypoint.sh`, `tools/deploy.sh`, `tools/docker_foreground.sh` |
 
-Read counts from the project root with `PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh once` (one snapshot), or omit `once` to stream. Open the selected RViz profile with `RVIZ_CONFIG="$PWD/rviz/kitti_front.rviz" bash tools/monitor_detections.sh rviz`; an existing viewer can add a MarkerArray display on `/bbox/count`. The marker includes latest published/pre-filter counts, removed boxes, cumulative totals and processed/dropped frames. See [the complete monitoring commands](docs/CONFIDENCE_FILTER_AND_MONITORING.md#monitor-the-statistics-topic).
+## One scan, from input to output
 
-The C++ and YAML default is **0.5**. At this architecture review, an existing local edit in `tools/deploy.sh` sets the shell fallback to **0.4**; an explicit `PP_CONFIDENCE_THRESHOLD` overrides it. A live parameter update overrides the running node until restart. Query the actual node rather than inferring its current value from either default. This documentation change preserves that existing shell edit.
+1. The driver or player publishes `sensor_msgs/msg/PointCloud2`.
+2. For Ouster input, the separate adapter reads the selected scalar channel and divides it by a configured positive divisor. It preserves XYZ and the header, publishes compact XYZI and reports rejected messages. It does not edit the source bag.
+3. The inference callback validates the cloud and packs finite points into reusable CPU storage. The detector expects little-endian scalar FLOAT32 x, y, z and intensity; row padding is supported. Oversized or malformed clouds are rejected.
+4. The runtime copies the points and point count to GPU buffers. The fixed batch-one engine performs pillar processing, network inference and candidate decoding.
+5. The CPU checks candidate counts and box values, then runs class-agnostic rotated BEV NMS. This matches the postprocessing policy used in the recorded comparison; a class-aware redesign remains a separate decision.
+6. The output layer keeps boxes whose score meets the current confidence threshold. It publishes an array even when that valid scan has no accepted boxes.
+7. The output header comes from the input. The code does not invent a world transform, shift the sensor origin or track object identities across scans.
 
-## Decision and scope
+As of the 23 November local repair, invalid input or failed inference publishes an empty detection array with the failed input header to request clearing previous boxes, together with warning diagnostics and unavailable counts. This is not a successful empty scan and does not increment successful-frame/detection totals. Consumers must inspect matching status and timestamps; separate topics are not atomic. Input silence and queued old scans can still leave stale output. See the [solution protocol](docs/POINTPILLARS_SOLUTION_PROTOCOL_20261123.md) for verification scope.
 
-The 23 October [confidence/count output layer](docs/CONFIDENCE_FILTER_AND_MONITORING.md) adds `DetectionOutput` between completed inference/NMS and ROS publication. Its score gate is dynamically adjustable because it does not change engine resources or input processing. Other allocation/model/input parameters retain their restart requirement. This does not implement the planned bounded inference worker.
+## CPU, GPU and process ownership
 
-Keep one ROS package and one process. Use a short subscription callback, one replaceable pending frame, one inference worker, one TensorRT execution context, and one persistent CUDA stream. Separate CPU correctness from GPU integration so useful development continues without a working driver. Optimize only after representative measurements establish the bottleneck.
+The adapter and detector are separate ROS processes when started with `tools/start_ouster.sh`. The combined launcher supervises both. Inside the detector, inference still runs **synchronously in the subscription callback**, with reliable history depth **700**. There is no latest-frame worker or one-slot handoff today.
 
-This deliverable designs the modernization in `PROJECT_REVIEW_AND_UPDATE_PLAN.md` and supplies a working development checkpoint mechanism. The quoted prompt in that document is reference material, not a new instruction to execute its installation commands. That planning task did not modify inference. Subsequent implementation modernized C++, CMake and ROS adapters; the native launch file still has historical paths/settings.
+The runtime owns its logger, TensorRT runtime, engine, execution context, profiler, persistent CUDA stream and capacity-sized buffers. These resources are reused across scans. A serious GPU execution failure latches a fault; the runtime does not silently rebuild itself on each frame.
 
-Start here after an interruption: [recovery/RESUME.md](recovery/RESUME.md). Track work in [recovery/tasks.json](recovery/tasks.json) and [recovery/PROGRESS.md](recovery/PROGRESS.md). Use the current status and source to distinguish delivered runtime files from proposed worker/launch interfaces below.
+GPU execution is only one part of processing time. The short inference/NMS timings in the channel study exclude sensor acquisition, ROS transport and full end-to-end age. They are not a sustained real-time benchmark.
 
-## Historical starting point — 1 October 2026
+## Input and model contract
 
-Source baseline: Git commit `2301135`. The original review document was already untracked when work began; preserve it. File/line references below refer to this baseline.
+The current export uses four input features, x/y/z/intensity, and a maximum of 204,800 points. Its encoded spatial range is approximately x/y ±51.2 m and z [−1.4,4.4] m. The pillar limits are 10,000 pillars and 32 points per pillar. Exact export attributes are recorded in [the model contract](config/model_contract.json).
 
-| Observation | Evidence and consequence |
-|---|---|
-| Build settings conflict and paths are fixed | `CMakeLists.txt:27–53,73–100`: C++14 plus forced C++11, legacy CUDA discovery, fixed include/library paths. Replace with target-based configuration. |
-| Jazzy build blockers | `src/pp_inference_node.cpp:46,76,199–200`: missing local header, untyped class parameter and old hypothesis fields. Installed Jazzy headers contain `hypothesis.class_id` and `hypothesis.score`. |
-| Unbounded age under overload | `src/pp_inference_node.cpp:97–100,118–227`: history depth 700 and synchronous inference in the callback. |
-| Unsafe input allocation | `src/pp_inference_node.cpp:135–161`: capacity follows received cloud size, with 32-bit byte arithmetic. Engine capacity and actual tensor dtype are unchecked. |
-| Unsafe output decoding | `src/pointpillar.cpp:296,330–354`: four assumed bindings, assumed nine-float rows, ignored enqueue result and unchecked output count. |
-| Ownership and profiler bugs | `src/pp_inference_node.cpp:95,115`: raw allocation without cleanup. `src/pointpillar.cpp:239`: unmanaged runtime. `:260–263`: persistent context receives a stack-local profiler pointer. |
-| Incorrect stream/timing design | Runtime uses default stream at node lines 94–95; callbacks create another at 123–127. Per-frame allocations and device-wide synchronization add cost. |
-| Geometry and suppression risks | `src/postprocess.cpp:160–161,195,201–211`: zero-count division, unchecked negative top-k and class-agnostic suppression. |
-| Startup can unexpectedly build an engine | `src/pointpillar.cpp:152–215`: missing engine enters model-building code and writes a different cache path. Separate engine preparation from deployment. |
+Point-count validation does not ensure compliance with the internal pillar limits. Twenty of 32 labeled Ouster scans in the primary study exceeded the pillar limit. The geometry-only bounded selection in the experiment is a **sensitivity control**, not enabled production preprocessing.
 
-Read-only machine checks during this task found x86_64 Ubuntu 24.04.4, `/opt/ros/jazzy`, colcon, Python 3.12.3, CMake 3.28.3 and CUDA compiler 12.0.140. `nvidia-smi` exited 9 because it could not communicate with the driver. No `NvInfer.h` was found under `/usr/include`; this does not rule out another installation. No `.engine`, `.plan`, `.etlt` or `.onnx` exists in this checkout. A CUDA compiler is not evidence of usable GPU inference. No C++ build or GPU benchmark was performed.
+The adapter supports literal fields named `signal` or `reflectivity`. Some recorded Ouster clouds instead name signal `intensity`; they need an explicit, verified field mapping for a future ROS signal replay. The current adapter does not silently interpret every intensity field as signal. See [adapter details](docs/LIVE_OUSTER_ADAPTER.md).
 
-## 1. Proposed component boundaries and worker architecture
+Reflectivity/255 remains an experimental numerical encoding. It is not a guarantee of equivalence to the model's training reflectance. In the current study it gives stronger vehicle BEV results than signal/65535, while neither configuration achieves qualifying 3D matches.
 
-```mermaid
-flowchart LR
-    A[PointCloud2 / shallow DDS history] --> B[Callback: byte cap and pointer handoff]
-    B --> C[LatestFrameSlot: one pending frame]
-    C --> D[Single inference worker]
-    D --> E[Validate and pack XYZI]
-    E --> F[H2D → TensorRT → D2H on one stream]
-    F --> G[Completion check and output validation]
-    G --> H[CPU rotated NMS]
-    H --> I[Detection3DArray with input header]
-    D --> J[Stage timings and drop counters]
-```
+## Output layers and state
 
-Use three production CMake targets, with test executables added as needed:
+| Topic | Message | Meaning |
+| --- | --- | --- |
+| `/bbox` | `vision_msgs/msg/Detection3DArray` | Accepted boxes for a successful scan; empty clear request on reported failure |
+| `/bbox/stats` | `diagnostic_msgs/msg/DiagnosticArray` | Latest status, threshold, counts and cumulative totals |
+| `/bbox/count` | `visualization_msgs/msg/MarkerArray` | Count text for RViz |
 
-| Target | Owned work | Dependency rule |
-|---|---|---|
-| `pp_core` | Plain box/tensor metadata types, checked capacity arithmetic, pure validation, rotated geometry and NMS | C++17 standard library; no ROS, PCL, CUDA or TensorRT headers |
-| `pp_runtime` | Engine inspection, logger/runtime/engine/context lifetimes, persistent buffers/stream, validated inference result | `pp_core`, selected TensorRT and CUDA runtime |
-| `pp_infer` | ROS parameters, input layout validation and PCL conversion, worker/mailbox, message mapping, diagnostics | `pp_runtime`, ROS messages, PCL/conversions; `Threads::Threads` where needed |
+Topic names follow detection-topic remapping. For a valid scan, `post_nms_count = filtered_count + published_count`, and `published_count` equals the detection-array length. Cumulative totals count repeated detection events, not unique physical objects, and reset when the node restarts.
 
-Do not create a generic backend framework for one model. Inject one narrow fake-inference callable in worker tests; do not build multiple production backends. Keep `postprocess.cpp` and its header where practical. Replace CUDA `float2` in CPU geometry with a local `Point2` structure. Extract runtime responsibilities from `pointpillar.cpp` incrementally; avoid moving all files and changing behavior in the same patch.
+The statistics and marker publishers retain their latest messages with Reliable / Transient Local QoS. Retention helps new viewers, but does not establish freshness. Match headers when comparing messages for the same scan. On failure, unavailable counts must not be read as zero.
 
-Proposed additional files: `include/pp_infer/model_contract.hpp`, `include/pp_infer/latest_frame_slot.hpp`, `include/pp_infer/cuda_resources.hpp`, `src/pointcloud_adapter.cpp`, `config/pp_infer.yaml`, and focused `tests/`. Use normal `add_library`/`add_executable`, explicit source lists, proper project include directories, `cxx_std_17`, `find_package(CUDAToolkit)` and imported TensorRT library targets. Compile CUDA language only if actual `.cu` files are introduced. Keep ONNX parsing/build tools outside the deployed runtime target. Declare ROS dependencies consistently; remove unused message_filters includes and decide whether tf2 is retained before declaring it.
+The node/YAML confidence default is 0.5. Standard launchers supply 0.4 unless explicitly overridden. The live `confidence_threshold` parameter can change without rebuilding the engine. Query it rather than assuming the current value from a file.
 
-The implemented `PP_BUILD_RUNTIME=OFF` and `PP_BUILD_ROS_ADAPTER=OFF` configuration builds the CPU core/tests without TensorRT, CUDA or ROS discovery. `PP_BUILD_ROS_ADAPTER=ON` builds local Jazzy/PCL input/config/output tests with no inference runtime. See README for runnable commands. The adapter is an additional testable library boundary inside the ROS layer.
+## Build, storage and external inputs
 
-## 2. Freeze the model contract before selecting the NVIDIA stack
+The package separates `pp_core`, ROS adapter libraries and `pp_runtime` so CPU geometry can be tested without a GPU. `PP_BUILD_RUNTIME=OFF` disables the TensorRT/CUDA runtime; `PP_BUILD_ROS_ADAPTER=OFF` also removes ROS/PCL requirements. [Native build instructions](docs/local_runtime.md) explain the supported combinations.
 
-The original plan required pinning GPU, driver, CUDA, TensorRT, export and plugin identities. Those deployment identities are now recorded in `config/*_inventory.json`; model semantics and accuracy acceptance remain partial. Do not pick the newest TensorRT automatically. The old README's TensorRT 8.2 / OSS 22.02 recipe is historical evidence, not a compatibility guarantee for this target.
+Deployment uses the local checkout by default. A matching saved runtime-input checksum skips the build; changed source uses cached dependency/model layers. Base pulls are explicit. `PP_BUILD_ONLY=1` is optional and stops before launching a detector.
 
-In W01, produce `config/environment.lock.json` and `config/model_contract.json` with:
+The build verifies the pretrained ONNX checksum and installs the declared software packages. GPU package versions are pinned, but other apt packages and base image tags are not fully frozen. At startup, the entrypoint hashes the model and deployment GPU/build identity, then reuses a matching engine or builds one. The detector loads the engine once. The ONNX remains in the image; engines persist in the `pp-engines` Docker volume. No runtime database is used.
 
-- GPU model, compute capability, driver, architecture, OS, ROS and compiler versions; exact CUDA/TensorRT packages and plugin source revision/build flags.
-- Model/export version, SHA-256 of model and engine, build command, build machine/GPU and plugin library hashes. Store proprietary artifacts outside Git and record their controlled location. Do not store TAO keys.
-- Every I/O tensor's name, input/output role, dtype, host/device location, format, rank, shape and profile bounds; batch size and selected profile.
-- Maximum point capacity `P`, feature order, point count encoding, required padding, class index order, intensity normalization, training range, coordinate units/axes, yaw convention and center-versus-bottom Z semantics.
-- Output names, candidate capacity `B`, row/schema layout, count encoding, score interpretation, whether the engine already filters/NMSes, and intended class-aware or class-agnostic NMS.
-- A representative input fixture, reference output/evaluator, dataset identity and agreed numerical/accuracy tolerance.
+Large datasets and raw measurements are stored under ignored `.recovery` directories. Git contains code, small summaries, figures and provenance. A source checkout alone is not a backup of the evidence. Model/data licensing and dataset attribution remain attached to their source records.
 
-Read metadata from the real engine and compare it with the manifest; a manifest cannot make an incompatible engine safe. Initially support one verified batch-one, linear-layout contract and reject others with an actionable error. Resolve all dynamic dimensions/profile choices before allocating. Reject unsupported data-dependent output shapes until a bounded allocator is explicitly implemented. Check shape products using overflow-safe `size_t` arithmetic. Precision in an engine filename does not establish input/output dtypes.
+## What is proposed next
 
-**Compatibility gate:** use a standalone pinned-stack smoke harness or offline tool to validate official support information for the candidate stack, build/register the required plugins, deserialize the engine, run a known fixture and compare outputs. This gate must not depend on the unfinished W04/W05 runtime. Retain logs and artifact hashes. If legacy plugins cannot build/run with a Jazzy-compatible stack, treat plugin/export migration as a separate prerequisite. A container does not repair a missing host driver or make an old engine compatible.
+The engineering sequence is:
 
-For a selected TensorRT 10.x path, use named I/O addresses and `enqueueV3`; migrate ownership and plugin APIs with that selection. Do not scatter version-conditionals across the node. Support one pinned stack initially; only add a second adapter for a demonstrated deployment need. NVIDIA documents default version-specific engine compatibility and the named-tensor migration; neither establishes compatibility for this particular TAO export. [Engine compatibility](https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/engine-compatibility.html), [C++ migration](https://docs.nvidia.com/deeplearning/tensorrt/latest/api/migration/tensorrt-8x-to-10x-c-api-patterns.html), [plugin APIs](https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/plugins-api-migration.html).
+1. Establish and test valid-return and pillar-capacity handling without changing one feature variant's geometry independently.
+2. Resolve the vertical/input-training mismatch using a verified reference; do not install an empirical display-only z shift.
+3. Evaluate an Ouster-compatible trained model or fine-tune if the current model remains inaccurate.
+4. Add a latest-frame worker, configurable sensor QoS and stage/end-to-end timing after correctness requirements are fixed.
+5. Measure sustained overload, memory stability and latency on the target sensor, then evaluate fresh recording-disjoint annotated data.
 
-Engine generation is an explicit offline operation with temporary output, validation and atomic promotion. Runtime startup loads only the configured engine and fails clearly if missing/incompatible. Preserve the prior verified engine and manifest together for rollback.
+The proposed worker would own one active and at most one pending cloud, with a single owner of the inference context. It would deliberately replace older pending work and report that behavior. That design does not bound every driver/DDS queue or turn average inference time into a real-time guarantee.
 
-## 3. Bounded live execution and ownership
-
-Suggested starting QoS: input `KeepLast(1)`, best effort, volatile; output shallow configurable history. Confirm compatibility with the actual LiDAR publisher and consumers. Best effort is commonly appropriate for recent sensor readings; a reliable subscriber cannot consume from a best-effort publisher. Reliable transport can also introduce backpressure outside the application slot. [Official ROS QoS source](https://github.com/ros2/ros2_documentation/blob/jazzy/source/Concepts/Intermediate/About-Quality-of-Service-Settings.rst).
-
-The callback performs only cheap envelope checks (including maximum message bytes), records a monotonic receive time and local sequence, exchanges a `ConstSharedPtr` into the slot under a mutex, increments `replaced_pending` when necessary, and signals a condition variable. Release the displaced pointer outside the lock. The worker waits on `stop || pending`, takes the pointer, releases the lock, then performs all conversion and inference. Never hold the slot lock during GPU or publication work. Latest means newest received; source timestamp ordering is a separate optional policy because rosbag clocks may jump.
-
-At most **one active + one pending** frame is retained by this application handoff; a callback can transiently hold another pointer. DDS, transport and an upstream driver have separate buffers. A maximum message byte limit and shallow QoS prevent the application from retaining arbitrarily large pending clouds; serialization can allocate before the callback, so test DDS resource limits on deployment.
-
-The worker selects the CUDA device and creates, uses and tears down the runtime on that thread. Startup signals success/failure before enabling the subscription. Logger and plugin handles outlive runtime/engine/context. Context and an optional persistent profiler are destroyed before the engine and runtime; buffers/events/stream remain alive through completion. Destructors do not throw or abort. For C++17, use `std::thread`, mutex, condition variable and an explicit join; do not depend on C++20 `jthread`.
-
-Shutdown: stop accepting frames, set stop/discard pending under lock, notify worker, finish/drain its outstanding GPU work, destroy its resources, join, then release publisher/node. Maintain publisher lifetime until join. A CUDA call can stall despite a one-slot queue; a bounded shutdown/restart policy requires a process supervisor on target hardware. Never destroy buffers while device work can still use them.
-
-For normal frame failures, drop that frame and increment a reasoned counter. For a failed CUDA context or serious runtime error, enter fault state and stop accepting inference work; preserve diagnostics and exit for a supervisor restart. Avoid blind per-frame retries and stale output publication.
-
-## 4. Memory, synchronization and correctness invariants
-
-Allocate one reusable workspace from validated maximum capacities. For linear four-feature FP32 input, an illustrative staging allocation is `P * 4 * sizeof(float)`; compute from actual tensor format/dtype in production. A nine-FP32-field output would be `B * 9 * sizeof(float)` only if that layout is confirmed. Total memory also includes both message pointers, PCL scratch, host and device I/O, NMS scratch, TensorRT engine/context/workspace and plugin allocations. Record measured GPU/host peaks; the I/O formula is not the whole memory budget.
-
-For a confirmed discrete GPU, start with persistent device I/O and capped pinned host staging; compare against reused managed memory on real hardware if worthwhile. The subsequently tested GPU is an RTX 4060 Laptop; broader hardware validation remains open. Keep PCL first. Reserve reusable point/candidate/output vectors, while acknowledging PCL and ROS serialization can still allocate. Remove per-frame CUDA allocations and stream creation; do not claim completely allocation-free execution.
-
-Single-stream ordering:
-
-1. Validate PointCloud2 `data`, `width`, `height`, `row_step`, `point_step`, fields, datatypes, offsets, counts and byte order with checked arithmetic. Respect organized-cloud row padding; reject unsupported layouts before PCL conversion. Require X/Y/Z/intensity or a documented model-compatible fallback.
-2. Remove/reject nonfinite points as specified by the contract, apply only recorded normalization and range handling, set the actual valid point count. Empty valid input produces an explicitly empty result without launching TensorRT if the model does not accept zero points. An invalid message produces a diagnostic/drop, not a successful empty detection.
-3. If valid points exceed capacity, reject by default. Add deterministic sampling only after specifying its method/seed and passing accuracy evaluation. Never silently truncate or overflow. Initialize unused tensor storage/padding as required each frame; stale prior points must not influence results.
-4. Enqueue H2D copies, input count/reset operations, inference, then D2H copies on the same persistent stream, respecting each tensor's host/device location. Initially copy the bounded full output and count together for one completion wait; optimize count-first transfers only if measured worthwhile.
-5. Check enqueue, copy and event/synchronization results. Wait for completion before CPU access or buffer reuse. Use stream events rather than device-wide synchronization on the successful frame path.
-6. Validate `0 <= count <= B` before indexing. Invalid count is a rejected inference result, not a silently clamped success. Validate finite score/geometry, positive dimensions and an integral, in-range class value **before** converting it to an integer. Clear result state on every attempt; never decode outputs after a failed enqueue.
-7. Run deterministic rotated NMS. Handle no intersection/degenerate polygons without division by zero; bound temporary polygon storage and candidate counts. Reject invalid NMS thresholds/top-k and NaN sort inputs. Specify stable tie ordering and verify same-class/cross-class behavior against the model reference.
-8. Publish Jazzy `hypothesis.class_id/score`, box geometry and the original timestamp/frame ID in the array and each detection. Preserve current numeric-string class IDs unless a documented consumer contract chooses labels. Populate hypothesis pose consistently where used; verify axes, yaw and Z convention with known boxes. If coordinates are transformed, update the frame and use the appropriate timestamped transform.
-
-Latency controls are separate from validity. Configure an optional maximum monotonic residence time and, only with comparable clocks, source frame age. Check before inference and before publication. Count expired work separately; clock mismatch or a negative age must not silently pass as a valid latency measurement. A latest-frame slot bounds queue growth, not worst-case GPU time or hard real-time latency.
-
-## 5. Implementation sequence and release gates
-
-Each row is a milestone. Split it into patches containing one behavior and its relevant check; prefer sessions of roughly 30–60 minutes, but checkpoint after every coherent edit and test regardless of time. These are work-sizing suggestions, not delivery estimates. Only one agent edits a shared file at a time.
-
-| ID | Work and file scope | Dependencies | Gate before completion |
-|---|---|---|---|
-| W00 | Architecture, task ledger, recovery helper/runbook | None | Recovery tests pass; source snapshot/status work; no inference changes |
-| W01 | Platform/model inventory, `environment.lock.json`, `model_contract.json`, known fixture | None | Working GPU; selected runtime/plugins deserialize and infer correctly; unknown requirements resolved |
-| W02 | CMake/package cleanup; CPU-only core; geometry/NMS safety and tests | W00 | CPU-only configure/build/test without NVIDIA stack; sanitizer checks of malformed geometry; dependency consistency |
-| W03 | Typed ROS config, safe PointCloud2 adapter, Jazzy output mapping, fake-runtime tests | W02 | Malformed/empty/oversize/layout fixtures; class/pose/header mapping; positive scale and parameter bounds |
-| W04 | Runtime RAII, contract inspection and named bindings for the selected stack | W01, W02 | Exact target build; missing/wrong engine/plugin/dtype/shape failures; clean startup/shutdown |
-| W05 | Reusable buffers, one stream, checked inference and output decode | W03, W04 | Known-fixture parity; capacity boundaries; injected enqueue failure never publishes stale output; GPU memory check |
-| W06 | Latest-frame worker, counters, startup/fault/shutdown lifecycle | W03, W05 | Slow fake inference replaces pending frames; one runtime owner; shutdown races; target overload test |
-| W07 | Launch arguments, installed YAML, stage metrics, diagnostics | W06 | Installed launch starts; overrides actually reach node; QoS/header/clock checks; bounded logging |
-| W08 | Representative replay, sustained profiling and justified optimization | W01, W07 | Agreed tail latency/drop/memory/accuracy criteria; 30-minute target run and overload run with recorded artifacts |
-| W09 | Reproducible setup/run/troubleshooting/deployment guide and CI | W08 | Clean-machine rehearsal on pinned stack; documented rollback; CI distinguishes CPU, ROS and GPU evidence |
-
-Critical path: W01 → W04 → W05 → W06 → W07 → W08 → W09, with W02/W03 feeding it. Start W02 while W01 is externally blocked. W03 uses explicit fixture contracts until W01 supplies actual capacity, normalization, coordinates and class semantics; W05 must revalidate their integration against the real model contract. Geometry tests and a standalone mailbox stress harness can be developed independently; integrating the mailbox still requires W05. Draft documentation/CI early, but do not mark W09 complete before end-to-end validation. No CPU test result substitutes for a GPU gate.
-
-Stop a milestone if its prerequisite is missing; record a specific unblock action and continue independent work. Do not repeatedly reinstall libraries or rerun the same failing GPU probe without an environment change. Keep verified steps as reviewable Git commits when implementation is underway; keep unfinished state in checkpoints. Recover by inspecting diffs, not resetting the checkout.
-
-## 6. Measurement and acceptance
-
-Set numerical targets with the owner before W08: GPU model/VRAM, LiDAR rate and worst cloud size/bytes, allowed end-to-end frame age and miss rate, minimum useful output rate, permitted drop fraction, memory budget and accuracy metric/tolerance on a named dataset. Missing values remain `null` in the task ledger; invented numbers are not acceptance criteria.
-
-Record CPU monotonic times for receive → worker start → preprocessing → postprocessing → publish return. Use reusable CUDA events on the inference stream for H2D, inference and D2H; report warm-up separately. Report callback-to-publication residence time separately from sensor timestamp-to-publication age. Publication return measures local submission, not remote consumer receipt; add a subscriber measurement if the downstream deadline requires it. For rosbag replay, use simulation time consistently for source age and monotonic time for processing durations, and handle pauses/backward jumps.
-
-Retain p50/p95/p99 and sample counts for stages, residence and comparable source age; incoming, started, published and failed rates; replaced/stale/invalid/oversize/fault drop counts; RSS/GPU memory; temperature and throttling. Do not sum individual stage p99 values and call that end-to-end p99. Measure DDS/transport losses separately when the publisher can provide counts; the application cannot infer all lost frames from callbacks alone.
-
-Tests must cover disjoint/identical/rotated/touching/degenerate boxes, equal scores, cross-class overlap, zero/maximum/oversize clouds, row padding and invalid fields, nonfinite values, negative/oversized counts, repeated empty/failing frames after a valid frame, QoS incompatibility, shutdown during work and producer rates above sustainable inference rate. CPU CI runs core tests and sanitizers; ROS CI uses fake inference; a provisioned GPU runner performs plugin, engine and accuracy tests. Mark missing GPU resources as skipped/blocked, never passed.
-
-Run representative bags at nominal and overload rates and a sustained 30-minute target run after warm-up. Accept bounded pending storage and memory without sustained growth, explicit frame drops, required percentiles/deadline-miss rate and reference accuracy. Use a fixed observation window/sample count for percentile comparisons. Extra reliability, sampling, FP16/INT8 changes, top-k reduction, direct PointCloud2 decoding and GPU NMS each need their own before/after measurement and accuracy gate. A slow NMS profile may justify score filtering/partial selection first; do not add streams or contexts simply to increase average FPS.
-
-## 7. Configuration and operational handoff
-
-W07 will add launch arguments for config file, engine/manifest paths, input/output topics and `use_sim_time`; YAML will contain QoS, validated NMS settings, diagnostics and age limits. Model-critical classes/normalization/capacity come from the checked manifest and cannot drift silently through independent parameters. Initially make model/device/QoS and processing parameters read-only after startup and require restart for changes; do not accept updates that diverge from allocated buffers or worker configuration. Log effective configuration and hashes at startup. Replace the misleading runtime `data_type` knob with engine metadata; expose build precision only in offline generation.
-
-W09's runbook must provide the exact verified environment and installation method, workspace layout, dependency installation, export/engine preparation, build, launch, live input, bag replay, output checking, visualization, diagnostics and rollback. Record working versions only after W01. Do not copy the old README's command that overwrites a system plugin library. Use a scoped installation/container and validate loaded library paths.
-
-The CPU/ROS test CMake options above are implemented. New launch arguments remain pending; current launch has a hard-coded engine path and no custom arguments. After implementing the new interface, verify its help/arguments and installed configuration before publishing commands. Deployment must use a restart policy with backoff and a restart ceiling; preserve fault logs and the prior verified engine/config/code combination.
-
-## 8. Recovery when credit or context runs out
-
-The durable state is on disk, not in the model's conversation. The available-now `tools/recovery.py` uses Python and Git locally and makes no model calls. It saves source/config snapshots, staged/unstaged patches, file hashes, Git identity and a task/next-action record; see its runbook for exclusions and limits. It never restores over the working tree automatically.
-
-Checkpoint before a milestone, after each coherent edit, after a test gate and before long-running work. Write exact test commands/results and next action in `recovery/PROGRESS.md` before checkpointing. If credit stops abruptly, the last complete checkpoint is the baseline; later on-disk edits are unfinished work to inspect and revalidate. A partial checkpoint is not a successful checkpoint. No mechanism can save unsent model reasoning or guarantee an uncheckpointed edit is complete.
-
-Resume the existing chat when usage is available, or start a fresh chat with `recovery/RESUME.md` and this repository. The CLI also supports `codex resume` for saved chats. Account limits and availability still apply; this helper does not purchase credits, switch providers or automatically wake the model. Official guidance describes active-turn continuation subject to fair-use limits, so do not depend on unlimited final-handoff time. [Usage guidance](https://learn.chatgpt.com/docs/pricing), [CLI session resumption](https://learn.chatgpt.com/docs/codex/cli).
-
-Recovery is complete only after checking snapshot integrity, comparing actual files/HEAD/index to the checkpoint, inspecting any command still running, and rerunning the affected gate. A recorded `verified` label is a human/agent assertion with evidence, not proof generated by the snapshot helper. Local snapshots protect against interrupted development; use a separate backup location for disk-loss protection.
-
-
-## Implementation-status update: 3 October 2026
-
-Labeled KITTI preparation/calibration and a 32-frame diagnostic inference/evaluation path are delivered, with live RViz ground-truth comparison. The 16-frame test split has zero moderate 3D matches; moderate BEV AP_R40 is Car 5.75%, Pedestrian 0%, Cyclist 0.0258%. This poor measured baseline does not meet accuracy acceptance. Independent original-model parity, repeatability, larger acceptance evaluation/targets, worker/QoS/metrics, memory/failure checks, benchmarks and CI remain. Earlier proposal requirements remain design context, not proof of implementation. See [accuracy results](docs/KITTI_ACCURACY_RESULTS.md), [inventory](config/kitti_accuracy_inventory.json) and [current ledger](recovery/tasks.json).
-
-
-## Independent reference update: 3 October 2026
-
-A separate TensorRT 8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately 1.53 m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all 192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and 12 frames exceed the export's 10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly 99.6–100%; no production adaptation was installed. Two actual CUDA 12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](docs/MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.
+The original modernization brief is preserved in [the review plan](PROJECT_REVIEW_AND_UPDATE_PLAN.md). The [task ledger](recovery/tasks.json) keeps accuracy, worker, full memory/performance acceptance and CI open rather than marking them complete because a replay succeeded.

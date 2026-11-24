@@ -1,51 +1,75 @@
-# Optional native project-local TensorRT setup
+# Native development without the inference container
 
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+Reviewed 8 November 2026. Docker is the normal deployment route; [startup and replay](STARTUP_AND_REPLAY.md) needs no host CUDA/TensorRT development setup. Use native builds when debugging C++, running selected tests or developing the adapter separately.
 
-> **Status reviewed 23 October 2026.** The native SDK instructions describe the recorded TensorRT 10 setup. Later reference allocation probes reported zero errors in two executions, but full memory safety and accuracy acceptance remain open. Use fresh native build directories after the checkout move. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
+## Before building
 
-Docker now downloads its own SDK/model and needs none of this host setup. For native work after moving the checkout, use fresh build/install directories: old generated CMake caches and ROS setup files can contain the previous absolute path. Choose new `--build-base`/`--install-base` directories consistently for build, test and overlay sourcing. The commands below assume fresh default directories.
+The runtime needs host ROS Jazzy development dependencies, PCL, CUDA and matching TensorRT 10 headers/libraries. The recorded optional SDK is extracted under `.recovery/sdk/tensorrt-10.16.1/usr`, with identity in [the runtime inventory](../config/runtime_inventory.json). It is not tracked by Git and is not registered with apt. `tools/env_tensorrt.sh` exposes that specific extracted SDK; it does not download or install it.
 
-The downloaded SDK is extracted, not registered with apt/dpkg. System installation was unavailable without a sudo password. Original package: `/home/ae/Downloads/nv-tensorrt-local-repo-ubuntu2404-10.16.1-cuda-12.9_1.0-1_amd64.deb`.
+If the SDK is missing, use the container workflow or prepare the documented matching SDK from independently retained artifacts. Do not reuse a generated build tree after moving the checkout: CMake caches and ROS setup files can contain old absolute paths. The commands below use separate development directories.
 
-TensorRT 10.16.1.11 runtime/development/plugin/parser components are under `.recovery/sdk/tensorrt-10.16.1/usr`. Exact artifact hashes are in `config/runtime_inventory.json`.
+## Build and test the full runtime
 
-```bash
-cd '/media/ae/New Volume/MasterThesis'
-source /opt/ros/jazzy/setup.bash
-source tools/env_tensorrt.sh
-colcon build --packages-select pp_infer --cmake-args \
-  -DPP_BUILD_RUNTIME=ON -DPP_BUILD_ROS_ADAPTER=ON -DBUILD_TESTING=ON \
-  -DCMAKE_BUILD_TYPE=Release -DPython3_EXECUTABLE=/usr/bin/python3
-source install/setup.bash
-colcon test --packages-select pp_infer --ctest-args --output-on-failure
-colcon test-result --verbose
-./build/pp_infer/runtime_smoke .recovery/engines/pointpillars-fp32.smoke.engine
-```
-
-The smoke command requires host GPU device access. It exercises repeated synthetic inference; it is not an accuracy benchmark. The existing ROS launch file has historical hardcoded paths and unverified class/intensity settings; do not use it as a validated deployment configuration. W06/W07 will supply the bounded worker and launch configuration.
-
-Recovery snapshots exclude `.recovery` SDK/engine/build/log artifacts. Keep the original DEB and ONNX independently. To reconstruct the local SDK, extract the outer DEB with `dpkg-deb --extract`, then the SDK component DEBs with the same command into one local root; no package maintainer scripts are run. The full system installation remains optional and requires sudo.
-
-## Colcon build and ros2 run
+From the project root:
 
 ```bash
-cd '/media/ae/New Volume/MasterThesis'
 source /opt/ros/jazzy/setup.bash
 source tools/env_tensorrt.sh
-colcon build --packages-select pp_infer --cmake-args -DCMAKE_BUILD_TYPE=Release -DPython3_EXECUTABLE=/usr/bin/python3
-source install/setup.bash
-ros2 run pp_infer pp_infer --ros-args --params-file .recovery/run/node.yaml
+colcon --log-base .recovery/native-log build --packages-select pp_infer \
+  --build-base .recovery/native-build --install-base .recovery/native-install \
+  --cmake-args -DPP_BUILD_RUNTIME=ON -DPP_BUILD_ROS_ADAPTER=ON \
+    -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release \
+    -DPython3_EXECUTABLE=/usr/bin/python3
+source .recovery/native-install/setup.bash
+colcon --log-base .recovery/native-log test --packages-select pp_infer \
+  --build-base .recovery/native-build --install-base .recovery/native-install \
+  --ctest-args --output-on-failure
+colcon test-result --test-result-base .recovery/native-build --verbose
 ```
 
-After moving this checkout, regenerate the native parameter file using the guide's Native engine and configuration procedure: an existing engine_path can still point to the old Desktop directory. Stop any existing instance before launching another on the same topics. The startup YAML uses provisional class labels and intensity scaling; replace them with validated model settings for real data. `colcon test --packages-select pp_infer` and `colcon test-result --verbose` passed four tests. Source ROS, the SDK environment and the workspace overlay in each new terminal.
+Use a valid matching engine for a GPU smoke check:
 
+```bash
+.recovery/native-build/pp_infer/runtime_smoke /absolute/path/to/matching.engine
+```
 
-## Measurement update: 3 October 2026
+This requires working GPU device access and checks synthetic inference, not accuracy. It does not download a model or build an engine.
 
-The first labeled 32-frame diagnostic baseline is now measured. The 16-frame test split has zero moderate 3D matches; moderate BEV AP_R40 is Car 5.75%, Pedestrian 0%, Cyclist 0.0258%. Vehicle is explicitly mapped to Car compatibility. The evaluator's exact/missing/duplicate controls passed, and 41 total Python tests passed. Green calibrated ground truth and live predictions render together in RViz on domain 42. First-pass detections are frozen; repeated counts vary and full independent original-model parity remains pending. Read [accuracy results and commands](KITTI_ACCURACY_RESULTS.md) and [inventory](../config/kitti_accuracy_inventory.json). Earlier “not measured” statements describe preparation or the initial investigation, not this new baseline. Accuracy acceptance remains unmet.
+## Run the node with explicit configuration
 
+Prepare a parameter YAML containing a real `engine_path` and the intended processing settings. A direct command is:
 
-## Independent reference update: 3 October 2026
+```bash
+ros2 run pp_infer pp_infer --ros-args \
+  --params-file /absolute/path/to/node.yaml \
+  -r __node:=pointpillars -p confidence_threshold:=0.4
+```
 
-A separate TensorRT 8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately 1.53 m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all 192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and 12 frames exceed the export's 10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly 99.6–100%; no production adaptation was installed. Two actual CUDA 12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.
+Source ROS, the SDK environment and the new overlay in every terminal. Native default naming is `/minimal_publisher` unless remapped as above. The historical detector launch file contains old absolute paths and is not the validated deployment interface. The container's engine generation does not occur in `ros2 run`.
+
+Input must be compatible FLOAT32 XYZI. For raw Ouster data, run the separate adapter with matching topic, domain and middleware. Keep detector `intensity_scale` at 1.0 when the adapter has already divided the selected channel. [Adapter build and launch](LIVE_OUSTER_ADAPTER.md#build-and-run-without-a-gpu).
+
+## Tests that do not need GPU inference
+
+For plain C++ geometry/output-contract tests without ROS:
+
+```bash
+cmake -S . -B .recovery/core-build \
+  -DPP_BUILD_RUNTIME=OFF -DPP_BUILD_ROS_ADAPTER=OFF -DBUILD_TESTING=ON
+cmake --build .recovery/core-build
+ctest --test-dir .recovery/core-build --output-on-failure
+```
+
+For ROS conversion/publication tests without CUDA/TensorRT, follow the adapter-only colcon build in the adapter guide. ROS/PCL development dependencies are still required. Python tests use:
+
+```bash
+python3 -m unittest discover -s tests -p 'test_*.py'
+```
+
+Some download tests open localhost sockets; a restricted execution sandbox can block these even when the code is correct. Report environment failures separately from test failures.
+
+## Research status
+
+The latest recorded suite has 119 Python tests; the deployment image separately passed seven C++/ROS tests. The annotated channel study used unchanged production inference/NMS in a direct runner and supports reflectivity/255 as a development baseline. Both channels still have zero qualifying 3D matches. Capacity controls remain experimental, and no bounded worker or production point-selection policy has been installed. [Results, limitations and proposal](OUSTER_CHANNEL_DECISION.md).
+
+Keep ignored SDKs, engines and raw observations backed up independently. The [thesis/documentation index](README.md) points to the current research narrative; dated recovery entries retain their historical scope.

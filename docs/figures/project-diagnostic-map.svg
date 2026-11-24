@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1810" viewBox="0 0 2400 1810"><rect width="100%" height="100%" fill="white"/>
+<text x="80" y="60" font-family="DejaVu Sans,sans-serif" font-size="58" font-weight="700" fill="#16324F" dominant-baseline="text-before-edge">How evidence narrows the diagnosis</text>
+<text x="80" y="143" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#597081" dominant-baseline="text-before-edge">Arrows mean “motivates this check” — they do not prove a unique root cause</text>
+<text x="80" y="225" font-family="DejaVu Sans,sans-serif" font-size="31" font-weight="700" fill="#087F8C" dominant-baseline="text-before-edge">OBSERVED SYMPTOM</text>
+<text x="870" y="225" font-family="DejaVu Sans,sans-serif" font-size="31" font-weight="700" fill="#087F8C" dominant-baseline="text-before-edge">WHAT THE CHECK ESTABLISHES</text>
+<text x="1660" y="225" font-family="DejaVu Sans,sans-serif" font-size="31" font-weight="700" fill="#087F8C" dominant-baseline="text-before-edge">JUSTIFIED NEXT WORK</text>
+<rect x="80" y="295" width="670" height="285" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="104" y="317" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Raw Ouster signal fails</text>
+<text x="104" y="379" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">15 of 48 October observations</text>
+<text x="104" y="420" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">rejected; normalized variants have</text>
+<text x="104" y="461" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">no recorded rejection.</text>
+<polyline points="765,438 845,438" fill="none" stroke="#087F8C" stroke-width="5"/>
+<polygon points="845.00,438.00 830.08,446.15 830.08,429.85" fill="#087F8C"/>
+<rect x="870" y="295" width="670" height="285" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="894" y="317" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Scaling matters numerically</text>
+<text x="894" y="379" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Normalization removes this observed</text>
+<text x="894" y="420" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">failure mode; physical calibration</text>
+<text x="894" y="461" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">remains unproven.</text>
+<polyline points="1555,438 1635,438" fill="none" stroke="#087F8C" stroke-width="5"/>
+<polygon points="1635.00,438.00 1620.08,446.15 1620.08,429.85" fill="#087F8C"/>
+<rect x="1660" y="295" width="670" height="285" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="1684" y="317" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Verify the feature contract</text>
+<text x="1684" y="379" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Inspect field meaning, divisor and</text>
+<text x="1684" y="420" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">model training input. No automatic</text>
+<text x="1684" y="461" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">alias is assumed.</text>
+<rect x="80" y="640" width="670" height="285" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="104" y="662" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Boxes are too high</text>
+<text x="104" y="724" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">KITTI and annotated Ouster matches</text>
+<text x="104" y="765" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">show upward center errors and poor</text>
+<text x="104" y="806" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">3D overlap.</text>
+<polyline points="765,783 845,783" fill="none" stroke="#087F8C" stroke-width="5"/>
+<polygon points="845.00,783.00 830.08,791.15 830.08,774.85" fill="#087F8C"/>
+<rect x="870" y="640" width="670" height="285" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="894" y="662" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Migration or NMS alone is</text>
+<text x="894" y="707" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">insufficient</text>
+<text x="894" y="769" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">TRT8 reproduces the broad KITTI</text>
+<text x="894" y="810" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">symptom; NMS agrees on 192</text>
+<text x="894" y="851" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">identical-candidate observations.</text>
+<polyline points="1555,783 1635,783" fill="none" stroke="#087F8C" stroke-width="5"/>
+<polygon points="1635.00,783.00 1620.08,791.15 1620.08,774.85" fill="#087F8C"/>
+<rect x="1660" y="640" width="670" height="285" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="1684" y="662" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Trace geometry conventions</text>
+<text x="1684" y="724" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Check sensor origin, training</text>
+<text x="1684" y="765" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">coordinates, anchors and decoder.</text>
+<text x="1684" y="806" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Do not guess a z offset.</text>
+<rect x="80" y="985" width="670" height="285" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="104" y="1007" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Repeated outputs can change</text>
+<text x="104" y="1069" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Identical input geometry does not</text>
+<text x="104" y="1110" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">always yield identical accepted</text>
+<text x="104" y="1151" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">boxes.</text>
+<polyline points="765,1128 845,1128" fill="none" stroke="#087F8C" stroke-width="5"/>
+<polygon points="845.00,1128.00 830.08,1136.15 830.08,1119.85" fill="#087F8C"/>
+<rect x="870" y="985" width="670" height="285" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="894" y="1007" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Capacity is a useful hypothesis</text>
+<text x="894" y="1069" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Limits are exceeded. Separate</text>
+<text x="894" y="1110" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">controls improve repeat behavior</text>
+<text x="894" y="1151" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">but do not repair 3D accuracy.</text>
+<polyline points="1555,1128 1635,1128" fill="none" stroke="#087F8C" stroke-width="5"/>
+<polygon points="1635.00,1128.00 1620.08,1136.15 1620.08,1119.85" fill="#087F8C"/>
+<rect x="1660" y="985" width="670" height="285" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="1684" y="1007" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Declare a capacity policy</text>
+<text x="1684" y="1069" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Test valid returns and bounded</text>
+<text x="1684" y="1110" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">pillars as a separate change, then</text>
+<text x="1684" y="1151" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">evaluate fresh labels.</text>
+<rect x="80" y="1330" width="670" height="285" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="104" y="1352" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">No recent incoming clouds</text>
+<text x="104" y="1414" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Live and bag defaults used</text>
+<text x="104" y="1455" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">different topics, domains and</text>
+<text x="104" y="1496" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">middleware.</text>
+<polyline points="765,1473 845,1473" fill="none" stroke="#087F8C" stroke-width="5"/>
+<polygon points="845.00,1473.00 830.08,1481.15 830.08,1464.85" fill="#087F8C"/>
+<rect x="870" y="1330" width="670" height="285" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="894" y="1352" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Transport is a separate failure</text>
+<text x="894" y="1397" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">layer</text>
+<text x="894" y="1459" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Matching profiles restores the</text>
+<text x="894" y="1500" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">tested path. A later large-cloud</text>
+<text x="894" y="1541" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">UDP A/B attempt remains incomplete.</text>
+<polyline points="1555,1473 1635,1473" fill="none" stroke="#087F8C" stroke-width="5"/>
+<polygon points="1635.00,1473.00 1620.08,1481.15 1620.08,1464.85" fill="#087F8C"/>
+<rect x="1660" y="1330" width="670" height="285" rx="18" fill="#F4F7FA" stroke="#E5ECF1" stroke-width="3"/>
+<text x="1684" y="1352" font-family="DejaVu Sans,sans-serif" font-size="34" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Verify the actual deployment</text>
+<text x="1684" y="1414" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">Check schema, topic, QoS,</text>
+<text x="1684" y="1455" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">middleware and load. A direct GPU</text>
+<text x="1684" y="1496" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">study does not certify ROS</text>
+<text x="1684" y="1537" font-family="DejaVu Sans,sans-serif" font-size="30" font-weight="400" fill="#16324F" dominant-baseline="text-before-edge">delivery.</text>
+<text x="80" y="1715" font-family="DejaVu Sans,sans-serif" font-size="29" font-weight="700" fill="#9A5D12" dominant-baseline="text-before-edge">Measured symptoms guide investigation; none of these checks establishes complete operational or 3D accuracy acceptance.</text>
+</svg>

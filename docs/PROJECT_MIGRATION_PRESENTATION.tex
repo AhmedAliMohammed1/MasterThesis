@@ -1,488 +1,334 @@
-% Eight active slides: migration, flow, engine lifecycle, accuracy, sensor results,
-% screenshots and the published filtering trial. Reviewed 23 October 2026; experiments recorded 1--14 October.
-% Screenshot assets are under docs/figures; missing assets produce a warning
-% and visible placeholder in standalone compiler environments.
+% Current project presentation, 8 November 2026. Twelve slides.
+% Figures are external assets with explicit standalone-compiler placeholders.
 \documentclass[aspectratio=169,11pt]{beamer}
-\usepackage[T1]{fontenc}
-\usepackage{lmodern}
-\usepackage{booktabs,tabularx,tikz,graphicx}
-\usepackage{listings}
-\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
-\geometry{paperwidth=216mm,paperheight=121.5mm}
+% XeTeX can load installed OpenType files directly, without fontspec.
+% On another OS, adapt these paths; absent files retain the class defaults.
+\newcommand{\projectnativefamily}[5]{%
+  \DeclareFontFamily{TU}{#1}{}%
+  \DeclareFontShape{TU}{#1}{m}{n}{<-> "[#2]"}{}%
+  \DeclareFontShape{TU}{#1}{m}{it}{<-> "[#3]"}{}%
+  \DeclareFontShape{TU}{#1}{m}{sl}{<-> "[#3]"}{}%
+  \DeclareFontShape{TU}{#1}{b}{n}{<-> "[#4]"}{}%
+  \DeclareFontShape{TU}{#1}{bx}{n}{<-> "[#4]"}{}%
+  \DeclareFontShape{TU}{#1}{b}{it}{<-> "[#5]"}{}%
+  \DeclareFontShape{TU}{#1}{bx}{it}{<-> "[#5]"}{}%
+  \DeclareFontShape{TU}{#1}{b}{sl}{<-> "[#5]"}{}%
+  \DeclareFontShape{TU}{#1}{bx}{sl}{<-> "[#5]"}{}%
+}
+\IfFileExists{/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf}{%
+  \ifcsname T@TU\endcsname\else
+    \DeclareFontEncoding{TU}{}{}
+  \fi
+  \projectnativefamily{projectserif}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSerif-BoldItalic.ttf}
+  \projectnativefamily{projectsans}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf}
+  \projectnativefamily{projectmono}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Oblique.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf}
+    {/usr/share/fonts/truetype/dejavu/DejaVuSansMono-BoldOblique.ttf}
+  \renewcommand{\encodingdefault}{TU}
+  \renewcommand{\rmdefault}{projectserif}
+  \renewcommand{\sfdefault}{projectsans}
+  \renewcommand{\ttdefault}{projectmono}
+  \DeclareFontSubstitution{TU}{projectserif}{m}{n}
+}{\PackageWarningNoLine{project}{DejaVu font files absent; using class font defaults}}
+\usefonttheme{professionalfonts}
+\usepackage{graphicx,booktabs,array,tabularx,tikz}
+\usetikzlibrary{arrows.meta,positioning}
 \definecolor{ink}{HTML}{16324F}
 \definecolor{accent}{HTML}{087F8C}
 \definecolor{muted}{HTML}{597081}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+% A standalone editor may receive only this source, without project images.
+% Keep the PDF readable and explicitly identify any missing illustration.
+\newcommand{\projectshot}[2]{%
+  \IfFileExists{figures/#1}{\includegraphics[width=#2,height=.60\textheight,keepaspectratio]{figures/#1}}{%
+    \IfFileExists{docs/figures/#1}{\includegraphics[width=#2,height=.60\textheight,keepaspectratio]{docs/figures/#1}}{%
+      \PackageWarningNoLine{project}{Illustration #1 unavailable}%
+      \fbox{\parbox{.85\linewidth}{\centering\small Illustration unavailable in this compiler.\par
+      Source asset: \code{#1}.\par See docs/figures/README.md for provenance.}}}}}
+\geometry{paperwidth=216mm,paperheight=121.5mm}
 \setbeamercolor{normal text}{fg=ink,bg=white}
 \setbeamercolor{frametitle}{fg=ink}
 \setbeamercolor{structure}{fg=accent}
 \setbeamertemplate{navigation symbols}{}
 \setbeamertemplate{headline}{}
-\setbeamertemplate{footline}{%
-  \hfill\insertframenumber/\inserttotalframenumber\hspace{5mm}\vspace{3mm}}
-\setbeamersize{text margin left=7mm,text margin right=7mm}
-\setbeamerfont{frametitle}{size={\fontsize{21}{25}\selectfont},series=\bfseries}
-\setlength{\tabcolsep}{4pt}
-\renewcommand{\arraystretch}{1.12}
-\newcommand{\file}[1]{{\ttfamily\detokenize{#1}}}
-\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
-
-% Diagram labels and the optional accuracy chart's recorded values.
-\newcommand{\migrationOld}{Ubuntu 20.04\\ROS Foxy / TensorRT 8}
-\newcommand{\migrationWork}{Update APIs\\Check sizes / reuse buffers}
-\newcommand{\migrationNew}{Ubuntu 24.04\\ROS Jazzy / TensorRT 10}
-\newcommand{\migrationCaption}{Same pretrained ONNX; no retraining.}
-\newcommand{\flowInput}{LiDAR driver or rosbag player}
-\newcommand{\flowCallback}{CPU: ROS callback}
-\newcommand{\flowCpuIn}{CPU: validate and pack XYZI}
-\newcommand{\flowGpu}{GPU: PointPillars engine}
-\newcommand{\flowCpuOut}{CPU: validate boxes and run NMS}
-\newcommand{\flowFilter}{CPU: confidence gate, $s\geq\tau$}
-\newcommand{\flowMessage}{CPU: accepted boxes + counters}
-\newcommand{\flowView}{RViz or another consumer}
-\newcommand{\flowCaption}{TensorRT's CPU API schedules GPU work. ROS runs on the CPU.}
-\newcommand{\flowInputTransfer}{ROS /point\_cloud}
-\newcommand{\flowToGpu}{CUDA: copy points and count\\to GPU}
-\newcommand{\flowFromGpu}{CUDA: copy candidate boxes\\to CPU}
-\newcommand{\flowOutputTransfer}{ROS /bbox, /bbox/stats, /bbox/count}
-\newcommand{\flowDirect}{ROS point-cloud topic}
-\newcommand{\engineDownload}{Docker build: download ONNX\\and verify its checksum}
-\newcommand{\engineStartup}{Container startup:\\check GPU, model and cache}
-\newcommand{\engineDecision}{Matching engine\\in cache?}
-\newcommand{\engineReuse}{Reuse existing\\engine}
-\newcommand{\engineBuild}{trtexec: build engine\\from ONNX}
-\newcommand{\engineStored}{Engine in persistent storage}
-\newcommand{\engineLoad}{ros2 run: load engine once}
-\newcommand{\engineInfer}{Reuse engine for every cloud}
-% BEV AP_R40 percentages: config/kitti_accuracy_inventory.json, test/moderate.
-\newcommand{\chartCar}{5.75160104747}
-\newcommand{\chartPedestrian}{0}
-\newcommand{\chartCyclist}{0.0257731958763}
-\newcommand{\chartTitle}{BEV AP (R40, \%)}
-\newcommand{\chartCaption}{16 moderate test frames; small diagnostic set.}
-\newcommand{\chartSource}{Source: config/kitti_accuracy_inventory.json}
-
-\newcommand{\migrationfigure}{%
-  \begin{tikzpicture}[x=1cm,y=1cm,font=\small,>=Stealth,
-    stage/.style={draw=accent,line width=.7pt,align=center,
-                  minimum height=1.25cm,text width=5.05cm,inner sep=3pt}]
-    \node[stage] (old) at (0,0) {\migrationOld};
-    \node[stage] (work) at (6.65,0) {\migrationWork};
-    \node[stage] (new) at (13.3,0) {\migrationNew};
-    \draw[->,accent,line width=1pt] (old.east) -- (work.west);
-    \draw[->,accent,line width=1pt] (work.east) -- (new.west);
-    \node[font=\footnotesize,text=muted] at (6.65,-1.0) {\migrationCaption};
-  \end{tikzpicture}%
-}
-
-\newcommand{\runtimefigure}{%
-  % Native TikZ version of the user's top-to-bottom Mermaid flowchart.
-  \begin{tikzpicture}[x=1cm,y=1cm,font=\scriptsize,>=Stealth,
-    stage/.style={draw=accent,line width=.7pt,align=center,
-                  minimum height=.62cm,text width=4.6cm,inner sep=3pt},
-    transfer/.style={font=\scriptsize,text=muted,align=left,
-                     anchor=west,text width=4.1cm,inner sep=1pt}]
-    \node[stage] (input) at (0,0) {\flowInput};
-    \node[stage] (callback) at (0,-1.10) {\flowCallback};
-    \node[stage] (cpuin) at (0,-2.02) {\flowCpuIn};
-    \node[stage] (gpu) at (0,-3.42) {\flowGpu};
-    \node[stage] (cpuout) at (0,-4.82) {\flowCpuOut};
-    \node[stage] (filter) at (0,-5.74) {\flowFilter};
-    \node[stage] (message) at (0,-6.66) {\flowMessage};
-    \node[stage] (view) at (0,-7.76) {\flowView};
-    \draw[->,accent,line width=.9pt] (input.south) -- (callback.north);
-    \draw[->,accent,line width=.9pt] (callback.south) -- (cpuin.north);
-    \draw[->,accent,line width=.9pt] (cpuin.south) -- (gpu.north);
-    \draw[->,accent,line width=.9pt] (gpu.south) -- (cpuout.north);
-    \draw[->,accent,line width=.9pt] (cpuout.south) -- (filter.north);
-    \draw[->,accent,line width=.9pt] (filter.south) -- (message.north);
-    \draw[->,accent,line width=.9pt] (message.south) -- (view.north);
-    \node[transfer] at (.12,-.55) {\flowInputTransfer};
-    \node[transfer] at (.12,-2.72) {\flowToGpu};
-    \node[transfer] at (.12,-4.12) {\flowFromGpu};
-    \node[transfer] at (.12,-7.21) {\flowOutputTransfer};
-    % Direct source-to-consumer edge, independent of the detection pipeline.
-    \draw[->,accent,line width=.8pt] (input.west) -- (-3.4,0)
-      -- (-3.4,-7.76) -- (view.west);
-    \node[rotate=90,font=\scriptsize,fill=white,text=muted,inner sep=2pt]
-      at (-3.4,-3.42) {\flowDirect};
-  \end{tikzpicture}%
-}
-
-\newcommand{\enginefigure}{%
-  \begin{tikzpicture}[x=1cm,y=1cm,font=\scriptsize,>=Stealth,
-    stage/.style={draw=accent,line width=.7pt,align=center,
-                  minimum height=.72cm,text width=5.3cm,inner sep=3pt},
-    branch/.style={stage,text width=2.85cm,minimum height=.85cm},
-    link/.style={->,accent,line width=.9pt}]
-    \node[stage] (download) at (0,0) {\engineDownload};
-    \node[stage] (startup) at (0,-1.12) {\engineStartup};
-    % Fixed diamond bounds keep the decision clear of the surrounding boxes.
-    \draw[accent,line width=.7pt] (0,-1.75) -- (2.1,-2.55)
-      -- (0,-3.35) -- (-2.1,-2.55) -- cycle;
-    \node[align=center,text width=2.2cm,inner sep=1pt]
-      at (0,-2.55) {\engineDecision};
-    \coordinate (cacheNorth) at (0,-1.75);
-    \coordinate (cacheWest) at (-2.1,-2.55);
-    \coordinate (cacheEast) at (2.1,-2.55);
-    \node[branch] (reuse) at (-2.8,-3.60) {\engineReuse};
-    \node[branch] (build) at (2.8,-3.60) {\engineBuild};
-    \node[stage] (stored) at (0,-4.85) {\engineStored};
-    \node[stage] (load) at (0,-5.95) {\engineLoad};
-    \node[stage] (infer) at (0,-7.05) {\engineInfer};
-    \draw[link] (download.south) -- (startup.north);
-    \draw[link] (startup.south) -- (cacheNorth);
-    \draw[link] (cacheWest) -|
-      node[pos=.25,above,font=\tiny,text=muted] {Found} (reuse.north);
-    \draw[link] (cacheEast) -|
-      node[pos=.25,above,font=\tiny,text=muted] {Missing} (build.north);
-    \draw[link] (reuse.south) -- (-2.8,-4.3)
-      -| ([xshift=-1.2cm]stored.north);
-    \draw[link] (build.south) -- (2.8,-4.3)
-      -| ([xshift=1.2cm]stored.north);
-    \draw[link] (stored.south) -- (load.north);
-    \draw[link] (load.south) -- (infer.north);
-  \end{tikzpicture}%
-}
-
-\newcommand{\accuracyfigure}{%
-  \begin{tikzpicture}[x=.75cm,y=.85cm,font=\footnotesize]
-    \node[anchor=west,font=\small\bfseries] at (-2.3,4.2) {\chartTitle};
-    \foreach \tick in {0,1,2,3,4,5,6} {
-      \draw[muted!20] (\tick,.5) -- (\tick,3.5);
-      \node[anchor=north,font=\scriptsize] at (\tick,.35) {\tick};
-    }
-    \draw[muted] (0,.5) -- (6,.5);
-    % Do not use \value as a loop variable: LaTeX uses it for counters.
-    \foreach \barCategory/\barScore/\barRow in
-      {Car/\chartCar/3,Pedestrian/\chartPedestrian/2,Cyclist/\chartCyclist/1} {
-      \node[anchor=east] at (-.15,\barRow) {\barCategory};
-      \fill[accent] (0,{\barRow-.23}) rectangle ({\barScore},{\barRow+.23});
-    }
-    \node[anchor=west,font=\scriptsize] at (\chartCar+.10,3) {5.75\%};
-    \node[anchor=west,font=\scriptsize] at (.10,2) {0.00\%};
-    \node[anchor=west,font=\scriptsize] at (\chartCyclist+.10,1) {0.026\%};
-    \node[anchor=west,font=\scriptsize,text=muted] at (-2.3,-.55) {\chartCaption};
-    \node[anchor=west,font=\tiny,text=muted] at (-2.3,-1.0)
-      {Source: \file{config/kitti_accuracy_inventory.json}};
-  \end{tikzpicture}%
-}
-
-\title{PointPillars project migration}
-\date{23 October 2026}
-
-% Locate illustration assets from docs/ or the repository root. The built-in
-% standalone compiler may not receive other project files; warn visibly then.
-\newcommand{\projectshot}[2]{%
-  \IfFileExists{figures/#1}{\includegraphics[width=#2]{figures/#1}}{%
-    \IfFileExists{docs/figures/#1}{\includegraphics[width=#2]{docs/figures/#1}}{%
-      \PackageWarningNoLine{project}{Screenshot #1 unavailable; illustrated output incomplete}%
-      \fbox{\parbox{.85\linewidth}{\centering\small Screenshot asset unavailable.\par
-      Keep \texttt{\detokenize{#1}} in the project's figures folder.\par
-      See docs/figures/README.md for the original image and provenance.}}}}}
-
+\setbeamertemplate{footline}{\hfill\insertframenumber/\inserttotalframenumber\hspace{5mm}\vspace{3mm}}
+\setbeamersize{text margin left=8mm,text margin right=8mm}
+\setbeamerfont{frametitle}{size={\fontsize{20}{24}\selectfont},series=\bfseries}
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.18}
+\title{PointPillars migration and Ouster evaluation}
+\date{8 November 2026}
 \begin{document}
 
-\begin{frame}[t]{Why we updated the original code}
-\small\raggedright
-\textbf{Project purpose:} This project uses PointPillars to detect vehicles,
-pedestrians and cyclists in LiDAR point clouds, then publishes their 3D boxes
-through ROS 2 for visualization and use by other applications.
-
-\smallskip
-\centering\resizebox{.96\linewidth}{!}{\migrationfigure}\par
-\raggedright
-\small
-Old ROS fields and TensorRT APIs did not fit the new stack. We also needed
-checked data sizes, reliable cleanup and fewer GPU allocations.
-
+\begin{frame}[t]{Current stage: working pipeline, unresolved 3D accuracy}
+\large
+We can deploy the migrated detector, convert Ouster clouds and display its output.
 \medskip
-\begingroup\footnotesize
-\begin{tabularx}{\linewidth}{@{}p{0.39\linewidth}Y@{}}
-\toprule
-\textbf{Main files we changed or added} & \textbf{What the change gives us} \\
-\midrule
-\file{CMakeLists.txt},\newline \file{package.xml} & C++17, explicit dependencies and CPU tests without a GPU. \\
-\file{pp_inference_node.cpp},\newline \file{pointcloud_adapter.cpp} & Jazzy messages and checks before accepting a cloud. \\
-\file{pointpillar.cpp},\newline \file{pointpillar.h} & TensorRT 10 named tensors, checked results and persistent runtime. \\
-\file{cuda_resources.hpp},\newline \file{output_contract.hpp} & Reused GPU buffers, automatic cleanup and valid output counts. \\
-\file{postprocess.cpp},\newline \file{postprocess.h} & Tested rotated box overlap and duplicate removal (NMS). \\
-\bottomrule
-\end{tabularx}
-\endgroup
-
-\end{frame}
-
-\begin{frame}[t]{What the project supports today}
-\begin{columns}[T,onlytextwidth]
-\begin{column}{0.47\textwidth}
-\centering
-% Bound the vertical diagram so it leaves room for the title and footer.
-\resizebox{!}{75mm}{\runtimefigure}
-\end{column}
-\begin{column}{0.50\textwidth}
-\small\raggedright
-\textbf{During inference}
-
-\flowCaption
-
-\medskip
-\textbf{CPU responsibility}
-
-Check and pack XYZI points. Validate returned boxes, remove duplicates with NMS,
-apply the confidence gate, then publish accepted boxes and counters with the cloud's timestamp and coordinate frame.
-
-\medskip
-\textbf{GPU responsibility}
-
-Group points into pillars, run the PointPillars network and decode candidate boxes.
-
-\medskip
-\textbf{Recorded checks}
-
-CPU/ROS tests, 10 synthetic GPU frames, engine-cache reuse and 25 bag frames
-in Docker plus 25 through host transport, with RViz.
-
-\medskip
-\textbf{Run settings}
-
-\file{deploy.sh} and \file{node.yaml}: build/run command and settings.
-The host provides the NVIDIA driver and Docker GPU access.
-
-\medskip
-\textbf{Tested:} Ubuntu 24.04, Linux x86-64, RTX 4060 Laptop.
-\end{column}
-\end{columns}
-
-% \medskip
-% \textbf{Still pending:} a background worker, configurable sensor QoS and sustained
-% benchmarks. Today the callback is synchronous; the reliable queue is 700.
-\end{frame}
-
-\begin{frame}[t]{From ONNX to a running ROS node}
-\begin{columns}[T,onlytextwidth]
-\begin{column}{0.49\textwidth}
-\centering
-\resizebox{!}{76mm}{\enginefigure}
-\end{column}
-\begin{column}{0.48\textwidth}
-\small\raggedright
-\textbf{Two files, two jobs}
-
-\file{.onnx}: trained network and weights, read by the builder.
-\file{.engine}: GPU execution plan, read by the ROS node. No retraining.
-
-\medskip
-\textbf{Where they are stored}
-
-Inside the container:\\
-ONNX: \file{/opt/models/pointpillars.onnx}\\
-Engine: \file{/var/lib/pp_infer/<key>.engine}\\
-Default persistent volume: \file{pp-engines}.
-
-\medskip
-\textbf{When an engine is built}
-
-First startup uses \file{trtexec} to build an FP32 engine for the selected GPU.
-Later starts reuse a matching engine. The cache identity includes the model,
-GPU, driver and build settings.
-
-\medskip
-\textbf{What ROS loads}
-
-\file{engine_path} selects the engine. TensorRT loads it once into memory and
-prepares GPU buffers. Each cloud reuses it.
-
-\medskip
-\textbf{Keep the ONNX in the image:} startup still checks its checksum.
-Direct \file{ros2 run} requires an already prepared engine.
-\end{column}
-\end{columns}
-\end{frame}
-
-
-\begin{frame}[t]{Measured KITTI accuracy remains poor}
-\begin{columns}[T,onlytextwidth]
-\begin{column}{.47\textwidth}
-\centering\resizebox{.97\linewidth}{!}{\accuracyfigure}
-\medskip
-\small\raggedright
-\textbf{Zero moderate 3D matches for all three classes.}
-Vehicle is evaluated as KITTI Car compatibility. The 16 tuning and 16 test
-frames are split by recording drive; this is a diagnostic sample.
-\end{column}
-\begin{column}{.50\textwidth}
-\small\raggedright
-\textbf{What the reference comparison found}
+\begin{block}{Current development choice}
+Use reflectivity divided by 255 for this model and these recordings.
+Neither tested channel is accepted as accurate 3D detection.
+\end{block}
+\normalsize
 \begin{itemize}
-\item TRT8 also reproduced poor accuracy and roughly 1.53 m upward car error.
-\item Our NMS and NVIDIA's unchanged NMS selected identical boxes on
-192/192 identical-candidate observations.
-\item 12/32 clouds exceed 10,000 pillars. Two tuning-only controls improved
-repeat matching to about 99.6--100\%; no production fix was installed.
+\item Migration: Ubuntu 24.04, ROS Jazzy and TensorRT 10.
+\item Integration: original bags, explicit adapter, monitoring and RViz.
+\item Latest evidence: 1,120 measured GPU inferences and 119 Python tests.
+\item Main research task: explain vertical error and input/capacity mismatch.
 \end{itemize}
-\textbf{Acceptance remains open.} Exact numerical/training parity, input
-conventions, bounded voxelization and larger untouched accuracy evaluation
-still need work. Two zero-error allocation probes do not establish memory safety.
-\end{column}
-\end{columns}
-\medskip
-\scriptsize Sources: \file{config/kitti_accuracy_inventory.json},
-\file{config/kitti_reference_inventory.json}. Recorded 3 October 2026.
+\small Source: \code{config/ouster_channel_decision.json}; reviewed 8 November 2026.
 \end{frame}
 
-\begin{frame}[t]{Later sensor experiments: numerical and integration results}
-\small
-\textbf{Ouster: only the fourth feature changed}
-\medskip
-\begin{tabularx}{\linewidth}{@{}Yrrrr@{}}
-\toprule Feature & Rejected & Invalid rows & Median boxes & Score median \\
-\midrule
-Original signal & 15/48 & 33 & 590 & 1.000 \\
-Signal / 65,535 & 0/48 & 0 & 15 & 0.164 \\
-Reflectivity / 255 & 0/48 & 0 & 18.5 & 0.166 \\
-min(reflectivity / 100, 1) & 0/48 & 0 & 26 & 0.173 \\
-\bottomrule
-\end{tabularx}
-\medskip
-\footnotesize
-16 scans $\times$ 4 variants $\times$ 3 repeats = 192 observations.
-All invalid rows had nonfinite length. Count medians use accepted observations;
-score values are medians of per-observation medians. Fewer boxes do not prove accuracy.
-\medskip
-\begin{itemize}
-\item \textbf{Normalized Ouster replay:} 556/556 matched input/output occurrences;
-no recorded detector log errors. Reflectivity/255 remains an opt-in diagnostic
-encoding; the ordinary helper defaults to raw signal.
-\item \textbf{Camera/detail:} 111 images and CameraInfo messages preserved;
-header clocks differ. Original clouds are available on a separate topic.
-\item \textbf{Frontal KITTI:} 154/154 matched clouds and detections, plus 154
-images/CameraInfo; full scans retain 98,532--124,122 points. No ground truth in this clip.
-\end{itemize}
-\scriptsize Recorded 13--14 October. Sources: Ouster feature/camera/detail and
-KITTI front inventories in \file{config/}. Detection accuracy remains unaccepted.
-\end{frame}
-
-\begin{frame}[t]{RViz examples from the supplied recordings}
-\begin{columns}[T,onlytextwidth]
-\begin{column}{.49\textwidth}
-\centering\projectshot{rviz-screencast-1.png}{\linewidth}
-\par\smallskip\scriptsize First recording: 32.035 s. Points, candidate boxes and scores.
-\end{column}
-\begin{column}{.49\textwidth}
-\centering\projectshot{rviz-screencast-2.png}{\linewidth}
-\par\smallskip\scriptsize Second recording: 16.023 s. Wider road view.
-\end{column}
-\end{columns}
-\medskip
-\small
-Full frames from local screencasts with 20 October filenames, preserved as PNGs.
-The visible rendering does not establish the bag, engine, feature recipe or
-correctness of individual boxes. No ground truth or calibrated image overlay is shown.
-\medskip
-\footnotesize
-\textbf{Initial documentation check, 23 October:} 64 Python tests passed; selected saved
-results matched inventory hashes. No new GPU experiment or runtime change.
-\par\smallskip
-\textbf{Next:} resolve input/training contract and bounded voxelization, validate
-accuracy on untouched data, then complete worker/QoS/metrics and benchmarks.
-\par\smallskip
-\scriptsize Provenance: \file{docs/figures/provenance.json}.
-Results: \file{docs/CURRENT_STATUS_AND_RESULTS.md}.
-Ouster: Koide/AIST, CC-BY-4.0; KITTI: Geiger et al., CC-BY-NC-SA-3.0.
-Screenshot experiment identity is unverified.
-\end{frame}
-
-
-\begin{frame}[t]{Published filtering trial and final stopped state}
-\begin{columns}[T,onlytextwidth]
-\begin{column}{.43\textwidth}
-\small
-\textbf{Published source:} \file{8a87a73}. Default score gate: $s\geq0.5$.
-\begin{itemize}
-\item 73 Python and five C++/ROS tests passed.
-\item 60 native + 60 deployed GPU frames verified at 0.0 / 0.5 / 0.95.
-\item Headers, accepted scores, counts and marker totals agreed.
-\item Actual RViz rendering verified; accuracy remains unaccepted.
-\end{itemize}
-\scriptsize
-The monitor's \file{rviz} option calls \file{visualize.sh} and opens a new window.
-Use File / Open Config for an existing window.
-\end{column}
-\begin{column}{.55\textwidth}
-\projectshot{rviz-filter-counters-2026-10-23.png}{\linewidth}
-\scriptsize Captured scan: 3 accepted / 94 post-NMS; 91 removed at 0.5.
-Totals count detections after filtering, not unique objects.
-\end{column}
-\end{columns}
-\smallskip
-\footnotesize
-\textbf{Stopped at user request:} detector, KITTI player and RViz closed on
-23 October, 19:47 UTC. Image, engine cache and data preserved. Last threshold 0.5.
-\par\smallskip
-\scriptsize
-Deploy always invokes a cache-aware build, then creates a fresh container;
-it refuses an existing name. Restart commands: \file{docs/CURRENT_STATUS_AND_RESULTS.md}.
-KITTI: Geiger et al., KIT/TTI-C, CC-BY-NC-SA-3.0.
-Capture identity: \file{docs/figures/filter-counters-provenance.json}.
-\end{frame}
-
-
-\begin{frame}[t,fragile]{Current output layers: filtering and detection counts}
-\centering
-\begin{tikzpicture}[font=\scriptsize,>=Stealth,
- stage/.style={draw=accent,align=center,text width=4.5cm,minimum height=.68cm},
- link/.style={->,accent,line width=.8pt}]
-\node[stage] (nms) at (0,0) {CPU NMS: $N$ valid post-NMS boxes};
-\node[stage] (gate) at (0,-1) {Confidence gate: keep score $s\geq\tau$};
-\node[stage] (boxes) at (-5.4,-2.2) {\file{/bbox}: $K$ accepted boxes\\Detection3DArray; original header};
-\node[stage] (stats) at (0,-2.2) {\file{/bbox/stats}: aggregate counts\\DiagnosticArray; terminal / program};
-\node[stage] (marker) at (5.4,-2.2) {\file{/bbox/count}: counter text\\MarkerArray; RViz display};
-\draw[link] (nms) -- (gate);
-\draw[link] (gate) -- (boxes);
-\draw[link] (gate) -- (stats);
-\draw[link] (gate) -- (marker);
+\begin{frame}[t]{Why the migration was necessary}
+\begin{center}
+\begin{tikzpicture}[font=\small,>=Stealth,
+ stage/.style={draw=accent,align=center,text width=5cm,minimum height=1.5cm}]
+\node[stage] (old) at (0,0) {Ubuntu 20.04\\ROS Foxy / TensorRT 8};
+\node[stage] (work) at (6.6,0) {Update message and tensor APIs\\Validate sizes; reuse GPU resources};
+\node[stage] (new) at (13.2,0) {Ubuntu 24.04\\ROS Jazzy / TensorRT 10};
+\draw[->,accent,thick] (old)--(work);\draw[->,accent,thick] (work)--(new);
 \end{tikzpicture}
-\par\smallskip
-\footnotesize\raggedright
-\textbf{Count meaning:} published $K$; removed $N-K$; before score filter $N$.
-Cumulative published totals sum accepted detections across scans, not unique objects;
-they reset on node restart. Failure counts are unavailable, not zero.
-\par\smallskip
-\textbf{Read from the project root} (Docker permissions as configured on your host):
-\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
-PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh once
-PP_MONITOR_BACKEND=docker bash tools/monitor_detections.sh threshold
-# Omit "once" to stream counters. Set the running threshold:
-sudo docker exec pointpillars /entrypoint.sh ros2 param set /pointpillars confidence_threshold 0.7
-\end{lstlisting}
-\scriptsize
-\textbf{RViz:} MarkerArray on \file{/bbox/count}, Reliable / Transient Local, cloud frame.
-\textbf{Program:} array length on \file{/bbox}, or keys \file{published_count},
-\file{filtered_count}, \file{published_detections_total} in diagnostic values.
-Match headers for the same scan; retained counters may be old.
-\par\smallskip
-\textbf{Defaults:} node/YAML 0.5; existing local deploy-script fallback 0.4.
-Explicit environment values override startup; query the live parameter.
-Filtering runs on the CPU after NMS; no engine rebuild is needed for a live change.
+\end{center}
+\medskip
+\begin{itemize}
+\item Preserve the pretrained ONNX; this work does not retrain the network.
+\item Separate geometry tests, ROS message handling and GPU inference.
+\item Check input layouts, output counts and GPU failures explicitly.
+\item Reuse the engine, context, CUDA stream and buffers between scans.
+\end{itemize}
+\medskip
+Successful migration establishes software compatibility. Accuracy requires a separate evaluation.
 \end{frame}
 
-
-\begin{frame}{Ouster startup update --- 8 November 2026}
+\begin{frame}[t]{How one scan reaches RViz}
+\begin{columns}[T,onlytextwidth]
+\begin{column}{.49\textwidth}\centering
+\begin{tikzpicture}[node distance=4mm,font=\scriptsize,>=Stealth,
+ stage/.style={draw=accent,align=center,text width=7cm,minimum height=7mm}]
+\node[stage] (source) {Ouster driver or original bag};
+\node[stage,below=of source] (adapt) {CPU adapter: selected channel / divisor → XYZI};
+\node[stage,below=of adapt] (pack) {CPU: validate cloud and pack points};
+\node[stage,below=of pack] (gpu) {GPU: pillar features, network and box decoder};
+\node[stage,below=of gpu] (nms) {CPU: validate boxes and run NMS};
+\node[stage,below=of nms] (gate) {CPU: confidence gate and ROS publication};
+\node[stage,below=of gate] (view) {RViz or another consumer};
+\foreach \a/\b in {source/adapt,adapt/pack,pack/gpu,gpu/nms,nms/gate,gate/view}
+  \draw[->,accent] (\a)--(\b);
+\end{tikzpicture}
+\end{column}
+\begin{column}{.47\textwidth}
 \small
+\textbf{Input:} FLOAT32 x, y, z and intensity.
+\medskip
+
+The Ouster adapter explicitly selects reflectivity or signal. It does not
+choose automatically or infer meaning from an arbitrary intensity field.
+\medskip
+
+\textbf{Outputs:}\par
+\code{/bbox}: accepted boxes.\par
+\code{/bbox/stats}: diagnostic counts.\par
+\code{/bbox/count}: RViz count text.
+\medskip
+
+Source timestamp and frame are preserved. The callback is synchronous;
+a bounded worker remains planned.
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}[t]{Deployment and engine reuse are separate caches}
+\begin{columns}[T,onlytextwidth]
+\begin{column}{.48\textwidth}
+\textbf{Image preparation}
 \begin{itemize}
-\item Deployment checks the host GPU/Docker, builds local source by default,
-and reuses a matching image. Base pulls are explicit; source edits preserve
-independent dependency/model caches.
-\item Optional \texttt{\detokenize{PP_BUILD_ONLY=1}} prepares the image without
-starting the detector. Otherwise deployment starts the detector only.
-\item Run \texttt{\detokenize{start_ouster.sh bag}} and
-\texttt{\detokenize{start_ouster_bag.sh}} in separate terminals: Fast DDS,
-domain 99, original topic \texttt{/sensing/lidar/points}.
-\item Adapter: reflectivity/255 to \texttt{/point\_cloud}; detector to
-\texttt{/bbox}. RViz: Ouster profile, fixed frame \texttt{lidar/os\_lidar}.
-\item One Ctrl+C stops each launcher. Verified 91 Python and seven C++/ROS
-tests plus actual GPU replay. Accuracy remains unvalidated.
+\item Host driver and Docker GPU access must already work.
+\item Deployment builds local source by default.
+\item Matching runtime checksum skips Docker build.
+\item Source builds reuse dependency/model layers.
+\item Base pulls are explicit; first builds can download dependencies.
+\end{itemize}
+\end{column}
+\begin{column}{.48\textwidth}
+\textbf{Container startup}
+\begin{itemize}
+\item Check model checksum and selected GPU.
+\item Reuse a matching persistent engine.
+\item Otherwise build from ONNX with trtexec.
+\item Load once; reuse for each cloud.
+\item Ctrl+C stops owned processes and preserves the cache.
+\end{itemize}
+\end{column}
+\end{columns}
+\medskip\small
+\code{PP_BUILD_ONLY=1} is optional: prepare the image and exit.
+Without it, \code{deploy.sh} starts the detector alone.
+\end{frame}
+
+\begin{frame}[t,fragile]{Run the original Ouster bag in three terminals}
+\small
+Prepare the image first; bags must already be downloaded:
+\begin{verbatim}
+sudo env PP_BUILD_ONLY=1 bash tools/deploy.sh
+# Terminal 1: adapter and detector
+sudo bash tools/start_ouster.sh bag
+# Terminal 2: read-only original recording
+sudo bash tools/start_ouster_bag.sh
+# Terminal 3: desktop viewer, without sudo
+ROS_DOMAIN_ID=99 RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
+  RVIZ_CONFIG="$PWD/rviz/ouster.rviz" \
+  bash tools/visualize.sh -f lidar/os_lidar
+\end{verbatim}
+\medskip
+Bag profile: Fast DDS, domain 99, raw \code{/sensing/lidar/points}.
+Adapter output \code{/point_cloud}; detections \code{/bbox}.
+\par\smallskip
+Live mode has different defaults: Zenoh, domain 0, \code{/ouster1/points}.
+Match the driver and router. Allow up to eight seconds after one Ctrl+C.
+\end{frame}
+
+\begin{frame}[t]{A fair channel comparison needs identical geometry}
+\small
+\begin{tabularx}{\linewidth}{@{}Yrrr@{}}
+\toprule Experiment & Scans & Repeats & Inferences \\ \midrule
+MOSEP: dry, 30 and 100 mm/h & 48 & 5 & 480 \\
+Dur360BEV-Extended, labeled & 32 & 5 & 320 \\
+Separate bounded-pillar sensitivity & 32 & 5 & 320 \\
+\bottomrule
+\end{tabularx}
+\medskip
+Two features: signal/65,535 and reflectivity/255. Same XYZ bits, point order
+and count within each experiment. Another 18 warmups were excluded.
+\begin{itemize}
+\item Current production inference and NMS compiled unchanged; existing FP32 engine.
+\item NMS 0.01, top-N 4096; reporting confidence 0.4; no guessed z correction.
+\item Direct C++ GPU runner avoids ROS delivery loss; this study is not a live ROS A/B test.
+\item Dur360 needs identical model-region and zero-return filtering for point capacity.
 \end{itemize}
 \end{frame}
 
+\begin{frame}[t]{What the supplied ground truth can establish}
+\begin{itemize}
+\item Dur360: 16 published train scans and 16 test scans, frozen before inference.
+\item Published indices are disjoint within one collection; independent-drive
+separation is not established.
+\item Original paper describes model-assisted labels with experienced human review.
+The Extended card does not separately detail its labeling process.
+\item Evaluation test region contains 60 vehicles and six pedestrians. Eleven
+original test labels lie outside the declared region; no cyclists occur.
+\item Class-aware, one-to-one matching: Vehicle IoU at least 0.7;
+Pedestrian IoU at least 0.5, in BEV and 3D separately.
+\end{itemize}
+\small
+The 1,120 runs contain repeated scans, not 1,120 independent scenes.
+MOSEP supplies weather data but no object-detection ground truth.
+This is a diagnostic subset, not an official benchmark score.
+\end{frame}
+
+\begin{frame}[t]{Reflectivity improves vehicle BEV results, not 3D acceptance}
+\small
+\begin{tabularx}{\linewidth}{@{}Yrr@{}}
+\toprule Test vehicles at confidence 0.4 & Signal/65,535 & Reflectivity/255 \\ \midrule
+BEV true positives per run, out of 60 & 0 & 4 \\
+Mean BEV false positives & 6.4 & 10.4 \\
+Mean BEV precision & 0\% & 27.81\% \\
+BEV recall & 0\% & 6.67\% \\
+Qualifying 3D matches & 0 & 0 \\
+\bottomrule
+\end{tabularx}
+\medskip
+All five repeats have four reflectivity vehicle BEV matches. Ratios summarize
+runs on the same 16 test scans; they are not pooled as independent scenes.
+\begin{itemize}
+\item Both channels have zero qualifying pedestrian matches.
+\item Removing the publication gate still yields zero qualifying 3D matches.
+\item Both complete all 560 measured inferences per channel without failures.
+\end{itemize}
+Numerical success and stable box counts do not prove correct objects.
+\end{frame}
+
+\begin{frame}[t]{The ground-truth view exposes the vertical error}
+\centering
+\projectshot{ouster-channel-ground-truth-2026-11-08.png}{.77\linewidth}
+\par\smallskip\scriptsize
+Frozen middle test frame; green labels, orange/purple predictions. XZ panels show height.
+The four first-repeat reflectivity vehicle BEV matches are 0.60--1.14 m too high.
+Their 3D IoUs are 0.141--0.381, below 0.7. These four boxes are not a unique-object tracking count.
+\par\smallskip
+Dur360BEV-Extended, CC-BY-4.0; source identity and attribution:
+\code{docs/figures/ouster-channel-ground-truth-provenance.json}.
+\end{frame}
+
+\begin{frame}[t]{Capacity affects repeatability; the height problem remains}
+\begin{itemize}
+\item Engine input capacity: 204,800 points. Original Dur360 scans: 262,144 points.
+Identical region/invalid-return preparation is necessary for this study.
+\item Twenty of 32 primary scans exceed 10,000 occupied pillars; every scan
+has pillars containing more than 32 points.
+\item Separate control keeps first encountered pillars and points, preserving
+order. It is a sensitivity test, not a reproduction of CUDA scheduling.
+\item The control removes empty/nonempty repeat changes in this sample.
+It retains four versus zero vehicle BEV matches and zero qualifying 3D matches.
+\end{itemize}
+\medskip
+\textbf{Interpretation:} investigate bounded capacity and the model/input contract.
+No production preprocessing fix or arbitrary z offset was installed.
+\par\smallskip\small
+Earlier KITTI/TRT8 tests also show poor 3D accuracy and elevated car centers;
+this supports a shared investigation, not a universal correction.
+\end{frame}
+
+\begin{frame}[t]{RViz verifies delivery and rendering}
+\begin{columns}[T,onlytextwidth]
+\begin{column}{.60\textwidth}\centering
+\projectshot{rviz-filter-counters-2026-10-23.png}{\linewidth}
+\par\smallskip\scriptsize Historical KITTI capture, 23 October: 3 accepted boxes,
+94 after NMS, 91 removed at 0.5. Separate camera panel; no calibrated box overlay.
+\end{column}
+\begin{column}{.37\textwidth}\small
+NMS removes overlapping candidates. The confidence gate removes low-score boxes.
+Neither corrects a misplaced box.
+\medskip
+
+Count totals are repeated detection events, not unique objects. Retained text
+may be old; check timestamps.
+\medskip
+
+119 Python tests are recorded for the comparison release. Earlier launcher
+checks include seven C++/ROS tests and actual GPU replay.
+\end{column}
+\end{columns}
+\smallskip\scriptsize KITTI, Geiger et al., CC-BY-NC-SA-3.0.
+Capture provenance: \code{docs/figures/filter-counters-provenance.json}.
+\end{frame}
+
+\begin{frame}[t]{Proposal: one baseline, then a fresh acceptance study}
+\begin{enumerate}
+\item Keep reflectivity/255 as the experimental baseline; record schema, model,
+engine, divisor and operating threshold.
+\item Declare and test valid-return and pillar-capacity policies.
+\item Trace sensor origin, training coordinates, anchors and decoder semantics.
+Do not fit a z offset to the inspected test labels.
+\item If necessary, choose or fine-tune an Ouster-compatible model.
+\item Freeze the corrected configuration and evaluate new, recording-disjoint
+annotated scenes, including pedestrians, cyclists and weather variation.
+\end{enumerate}
+\medskip\small
+Report per-class 3D/BEV precision, recall, AP, localization error, failures and latency.
+An 80\% precision/recall pilot gate is a proposal requiring agreement, not an accepted standard.
+\par\smallskip
+Thesis starting points: \code{docs/THESIS_DRAFT.tex} and
+\code{docs/OUSTER_CHANNEL_DECISION.md}. The current result is a supported development
+choice with a documented accuracy failure.
+\end{frame}
 \end{document}

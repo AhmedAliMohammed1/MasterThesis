@@ -143,6 +143,31 @@ class OusterGroundTruthTests(unittest.TestCase):
         self.assertLess(c['estimates']['recall']['valid_bootstrap_samples'], c['bootstrap_samples'])
         self.assertIn('single collection', c['limitation'])
 
+    def test_incomplete_and_disjoint_repeat_sets_rejected(self):
+        for repeats in ((0,), (2, 3)):
+            with self.subTest(candidate_repeats=repeats):
+                records = [record(variant='baseline', repeat=r) for r in (0, 1)]
+                records += [record(variant='candidate', repeat=r) for r in repeats]
+                with self.assertRaisesRegex(ValueError, 'identical repeat sets'):
+                    evaluate(records)
+
+    def test_repeat_sets_are_local_to_split_and_explicit_failures_are_retained(self):
+        records = [record(variant=v, repeat=r, status='timeout' if v == 'candidate' else 'ok')
+                   for v in ('baseline', 'candidate') for r in (0, 1)]
+        records += [dict(record(variant=v, repeat=7), split='validation')
+                    for v in ('baseline', 'candidate')]
+        report = evaluate(records)
+        comparisons = [c for c in report['paired_comparisons']
+                       if c['class'] == 'Vehicle' and c['metric'] == '3d']
+        self.assertEqual([c['paired_repeats'] for c in comparisons], [[0, 1], [7]])
+        self.assertEqual(comparisons[0]['estimates']['recall']['right'], 0)
+        self.assertEqual(comparisons[1]['estimates']['recall']['right'], 1)
+
+    def test_empty_input_rejected_but_single_variant_remains_valid(self):
+        with self.assertRaisesRegex(ValueError, 'at least one observation'):
+            evaluate([])
+        self.assertEqual(evaluate([record()])['paired_comparisons'], [])
+
     def test_incomplete_sets_duplicates_changed_truth_and_bad_boxes_rejected(self):
         cases = [[record(), record()],
                  [record(), record(variant='reflectivity', truth=[gt(box(x=1))])],

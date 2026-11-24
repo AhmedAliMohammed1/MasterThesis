@@ -1,0 +1,108 @@
+{
+  "date": "2026-11-21",
+  "images": [
+    {
+      "file": "multi-agent-comparison.png",
+      "sha256": "73cb9b74b04597c8f4d882da8e00fb20b71ee15126cf7ea9616fef972a9740a6",
+      "source_path": "/home/ae/.codex/visualizations/2026/11/21/01a1fdf3-f289-76b1-9a56-9b376b45aaeb/ouster-multi-agent-verification/summary/comparison.png",
+      "caption": "Generated diagnostic plot: score 0.3,16 previously inspected labeled test scans,three repeats. Not official benchmark."
+    },
+    {
+      "file": "exact-person-frame1403.png",
+      "sha256": "d4990427782b4e3f933718bac59fb29a02a7ffea06afe7398f648ac409ebb312",
+      "source_path": "/home/ae/.codex/visualizations/2026/11/21/01a1fdf3-f289-76b1-9a56-9b376b45aaeb/user-person-exact-scan/matched-person-diagnostic.png",
+      "caption": "Generated exact-source-scan XY/YZ projections. User-selected head/lower crosses; nearest pedestrian candidates, dashed below0.3. Lower point is not feet."
+    },
+    {
+      "file": "exact-person-published-only.png",
+      "sha256": "e688a1c558a2122bdc406894c5aa722a5351e084feeb7791486bbce58ed74e97",
+      "source_path": "/home/ae/.codex/visualizations/2026/11/21/01a1fdf3-f289-76b1-9a56-9b376b45aaeb/user-person-exact-scan/matched-person-diagnostic-published-only.png",
+      "caption": "Preserved earlier figure variant showing published candidates only. Not superseding the full candidate view."
+    },
+    {
+      "file": "exact-person-wide-labels.png",
+      "sha256": "a91cb94083657a5361f614cc08616963070ad5730db83a4ba860e2ea48f48fc4",
+      "source_path": "/home/ae/.codex/visualizations/2026/11/21/01a1fdf3-f289-76b1-9a56-9b376b45aaeb/user-person-exact-scan/matched-person-diagnostic-wide-labels.png",
+      "caption": "Preserved intermediate figure with wide labels; retained as requested, final figure preferred for documentation."
+    },
+    {
+      "file": "raw01-movement-montage.png",
+      "sha256": "66afbdbb39e63096423d9c5c04eb25379aa87ac53d864a4f37a6936142170320",
+      "source_path": "/home/ae/.codex/visualizations/2026/11/21/01a1fdf3-f289-76b1-9a56-9b376b45aaeb/ouster-multi-agent-verification/geometry/raw01-person-interval-montage.png",
+      "caption": "Generated six-scan original-XYZ montage for user-provided movement interval. No semantic ground-truth boxes."
+    },
+    {
+      "file": "user-head-point39860.png",
+      "sha256": "520739be0feedfa658845b7090e057dbc71d5aea15fd20fc269d25b2ff9a4639",
+      "source_path": "/tmp/codex-clipboard-32b0f4fe-b8d8-43ab-a49c-c90a78ad9a81.png",
+      "caption": "User RViz head selection (-2.5729,0.28832,0.37343), matched to ouster1 frame 1403."
+    },
+    {
+      "file": "user-lower-point111712.png",
+      "sha256": "fcf769a48bc4d7adf9039e9df2d31f206499f65e4763646ea48bf8d47adb7f19",
+      "source_path": "/tmp/codex-clipboard-3bfee716-7378-444b-95ec-6d5918b01f39.png",
+      "caption": "User RViz partial lower-body selection (-2.7426,0.64956,-0.88179), same source frame 1403; legs incomplete, not full feet."
+    },
+    {
+      "file": "user-original-head-corrected.png",
+      "sha256": "fc223a88abf0975de9d763b8e6d1ee1c669333590eb0a873a478406232aedfa6",
+      "source_path": "/tmp/codex-clipboard-9754820d-730b-4f12-ba0c-15cd3c85ed67.png",
+      "caption": "Initially called feet then explicitly corrected by user to head: (-2.6843,-1.0541,0.45051). Unique match source frame 1286."
+    },
+    {
+      "file": "user-background-selection.png",
+      "sha256": "81a10d8494a863ef90d18a3a6892110604ecc96568fe6c14cecb148ec21b6d6d",
+      "source_path": "/tmp/codex-clipboard-4d5622a7-0351-48a8-945c-961fa5396eaf.png",
+      "caption": "User-labeled head selection (-15.797,-7.1147,2.7198), rejected as plausible paired head:14.54 m horizontal separation from supplied feet."
+    },
+    {
+      "file": "user-feet-unpaired.png",
+      "sha256": "05b38e01af1e134758dbf0356530a2cb42fdd47f77c44f12856954dd6a6bf8b4",
+      "source_path": "/tmp/codex-clipboard-14a44d03-51f8-49b2-af60-07e95d4c5d57.png",
+      "caption": "User feet selection (-2.6137,-0.9821,-1.0674). Same-source match not found in full ouster1 search at declared tolerance; no pairing assumed."
+    },
+    {
+      "file": "user-moving-person-01.png",
+      "sha256": "874da27cc55fc6986cbd9949ed1c35b4876d7fb78da5e5a9795d90b293e9bcb0",
+      "source_path": "/tmp/codex-clipboard-bd0338fa-8639-46c2-90da-d620a8968b01.png",
+      "caption": "User RViz screenshot, supplied order 1. Qualitative rendering only; exact source frame not established for this image."
+    },
+    {
+      "file": "user-moving-person-02.png",
+      "sha256": "c5efce837e89e4c403af71ce9dee9891a3ded743f19b044600e7472099cafb1a",
+      "source_path": "/tmp/codex-clipboard-79455a48-c711-48ba-bc4e-f74de22d4d39.png",
+      "caption": "User RViz screenshot, supplied order 2. Qualitative rendering only; exact source frame not established for this image."
+    },
+    {
+      "file": "user-moving-person-03.png",
+      "sha256": "b0cb8f4870d7e3539ca18257258a7a254f4ef00549ddc2b7dfef434b2483273f",
+      "source_path": "/tmp/codex-clipboard-2f7e6010-a052-4c9f-86d8-86728b6a33c1.png",
+      "caption": "User RViz screenshot, supplied order 3. Qualitative rendering only; exact source frame not established for this image."
+    },
+    {
+      "file": "user-moving-person-04.png",
+      "sha256": "7d8f83b59604e914b4096b4b9072059333a7367e93a22c1f7ce26e444d095d85",
+      "source_path": "/tmp/codex-clipboard-cedf890d-2fea-4112-9521-dd34803b4c5d.png",
+      "caption": "User RViz screenshot, supplied order 4. Qualitative rendering only; exact source frame not established for this image."
+    },
+    {
+      "file": "user-moving-person-05.png",
+      "sha256": "ada756b3c9eba87f67fba29edd5b8fe92816757e8649a26eaed8ae7a9b96c943",
+      "source_path": "/tmp/codex-clipboard-0bb40c2d-97c4-4338-8ec5-62f9843abd3c.png",
+      "caption": "User RViz screenshot, supplied order 5. Qualitative rendering only; exact source frame not established for this image."
+    },
+    {
+      "file": "user-moving-person-06.png",
+      "sha256": "675c465d4b1cc478d408dc379424e8f0c10239cadf43b6f4c45757adfa2512ce",
+      "source_path": "/tmp/codex-clipboard-07fee627-a3b3-4d05-a3e0-50f146594cc9.png",
+      "caption": "User RViz screenshot, supplied order 6. Qualitative rendering only; exact source frame not established for this image."
+    },
+    {
+      "file": "user-moving-person-07.png",
+      "sha256": "04a9d6b62440fd731de4edc9a5e709135b06491fc144fb1ea6400cf68d3a4494",
+      "source_path": "/tmp/codex-clipboard-9af346ce-6131-466c-9e1f-eb227dcf9886.png",
+      "caption": "User RViz screenshot, supplied order 7. Qualitative rendering only; exact source frame not established for this image."
+    }
+  ],
+  "preservation": "All originals, variants and negative results retained in the complete image archive; these are named documentation copies."
+}

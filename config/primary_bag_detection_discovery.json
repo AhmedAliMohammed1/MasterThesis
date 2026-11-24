@@ -1,0 +1,151 @@
+{
+  "measured_inferences": 120,
+  "excluded_warmups": 2,
+  "failures": 0,
+  "summary": [
+    {
+      "bag": "raw01",
+      "channel": "reflectivity",
+      "policy": "baseline",
+      "inferences": 15,
+      "mean_candidates": 33.6,
+      "accepted_total_at_04": 1,
+      "accepted_total_at_02": 162,
+      "candidate_repeat_match_median": 0.08333333333333333,
+      "accepted_repeat_match_median_nonempty_pairs": 0.0,
+      "max_score": 0.4114978313446045
+    },
+    {
+      "bag": "raw01",
+      "channel": "reflectivity",
+      "policy": "bounded",
+      "inferences": 15,
+      "mean_candidates": 33,
+      "accepted_total_at_04": 0,
+      "accepted_total_at_02": 156,
+      "candidate_repeat_match_median": 1.0,
+      "accepted_repeat_match_median_nonempty_pairs": null,
+      "max_score": 0.3754463493824005
+    },
+    {
+      "bag": "raw01",
+      "channel": "signal",
+      "policy": "baseline",
+      "inferences": 15,
+      "mean_candidates": 19.866666666666667,
+      "accepted_total_at_04": 0,
+      "accepted_total_at_02": 87,
+      "candidate_repeat_match_median": 0.0,
+      "accepted_repeat_match_median_nonempty_pairs": null,
+      "max_score": 0.32598695158958435
+    },
+    {
+      "bag": "raw01",
+      "channel": "signal",
+      "policy": "bounded",
+      "inferences": 15,
+      "mean_candidates": 19.2,
+      "accepted_total_at_04": 0,
+      "accepted_total_at_02": 72,
+      "candidate_repeat_match_median": 1.0,
+      "accepted_repeat_match_median_nonempty_pairs": null,
+      "max_score": 0.3169388771057129
+    },
+    {
+      "bag": "ouster1",
+      "channel": "reflectivity",
+      "policy": "baseline",
+      "inferences": 15,
+      "mean_candidates": 32.266666666666666,
+      "accepted_total_at_04": 9,
+      "accepted_total_at_02": 173,
+      "candidate_repeat_match_median": 0.08571428571428572,
+      "accepted_repeat_match_median_nonempty_pairs": 0.0,
+      "max_score": 0.6006814241409302
+    },
+    {
+      "bag": "ouster1",
+      "channel": "reflectivity",
+      "policy": "bounded",
+      "inferences": 15,
+      "mean_candidates": 32.4,
+      "accepted_total_at_04": 6,
+      "accepted_total_at_02": 171,
+      "candidate_repeat_match_median": 1.0,
+      "accepted_repeat_match_median_nonempty_pairs": 1.0,
+      "max_score": 0.5559692978858948
+    },
+    {
+      "bag": "ouster1",
+      "channel": "signal",
+      "policy": "baseline",
+      "inferences": 15,
+      "mean_candidates": 19.4,
+      "accepted_total_at_04": 0,
+      "accepted_total_at_02": 88,
+      "candidate_repeat_match_median": 0.045548654244306416,
+      "accepted_repeat_match_median_nonempty_pairs": null,
+      "max_score": 0.39095380902290344
+    },
+    {
+      "bag": "ouster1",
+      "channel": "signal",
+      "policy": "bounded",
+      "inferences": 15,
+      "mean_candidates": 19,
+      "accepted_total_at_04": 0,
+      "accepted_total_at_02": 72,
+      "candidate_repeat_match_median": 1.0,
+      "accepted_repeat_match_median_nonempty_pairs": null,
+      "max_score": 0.33533141016960144
+    }
+  ],
+  "limitations": [
+    "Ten unlabeled sampled scans, five per bag; no precision, recall or accuracy claim.",
+    "Bounded selection changes ROI and per-pillar selection together; cannot isolate one mechanism.",
+    "Concurrent live inference; no performance benchmark.",
+    "Three repeats per input; empty accepted pairs excluded from accepted repeat metric.",
+    "Intermittent no-recent-cloud warnings in live replay; delivery rate and transport gaps not resolved."
+  ],
+  "evidence_directory": ".recovery/verification/primary-bags-20261121-1301",
+  "runtime_identity": {
+    "date": "2026-11-21",
+    "git_head": "15a82bca8149aba934de26ba48c5714bff0ea51f",
+    "source_sha256": {
+      "src/pointpillar.cpp": "983cb2fc3a581eddb84dd3d64767d2d76f957b442a4d495fde623e33626b0379",
+      "src/postprocess.cpp": "297c73c7378e14afe845355dd473acb6d50ac16befc2d2b2b758f2abc38b6050",
+      "include/pp_infer/pointpillar.h": "df9513d42ad0c6580ec9136fb5bea2b1b65b459190ae7500837c6e16969f8eff",
+      "include/pp_infer/postprocess.h": "d819506d33c02b0581aa5562001372bad6bc1c10b38f31311a86c5437705d6f7",
+      "include/pp_infer/cuda_resources.hpp": "dc969f336ffdd64f1f3b254cb2dead1bec2c0078c2c325c8993f1052e7fcd2e9",
+      "include/pp_infer/model_contract.hpp": "d006c5c6382a993419211ed98e3efaa6c9a816c3e5ea1044c66697fd6ca6268b",
+      "include/pp_infer/output_contract.hpp": "ba2be89be7324e31b2babd41cd669b0a92f35283de4439b4cc22376f31717927",
+      "docker/reference/production_runner.cpp": "199230d4c36d23e6736c84f8a77634da001fc2c11650e98b7e8267b649367a01",
+      "tools/ouster_point_policy.py": "6f4423d041394bb55905b23e5f71033937b7a31e3a0da456ac0407236579795c",
+      "tools/kitti_reference.py": "aa32b71fe9ddd0b6fa43a9247c607f31993050ca9d698a0dd0593b6e9aa4a35a"
+    },
+    "inference_image": "sha256:c6c6f0c3f167d98593360f9dcae9b30b09e7db19a707e95b1116317d87006720",
+    "offline_image": "sha256:1171d26ec8f79c8176450008b745412d9e04632f948c1a5f597358b9886c2b5c",
+    "engine": "bea83e579931a273617c656538b132346dde6fe96ad37aafd22c46af1e055e29.engine",
+    "engine_sha256": "97ece7c15dbccedaf95693950a5a772e37361d74dd9dd366655a0ec7efae8e14",
+    "tests": {
+      "point_policy": 5,
+      "reference_and_voxel": 9,
+      "result": "all passed"
+    },
+    "live": {
+      "pipeline_container": "pointpillars",
+      "player_container": "pointpillars-ouster-bag",
+      "raw_topic": "/ouster1/points",
+      "input_topic": "/point_cloud",
+      "detections": "/bbox",
+      "domain": 99,
+      "middleware": "rmw_fastrtps_cpp",
+      "channel": "reflectivity",
+      "divisor": 255,
+      "threshold": 0.4,
+      "playback_rate": 0.5,
+      "loop": true
+    },
+    "limits": "Offline runner bypasses ROS transport. Ten unlabeled sampled scans; no accuracy evaluation. No full bag checksum. Timings overlap live GPU workload."
+  }
+}

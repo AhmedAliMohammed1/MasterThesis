@@ -4,6 +4,14 @@
 
 This is a comparison of **these two encodings, this pretrained model and these recordings**. It does not prove every possible signal calibration inferior to reflectivity. No driver, production adapter, saved production image or deployment default was changed. Reflectivity was already the experimental launcher default.
 
+## Reading the result
+
+BEV compares box footprints viewed from above; 3D overlap also includes height. A true positive is a prediction matched to one supplied annotation under the declared class and overlap rules. Precision asks how many predictions match; recall asks how many annotated objects are found. The distinction matters here: four good vehicle footprints still fail the 3D height criterion.
+
+![Vehicle BEV comparison and the four first-repeat 3D overlaps](figures/ouster-channel-results-summary.png)
+
+The left panel summarizes the frozen primary test metrics; the right shows why its four reflectivity BEV matches fail the 0.7 Vehicle 3D-overlap requirement. [Figure provenance](figures/ouster-channel-results-summary-provenance.json).
+
 ## What was tested
 
 The experiment made **1,120 new measured GPU inferences**, plus 18 discarded warmups, using current `src/pointpillar.cpp` and `src/postprocess.cpp` compiled unchanged. It used the existing FP32 engine read-only on the RTX 4060 Laptop, driver 595.99.02. NMS was 0.01, top-N 4096, three model classes. All post-NMS rows were saved losslessly before the confidence gate. Primary reporting uses the actual launcher threshold **0.4**; an unfiltered evaluation checks whether that gate explains the result.
@@ -120,4 +128,4 @@ Exact completed directories:
 - `.recovery/accuracy/ouster-production-dur360-bounded-v1`: 320 capacity-control observations.
 - `.recovery/dur360bevet-study`: original subset, all original labels, published checksums, frozen selection, source/schema provenance and official loader snapshot.
 
-Validation: all **119 Python tests passed**, including analytic IoU/AP/matching/failure controls, archive integrity controls and deterministic capacity selection. The production runner passed strict syntax checks and a compiled stub I/O/failure/reuse test. All three actual GPU runs completed. No test containers remain running. This document does not claim a newly verified live ROS A/B deployment or a successful LaTeX compilation; the open presentation was left unchanged.
+Validation: all **119 Python tests passed**, including analytic IoU/AP/matching/failure controls, archive integrity controls and deterministic capacity selection. The production runner passed strict syntax checks and a compiled stub I/O/failure/reuse test. All three actual GPU runs completed. The experimental test containers were stopped after verification. This does not assert the current state of unrelated services. The study verifies direct production-C++ inference and scoring, not a completed live ROS A/B deployment. Documentation and PDF compilation are separate checks.

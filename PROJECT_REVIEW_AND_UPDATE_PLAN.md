@@ -1,8 +1,12 @@
 # Project review and modernization prompt
 
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](docs/CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+**Historical record, with a current reading guide — 8 November 2026.** The material below preserves the original requests and dated observations. Earlier statements about “current” code, processes, drivers or unpublished work refer to their original session, not the present checkout.
 
-> **Status reviewed 23 October 2026.** The original review and modernization prompt below are historical. CPU/ROS foundations, TensorRT 10 migration, deployment, labeled evaluation, compatibility comparison and later sensor demos are now delivered in part; the bounded worker, accuracy/parity acceptance, benchmarks and CI remain unfinished. [Current results and evidence](docs/CURRENT_STATUS_AND_RESULTS.md).
+For today's project, use [the documentation index](docs/README.md), [current status](docs/CURRENT_STATUS_AND_RESULTS.md) and [the channel decision](docs/OUSTER_CHANNEL_DECISION.md). The migration and Ouster integration are implemented; reflectivity/255 has the stronger measured vehicle BEV result, while both tested configurations still fail the declared 3D matching criteria. Latest recorded validation includes 1,120 measured channel-study GPU inferences and 119 Python tests.
+
+For thesis writing, cite the measured reports and primary sources rather than quoting an old progress reply as proof. The historical text is retained for traceability; commands in it are not the current setup guide.
+
+## Preserved historical material
 
 Copy this prompt into a coding agent with access to this repository:
 

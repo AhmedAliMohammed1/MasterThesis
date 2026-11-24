@@ -1,10 +1,8 @@
 # KITTI accuracy baseline and live RViz comparison
 
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+Reviewed 8 November 2026. This is the **frozen 3 October KITTI diagnostic baseline**, not a new measurement. Its zero moderate 3D AP_R40 remains unchanged. The [independent compatibility comparison](MODEL_REFERENCE_COMPARISON.md) and newer [Ouster channel study](OUSTER_CHANNEL_DECISION.md) provide additional diagnosis, but neither establishes an accurate 3D configuration.
 
-> **Status reviewed 23 October 2026.** The frozen labeled baseline below remains the latest recorded accuracy measurement: zero moderate 3D matches, with BEV AP_R40 5.7516% Car, 0% Pedestrian and 0.02577% Cyclist. Later Ouster normalization and frontal KITTI replay did not replace or improve this frozen accuracy result. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
-
-On 3 October 2026, the current deployed PointPillars node was measured on the 32 frozen labeled KITTI diagnostic frames. **The baseline is poor. There were no accepted 3D matches on the 16 test frames at KITTI's class-specific overlap thresholds.** Some cars and cyclists matched in bird's-eye view. Integration and visualization work, but this model/runtime combination has not passed accuracy acceptance.
+On 3 October 2026, the then-deployed PointPillars node was measured on the 32 frozen labeled KITTI diagnostic frames. **The baseline is poor. There were no accepted 3D matches on the 16 test frames at KITTI's class-specific overlap thresholds.** Some cars and cyclists matched in bird's-eye view. Integration and visualization work, but this model/runtime combination has not passed accuracy acceptance.
 
 This measurement uses original XYZI values, intensity scale 1.0, the existing FP32 engine, class-agnostic NMS at 0.01 and pre-NMS top-N 4096. No confidence tuning, intensity rescaling or coordinate shift was applied after inspecting results. The first observed detections for each frame were saved and hashed; subsequent live playback does not overwrite them.
 
@@ -42,7 +40,7 @@ For the 12 test-set car pairs that match BEV at the required overlap, the median
 
 A separate NVIDIA `trtexec` execution used the same engine and one exact padded input frame, 005876. It emitted 528 raw candidates with median z about 0.714 m. The saved ROS output contained 68 final boxes with median z about 0.706 m. Forty-six ROS boxes had a same-class raw candidate within 0.001 in every compared component after wrapping yaw. This supports the finding that elevated centers already appear before the ROS display. It does **not** certify full independent inference or postprocessing parity: both executions share the engine/plugins, the JSON floats are rounded, matching is not one-to-one, and repeated execution varies.
 
-During repeated live inference, final counts varied for 31 of the 32 observed frames, with a maximum observed span of seven boxes. First-pass measurements remain frozen. Numerical repeatability and an independent original-model/reference comparison are unfinished. We cannot yet attribute all poor performance to the pretrained model rather than plugin/runtime or input-domain differences.
+During repeated live inference, final counts varied for 31 of the 32 observed frames, with a maximum observed span of seven boxes. First-pass measurements remain frozen. The later TensorRT compatibility comparison is recorded in [the reference guide](MODEL_REFERENCE_COMPARISON.md); exact original-training parity and repeatability acceptance remain unresolved. We cannot yet attribute all poor performance to the pretrained model rather than plugin/runtime or input-domain differences.
 
 Six evaluator controls passed: known camera conversion, outside-camera filtering, near-plane clipping, exact boxes giving 100% 3D/BEV AP_R40, missing predictions giving all false negatives, and duplicates counting false positives. All 41 Python tests passed, including the earlier dataset/recovery tests. The report was rerun from frozen inputs and reproduced. RViz startup and actual desktop rendering of points, predictions and green calibrated ground truth were verified.
 
@@ -100,7 +98,7 @@ Green edges show original calibrated ground-truth boxes. Prediction colors ident
 
 Use the mouse to move around, or disable **Detections** or **Ground truth (green)** to inspect one layer at a time. Playback defaults to three seconds per frame and loops the fixed set. Live inference is repeated; the scoring report continues to use the first saved observation. This is direct labeled-frame playback, not conversion into a new rosbag. The old bag/video/viewer workflow remains available separately.
 
-RViz and live inference were left running after implementation. The helper records identities of its detector/player/viewer so this command stops those resources without touching unrelated containers or applications:
+RViz and live inference were left running at the end of the original measurement session; this is not a current process-state assertion. The helper records identities of its detector/player/viewer so this command stops those resources without touching unrelated containers or applications:
 
 ```bash
 bash tools/kitti_accuracy.sh stop
@@ -126,9 +124,12 @@ The utility probe requires the running validation detector and its cached engine
 
 ## Status after measurement
 
-Data preparation, calibrated ground-truth playback, prediction export and a diagnostic accuracy baseline are implemented. **Accuracy acceptance is not achieved.** Independent original-model parity, repeatability investigation, larger evaluation data/targets, runtime contract enforcement, the bounded worker, QoS/metrics, memory/failure checks, performance benchmarks and CI remain. The evaluation/reference tools are included in local commit `29ef404`, followed by the later demo commit `ee6b36c`. Remote publication is not inferred; Docker continues to build its selected published Git reference.
-
+Data preparation, calibrated ground-truth playback, prediction export and a diagnostic accuracy baseline are implemented. **Accuracy acceptance is not achieved.** Independent original-model parity, repeatability investigation, larger evaluation data/targets, runtime contract enforcement, the bounded worker, QoS/metrics, memory/failure checks, performance benchmarks and CI remain. The original evaluation/reference tools were recorded in `29ef404`, followed by demo work in `ee6b36c`. Current deployment builds local source by default; a saved image still needs rebuilding before it can include new runtime changes. See [startup and replay](STARTUP_AND_REPLAY.md).
 
 ## Independent reference update: 3 October 2026
 
 A separate TensorRT 8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately 1.53 m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all 192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and 12 frames exceed the export's 10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly 99.6–100%; no production adaptation was installed. Two actual CUDA 12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.
+
+## Using this baseline in the thesis
+
+Report the declared split, class mapping, camera-visibility rules, overlap thresholds and AP_R40 definition together with the table. Present this as a small diagnostic baseline. Its zero 3D matches and observed height error are findings that motivate further work; they do not establish the source of the error.

@@ -1,133 +1,80 @@
-# Verifying the PointPillars model on KITTI
+# Validation plan: from working inference to trustworthy results
 
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+Reviewed 8 November 2026. The pipeline works, but its current 3D accuracy does not meet acceptance. This plan explains what evidence we already have, what the unresolved questions mean, and how to test the next change fairly.
 
-> **Status reviewed 23 October 2026.** Data preparation, frozen prediction export, explicit evaluation policy and diagnostic accuracy scoring are implemented, and an independent TensorRT8 compatibility comparison is recorded. W01 remains in progress because original-training parity and accuracy acceptance have not passed. Ouster encodings remain unlabeled diagnostic candidates. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
+The immediate development choice is **reflectivity/255**, supported by the labeled Ouster comparison. It remains an experimental input encoding. The recommendation is specific to this model, preprocessing and sample; it does not establish universal superiority over signal or an accurate 3D configuration. Read the [full channel decision](OUSTER_CHANNEL_DECISION.md) before using it as an accuracy claim.
 
-This is the plan for W01, started on 2 October 2026. The user chose labeled KITTI scenarios first, followed by their own LiDAR recordings when available. It separates correct implementation of the downloaded model from the model's accuracy on a new dataset. Neither result has been claimed complete.
+## Three questions that need separate answers
 
-## What the first investigation established
+| Question | Evidence available | Still needed |
+| --- | --- | --- |
+| Does the software move and preserve the intended data? | Adapter conversion tests, original-bag replay, ROS counters and RViz checks | Sustained target-sensor transport, failure recovery and resource tests |
+| Does the migration preserve the intended model behavior? | Exact artifact/label identities, independent TensorRT 8/10 compatibility comparison, identical-candidate NMS agreement | Original-training/reference behavior, input semantics and bounded preprocessing |
+| Are the detected objects correct? | Frozen labeled KITTI and Dur360 diagnostic measurements | A justified correction/model and fresh recording-disjoint acceptance evaluation |
 
-The actual local ONNX hash matches NVIDIA's deployable_v1.1 package metadata. That same package supplies label.txt, with the verified order:
+A successful replay answers the first question. It cannot substitute for the other two. Similarly, repeating a wrong box reliably does not make it accurate.
 
-| Numeric ID | NVIDIA label |
-|---|---|
-| 0 | Vehicle |
-| 1 | Pedestrian |
-| 2 | Cyclist |
+## Current evidence
 
-The package's label hash also matches the existing repository label.txt. This closes the label-file provenance/order gap for this export. Runtime class_names still uses generic smoke labels; class IDs in ROS messages are numeric strings.
+The exact ONNX matches NVIDIA's `deployable_v1.1` package identity. Its verified labels are ID 0 Vehicle, ID 1 Pedestrian and ID 2 Cyclist. The export encodes roughly x/y [−51.2,51.2) m and z [−1.4,4.4) m, voxels [0.2,0.2,5.8], 10,000 pillars, 32 points per pillar and a decode score threshold of 0.1. These are this artifact's attributes; generic training examples must not override them. The [partial model contract](../config/model_contract.json) records sources and gaps. Artifact-bound runtime enforcement remains unfinished.
 
-The NVIDIA model card describes proprietary solid-state LiDAR training/evaluation data. Some card instructions still describe older ETLT versions. We therefore use the exact v1.1 file manifest and ONNX attributes for artifact-specific facts, and treat KITTI performance as a separate measurement. We cannot reproduce the card's published accuracy from an unrelated KITTI sample.
+The frozen [KITTI baseline](KITTI_ACCURACY_RESULTS.md) has zero moderate 3D matches for all three classes on 16 test frames. Its 16 tuning and 16 test frames are separated by recording drive. The [independent compatibility reference](MODEL_REFERENCE_COMPARISON.md) reproduces poor accuracy and roughly 1.53 m upward car error. NMS selects identical boxes on identical candidates, but exact inference/training parity is not established.
 
-TAO documents XYZI reflectance in [0,1] and a LiDAR frame with x forward, y left and z up. The release/10.16 decoder source emits box centers, dimensions along local x/y/z, yaw in radians, zero-based class ID and score. Its anchor z uses bottom height plus half anchor height; output z is not the anchor bottom. This supports the existing ROS center mapping, rather than an unverified extra half-height adjustment.
+The [new Ouster study](OUSTER_CHANNEL_DECISION.md) adds 1,120 measured production-C++ GPU inferences. At confidence 0.4, reflectivity/255 matches four of 60 in-region test vehicles in BEV on every repeat; signal/65,535 matches none. Both have zero qualifying 3D matches and no recorded inference failures. The labeled scans are a frozen diagnostic subset of Dur360BEV-Extended; their published index splits are not verified as recording-disjoint. MOSEP weather runs are unlabeled numerical/transport evidence, not weather accuracy measurements.
 
-The exact ONNX embeds a range of approximately x/y [-51.2,51.2] m and z [-1.4,4.4] m, voxels [0.2,0.2,5.8], 10000 pillars, 32 points per pillar and a decode score threshold of 0.1. These are properties of this export. Do not replace them with the different example KITTI training range from the TAO manual.
+Twenty of 32 primary labeled Ouster scans exceed the 10,000-pillar limit. A separate bounded-capacity sensitivity test reduces repeat changes but does not repair 3D accuracy. It is not deployed preprocessing. Both channels preserve identical geometry within each experiment, including the same explicit labeled-data capacity adaptation.
 
-A read-only audit of the first three existing bag clouds found intensity 0–0.99, with no samples outside [0,1]. They therefore support scale 1.0 for this bag. About 29.6–29.8 thousand of approximately 124 thousand points per cloud were inside the encoded range; many points were below the z range. This is an input-coverage observation, not proof of a bug or accuracy failure. Inspect where labeled objects fall before making any frame translation. Do not shift z or divide intensity by 255 merely to make the picture look different.
+## Next experiment: resolve input and capacity handling
 
-Evidence and remaining gaps are recorded in [model_contract.json](../config/model_contract.json). It is a partial validation record, not yet runtime enforcement or an accuracy certificate.
+1. Write down the sensor schema, valid-return rule, coordinate frame, units and fourth-feature formula. Distinguish an original `intensity` field representing Ouster signal from a generic intensity field. Do not guess aliases.
+2. Audit original and retained point counts, nonfinite/zero returns, occupied pillars and points per pillar. A total point count below 204,800 does not guarantee compliance with the internal pillar limits.
+3. Implement any selected bounded preprocessing as a separate, reviewable change. Preserve source files and point identities; record exactly which points are retained and why. Use identical selected geometry when comparing channels.
+4. Test boundary conditions and deterministic behavior. Compare the new path with the unchanged production baseline on development data before drawing an accuracy conclusion.
+5. Freeze the resulting recipe and rerun independent annotations. Keep the current poor baseline available for comparison.
 
-## Step 1: freeze the model and the evaluation rules
+The existing first-encountered-pillar control is a diagnostic candidate. It does not reproduce CUDA thread encounter order and has not been selected as the final operational policy.
 
-Keep the exact ONNX hash, TensorRT version, precision, plugin versions, point packing, output decoding, NMS policy and confidence thresholds in the validation manifest. Initially use the existing FP32 recipe and postprocessing so the comparison can isolate migration issues.
+## Investigate height and training conventions
 
-Bind the labels to the verified model hash. Confirm all incoming data sources separately: a future sensor can use another intensity scale or frame even though the current KITTI bag matches the documented reflectance range.
+Trace sensor origin, calibration, training coordinates, anchor centers, decoder output and box conversion. The published decoder uses geometric centers derived from anchor bottom plus half height; an extra blanket half-height adjustment is not justified. KITTI annotations need their explicit calibrated bottom-to-center conversion. Dur360's loader convention uses geometric LiDAR centers directly.
 
-Remaining code for this step: enforce or validate the model contract at startup, integrate the verified labels into current configuration/documentation, and add focused geometry/coordinate mapping fixtures. Do not call every semantic check complete just because the label order is resolved.
+The four first-repeat reflectivity BEV matches are 0.60–1.14 m too high. This supports investigation of vertical behavior; it does not identify a correction for all objects. Confirm a proposed fix against a mathematical fixture and a validated reference, then measure its effects on independent labeled scenes. Do not infer a fixed z offset from the inspected test labels or change only the rendered boxes.
 
-## Step 2: prepare labeled KITTI frames — implemented
+If the current export remains unsuitable after these checks, evaluate an Ouster-compatible trained model or fine-tune on labeled Ouster development recordings. Model suitability and software migration are separate research questions.
 
-The existing raw-sequence bag and matching MP4 provide integration and scene context; this setup contains no object annotations. They cannot produce an accuracy score.
+## Freeze an acceptance evaluation
 
-Use the KITTI **3D object detection training data**, whose annotations are public. Each selected frame needs matching:
+Select data before looking at predictions. Use recording-disjoint tuning and test groups, retain negative scenes, and include representative distances, weather and supported classes. The current inspected KITTI and Dur360 test frames are now diagnostic material. A larger selection containing them is not automatically untouched acceptance data. The original model's training-frame list is unavailable, so pretrained overlap cannot be certified.
 
-- Velodyne point cloud;
-- label_2 annotation;
-- calibration matrices;
-- image dimensions, and preferably the camera image for review.
+Record the following before the final run:
 
-The recorded source inventory lists approximately 29 GB for the full point-cloud archive, 5 MB for labels and 16 MB for calibration. Downloads require the dataset's official access process. The implemented preparation tool selects a subset through verified ZIP ranges when the endpoint supports it; do not assume range support, valid direct URLs or silently fetch the whole archive.
+| Item | Required record |
+| --- | --- |
+| Input | Dataset identity, checksums, frame IDs, split and excluded-label counts |
+| Geometry | Frame, units, valid returns, capacity policy, spatial coverage and calibration |
+| Model | ONNX/engine hashes, classes, precision, plugins, GPU and software |
+| Postprocessing | NMS/top-N, class mapping, confidence gate and matching thresholds |
+| Metrics | Per-class BEV/3D precision, recall, AP definition, localization errors and confidence intervals |
+| Reliability | Failed inputs/inferences, delivery loss, repeat variation, latency and memory behavior |
 
-Keep assets outside Git, for example ../datasets/kitti_object. Record dataset source, hashes, frame IDs and split identity. The current bag helper does not already prepare labeled object-detection data.
+Use official KITTI AP_R40 only with its declared difficulty, ignore and visibility rules. The Ouster diagnostic continuous-envelope AP is a different measure. Never compare the two as if they were one benchmark. Repeated inference measures variability; it does not increase the number of independent scenes.
 
-Start with a small diagnostic set covering all three classes, near/far objects, isolated/crowded scenes and different occlusion/truncation levels available in KITTI. Then use a substantially larger fixed evaluation split. Small samples diagnose errors; they do not establish reliable overall AP. Do not promise night/rain coverage that the selected KITTI data does not provide.
+## Proposed acceptance and completion criteria
 
-Select scenarios from annotations and scene information before seeing detector results. Do not choose only frames where the detector succeeds. Keep a separate tuning split and an untouched test split. Without the pretrained training manifest, we cannot certify that every KITTI frame is unseen by that pretrained model.
+No project-wide accuracy target has been approved. The channel proposal suggests a pilot gate of zero invalid-input/inference failures, verified capacity compliance and at least 80% precision and recall per supported class at the declared 3D IoU and fixed threshold. This is a proposal requiring agreement, not an established requirement or a safety standard. Current results are far below it.
 
-## Step 3: put annotations and predictions in the same frame
+Validation is complete only when the artifact-bound input/class/box conventions are tested, the independent reference checks pass within declared tolerances, and a frozen untouched dataset meets agreed application targets. Preserve both successes and failures with runnable commands and hashes. Two clean allocation probes do not establish internal tensor-bounds safety or race freedom.
 
-KITTI labels use camera-coordinate conventions and box locations that differ from ROS center-based LiDAR messages. A direct comparison of their numeric x/y/z values would be wrong.
+## Reproduction routes and sources
 
-Use each frame's calibration to transform annotations and predictions into a common coordinate frame. Handle bottom-to-center conversion, dimension ordering and orientation explicitly. Test a known box's center, corners and heading with an independent construction, then visually check projected/3D overlays.
+Start with [KITTI data preparation](KITTI_VALIDATION_DATA.md), [KITTI scoring](KITTI_ACCURACY_RESULTS.md), [TensorRT reference comparison](MODEL_REFERENCE_COMPARISON.md), or [Ouster channel reproduction](OUSTER_CHANNEL_DECISION.md#reproduction-and-evidence). These guides distinguish prerequisite preparation, inference, evaluation and viewing. Use fresh output directories when source, model, recipe or dataset identity changes.
 
-Account for KITTI's camera-visible labeling scope: this model has a much wider x/y range, and a rear-facing prediction is not directly comparable with a front-camera label set. Declare and freeze visibility/ignore rules. Report coverage of the model's spatial range rather than quietly dropping inconvenient ground-truth objects. A separate region-restricted score must be labeled as such.
+Primary sources used for the recorded contract:
 
-## Step 4: verify reference parity
+- [NVIDIA deployable_v1.1 manifest](https://api.ngc.nvidia.com/v2/models/nvidia/tao/pointpillarnet/versions/deployable_v1.1/files) and [label file](https://api.ngc.nvidia.com/v2/models/nvidia/tao/pointpillarnet/versions/deployable_v1.1/files/label.txt).
+- [NVIDIA model card](https://catalog.ngc.nvidia.com/orgs/nvidia/tao/models/pointpillarnet/-?_lr=1) and [TAO PointPillars input/evaluation documentation](https://docs.nvidia.com/tao/tao-toolkit/6.26.03/text/cv_finetuning/pytorch/point_cloud/pointpillars.html).
+- [TensorRT 10.16 decoder source](https://github.com/NVIDIA/TensorRT/blob/release/10.16/plugin/common/kernels/decodeBbox3DKernels.cu) and [decoder documentation](https://github.com/NVIDIA/TensorRT/blob/release/10.16/plugin/decodeBbox3DPlugin/README.md).
+- [KITTI benchmark rules](https://www.cvlibs.net/datasets/kitti/eval_object.php?obj_benchmark=3d).
+- [Dur360BEV-Extended](https://huggingface.co/datasets/TomEeee/Dur360BEV-Extended) and its pinned loader/paper references in the channel report.
 
-Run exactly the same packed points through:
-
-1. an independent inference/reference path for this same ONNX and compatible plugins; and
-2. the migrated node.
-
-Compare point count and packed values, decoded boxes before NMS, scores/classes, and final boxes after identical NMS/top-N settings. Use class-aware matching by geometry with declared tolerances rather than raw array order: the decoder uses an atomic output counter, so row ordering is not a reference identity.
-
-The independent path should not call the same migrated runtime and postprocessing code, or it would merely compare the implementation with itself. The old NVIDIA sample is a reference for semantics but needs an isolated compatible runtime/adaptation before it is runnable on the current stack. An unrelated trainable TLT is not a proven reference for the pruned deployable ONNX unless their pairing/export history is established.
-
-Reference parity answers “did our migration change the model's behavior?” It does not answer “does this model detect KITTI objects well?”
-
-## Step 5: measure accuracy
-
-Compute precision, recall, missed detections, false positives and AP for each class, with 3D and bird's-eye-view overlap. Report the defined sample split and scenario/difficulty breakdowns.
-
-For official KITTI-compatible reporting, follow its evaluator, ignore/visibility/difficulty rules and AP_R40 protocol. KITTI uses overlap 0.7 for Car and 0.5 for Pedestrian/Cyclist. This model's Vehicle label is broader than Car: define the mapping before evaluation. Do not silently rename all vehicles Car or merge Van/Truck while still calling the result an official KITTI score.
-
-A useful alternative is a clearly named custom Vehicle/Pedestrian/Cyclist evaluation with declared class groups, overlap thresholds and ignored categories. Its AP is not interchangeable with official KITTI Car AP or NVIDIA's proprietary-dataset mAP. TAO also documents that its general metric differs from KITTI's official difficulty-based metric.
-
-Tune confidence/NMS only on the tuning split. Evaluate the final fixed settings on the untouched split. If parity passes but KITTI accuracy is poor, investigate sensor/data differences and model suitability before blaming TensorRT. Fine-tuning or a KITTI-trained replacement may become appropriate after that evidence; it is not required merely to start validation.
-
-## Step 6: define and record acceptance
-
-W01 becomes verified only when:
-
-- the artifact-bound class, input and box conventions are resolved and tested;
-- the known fixtures match an independent reference within declared tolerances;
-- the dataset/mapping/evaluator/splits are frozen and identifiable;
-- per-class/scenario accuracy is measured and meets the agreed targets;
-- the result can be reproduced from saved commands/configuration and evidence.
-
-The project does not yet have agreed accuracy targets. The diagnostic baseline has been measured and is poor; define useful targets and a larger untouched evaluation before claiming acceptance. A score alone cannot choose what is acceptable for the future application.
-
-Later, record and annotate representative clouds from the user's actual sensor, audit intensity/frame/range again, and repeat the same protocol. Passing KITTI validation will not validate that sensor automatically.
-
-## Preparation implemented on 3 October 2026
-
-The [labeled-data preparation guide](KITTI_VALIDATION_DATA.md) describes the implemented standard-library tool, pinned official sources, deterministic annotation-based scenario selection, raw-drive-disjoint tuning/test partitions, atomic asset recovery and full calibration conversion. The initial 32 real frames have matching annotations, clouds, calibration and images, with all configured buckets present in both splits. Fifteen focused fixtures and eight existing HTTP/recovery regressions passed. The [validation inventory](../config/kitti_validation_inventory.json) indexes exact manifests and evidence. This supersedes the initial investigation's “no labeled downloads” status.
-
-The raw KITTI annotations remain unchanged, including DontCare and other classes. Full orientation/corners retain calibration tilt; no yaw-only approximation, intensity rescaling or coordinate shift was applied. The observed object/model-range coverage is documented separately from accuracy.
-
-## What remains to implement next
-
-Prediction export, explicit evaluator policy and baseline scoring are delivered. A separate TensorRT 8.6 compatibility reference is also measured; it is not a trusted training-framework fixture. Next resolve bounded voxelization, shared repeatability and tensor-bounds concerns, verify the original input/training contract and decoder behavior, and define a larger untouched acceptance evaluation. Runtime contract enforcement and verified-label configuration integration remain. The original preparation phase performed no inference; the dated updates below record later measurements.
-
-## Sources
-
-- [NVIDIA exact deployable_v1.1 file manifest](https://api.ngc.nvidia.com/v2/models/nvidia/tao/pointpillarnet/versions/deployable_v1.1/files)
-- [Exact model label file](https://api.ngc.nvidia.com/v2/models/nvidia/tao/pointpillarnet/versions/deployable_v1.1/files/label.txt)
-- [NVIDIA model card](https://catalog.ngc.nvidia.com/orgs/nvidia/tao/models/pointpillarnet/-?_lr=1)
-- [TAO PointPillars input/annotation/evaluation documentation](https://docs.nvidia.com/tao/tao-toolkit/6.26.03/text/cv_finetuning/pytorch/point_cloud/pointpillars.html)
-- [TensorRT release/10.16 decoder kernel](https://github.com/NVIDIA/TensorRT/blob/release/10.16/plugin/common/kernels/decodeBbox3DKernels.cu)
-- [TensorRT release/10.16 decoder documentation](https://github.com/NVIDIA/TensorRT/blob/release/10.16/plugin/decodeBbox3DPlugin/README.md)
-- [Official KITTI 3D detection data and evaluation rules](https://www.cvlibs.net/datasets/kitti/eval_object.php?obj_benchmark=3d)
-
-Exact source identities and the ignored input-audit log are indexed by the partial contract and recovery records. Generic documentation and old model-card deployment commands must not override the exact ONNX attributes or be mistaken for a current TensorRT installation procedure.
-
-
-## Measurement update: 3 October 2026
-
-The first labeled 32-frame diagnostic baseline is now measured. The 16-frame test split has zero moderate 3D matches; moderate BEV AP_R40 is Car 5.75%, Pedestrian 0%, Cyclist 0.0258%. Vehicle is explicitly mapped to Car compatibility. The evaluator's exact/missing/duplicate controls passed, and 41 total Python tests passed. Green calibrated ground truth and live predictions render together in RViz on domain 42. First-pass detections are frozen; repeated counts vary and full independent original-model parity remains pending. Read [accuracy results and commands](KITTI_ACCURACY_RESULTS.md) and [inventory](../config/kitti_accuracy_inventory.json). Earlier “not measured” statements describe preparation or the initial investigation, not this new baseline. Accuracy acceptance remains unmet.
-
-
-## Independent reference update: 3 October 2026
-
-A separate TensorRT 8.6 engine for the exact ONNX reproduced the poor KITTI baseline and approximately 1.53 m upward car error. Three repeats per runtime (192 raw inferences) still produced zero moderate 3D matches in both runtimes. NVIDIA's unchanged NMS and our NMS selected identical boxes on all 192 same-candidate observations. Strict numerical parity remains unmet: both runtimes vary, and 12 frames exceed the export's 10,000-voxel limit. Two tuning-only capacity controls improved repeat matching to roughly 99.6–100%; no production adaptation was installed. Two actual CUDA 12.9 allocation probes reported zero errors, which does not clear the internal tensor-bounds concern or complete GPU memory validation. Read [independent comparison](MODEL_REFERENCE_COMPARISON.md) for commands, results, source evidence and limits. Pretrained weights alone are not established as the cause; bounded voxelization and the original input/training contract are next.
+Source identities are preserved in the inventories. This documentation update does not re-fetch or re-validate external publications.

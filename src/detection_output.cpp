@@ -62,6 +62,11 @@ void DetectionOutput::publish(const std_msgs::msg::Header& header, const std::ve
 }
 
 void DetectionOutput::report_failure(const std_msgs::msg::Header& header, FrameFailure failure) {
+  // Clear the previous frame without counting this failure as a successful scan.
+  // Diagnostics distinguish unavailable detections from a valid empty result.
+  vision_msgs::msg::Detection3DArray message;
+  message.header = header;
+  detections_->publish(message);
   if (failure == FrameFailure::invalid_cloud) ++invalid_cloud_frames_;
   else ++inference_error_frames_;
   publish_monitor(header, failure == FrameFailure::invalid_cloud ? "invalid_cloud" : "inference_error",

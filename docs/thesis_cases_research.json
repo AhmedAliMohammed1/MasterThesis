@@ -1,0 +1,743 @@
+[
+  {
+    "id": "J30",
+    "title": "Bind labels and coordinates to the exact model",
+    "symptom": "Early messages used numeric class IDs with provisional names and intensity scale. A local label file alone did not prove the export order.",
+    "explanation": "A model contract needs the exact artifact, its labels, tensor layout and coordinate conventions. Successful deserialization only checks a subset of those assumptions.",
+    "steps": [
+      "Identify the ONNX by SHA-256 rather than by filename.",
+      "Compare the repository label file with the recorded exact-version NVIDIA label digest.",
+      "Read the decoder convention: XYZ is a geometric box center, dimensions follow local axes and yaw is in radians.",
+      "Keep generic display labels and unresolved training semantics separate from the verified artifact facts."
+    ],
+    "verification": "The new read-only check confirms label.txt matches the recorded digest and prints Vehicle/Pedestrian/Cyclist order, axes and remaining contract gaps. No internet lookup or inference is repeated.",
+    "remaining_limit": "Exact original-training/reference parity, sensor feature equivalence and runtime enforcement of the full semantic contract remain incomplete.",
+    "evidence_paths": [
+      "config/model_contract.json",
+      "label.txt",
+      "src/pointcloud_adapter.cpp",
+      "include/pp_infer/model_contract.hpp",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J30.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J30.log"
+    ],
+    "reproduction": {
+      "kind": "read-only artifact/contract audit",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J30",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J30.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "A derived contract card with the three verified IDs, center convention and a separate unresolved box; use the actual J30 JSON, not a fabricated model screenshot.",
+    "visual_kind": "source_explanation",
+    "visual_before": "Names and scale were provisional.",
+    "visual_after": "Exact artifact labels verified; training/input semantics remain partial."
+  },
+  {
+    "id": "J31",
+    "title": "Prove the evaluator responds to correct, missing and duplicate predictions",
+    "symptom": "A plausible score could come from broken matching or ignore logic rather than from the detector.",
+    "explanation": "Before interpreting a poor model result, controlled predictions must produce known outcomes. A second identical prediction must not reuse one annotation.",
+    "steps": [
+      "Create a known annotated box and an identical prediction in an analytic control.",
+      "Remove that prediction and check that one false negative remains.",
+      "Add a duplicate and check that only one prediction matches.",
+      "Run the existing official KITTI metric controls using the already-cached development kit."
+    ],
+    "verification": "Actual controls print exact=1 TP/0 FP/0 FN, missing=0/0/1, and duplicate=1/1/0 with precision 0.5. The KITTI controls independently use 41 artificial frames per class and check AP_R40=1 for exact boxes.",
+    "remaining_limit": "These artificial fixtures verify metric behavior. They are not real-world detector observations or evidence of dataset accuracy.",
+    "evidence_paths": [
+      "tests/test_kitti_evaluation.py",
+      "tests/test_ouster_gt_evaluation.py",
+      "tools/kitti_evaluation.py",
+      "tools/ouster_gt_evaluation.py",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J31.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J31.log"
+    ],
+    "reproduction": {
+      "kind": "controlled analytic failure reproduction and CPU metric tests",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J31",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J31.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "A three-panel diagram or actual evidence-page table for exact/missing/duplicate counts, explicitly labeled synthetic evaluator controls. Avoid representing the artificial 41 frames as collected scenes.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "Missing prediction: 0 TP / 0 FP / 1 FN.\nDuplicate: 1 TP / 1 FP / 0 FN.",
+    "visual_after": "Exact control: 1 TP / 0 FP / 0 FN.\nOfficial KITTI controls also pass."
+  },
+  {
+    "id": "J32",
+    "title": "Put predictions and labels in one coordinate and evaluation frame",
+    "symptom": "KITTI labels use camera bottom centers; ROS detections use LiDAR geometric centers. Full scans also contain predictions outside the camera-labeled view.",
+    "explanation": "Comparing raw coordinates or counting every rear-facing prediction as a false positive would produce misleading metrics. Calibration, split and visibility rules must be fixed first.",
+    "steps": [
+      "Load the matching calibration, rectification and camera dimensions.",
+      "Convert the annotated bottom center to a geometric center and apply the complete transform.",
+      "Check known centers, dimensions, headings and near-plane image clipping with the existing fixtures.",
+      "Keep source recording drives separated between the KITTI tuning and test samples.",
+      "Apply the declared camera visibility and ignore policy before scoring."
+    ],
+    "verification": "New tests exercise known camera coordinates, nontrivial translated/rectified calibration, outside-camera exclusion and near-plane clipping. The preserved baseline has 2,876 predictions: 862 camera-visible and 2,014 excluded; frozen drive overlap is zero.",
+    "remaining_limit": "KITTI camera-upright prediction formatting approximates calibration tilt. Small scenario-selected data and unknown pretrained overlap prevent a population or official leaderboard claim.",
+    "evidence_paths": [
+      "tests/test_kitti_validation.py",
+      "tests/test_kitti_evaluation.py",
+      "tools/kitti_geometry.py",
+      "tools/kitti_evaluation.py",
+      "config/kitti_validation_inventory.json",
+      "config/kitti_accuracy_inventory.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J32.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J32.log",
+      ".recovery/verification/kitti-rviz-live.png"
+    ],
+    "reproduction": {
+      "kind": "controlled coordinate/visibility tests plus frozen-policy audit",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J32",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J32.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "Use original .recovery/verification/kitti-rviz-live.png if its provenance is retained, alongside a labeled camera-bottom to LiDAR-center diagram. The screenshot shows the historical session; the diagram explains the conversion.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "Camera bottom centers and full LiDAR outputs are not directly comparable.",
+    "visual_after": "Calibration/visibility fixtures pass.\nHistorical baseline: 862 visible / 2,876 predictions; zero split-drive overlap.",
+    "historical_captures": [
+      {
+        "path": ".recovery/verification/kitti-rviz-live.png",
+        "kind": "original_capture",
+        "visually_inspected_now": true,
+        "sha256": "32e1fe9ef18abaf4c2a99caee72c09a8dc4bc702d1221d7f0cca2dab7d5117d1",
+        "note": "Original historical RViz capture, not a new run. Frame000368/tuning is visible; image alone is not a metric."
+      }
+    ],
+    "subcases": [
+      {
+        "title": "Preparation and evaluation hardening retained the original baseline",
+        "explanation": "Initial preparation manifests remain as .initial-pre-review. Source pin/cache hardening revalidated unchanged frame selection/assets. The original evaluator report remains evaluation.pre-review; later image-dimension hardening reproduced every score/count/visibility decision unchanged.",
+        "evidence_paths": [
+          "config/kitti_validation_inventory.json",
+          "config/kitti_accuracy_inventory.json",
+          ".recovery/verification/thesis-evidence-2026-11-09/research/J32a.json",
+          ".recovery/verification/thesis-evidence-2026-11-09/research/J32a.log"
+        ],
+        "verification_scope": "Historical inventory statements; no new dataset preparation or score overwrite.",
+        "id": "J32a",
+        "visual_kind": "historical_evidence",
+        "visual_before": "Earlier preparation/evaluator records were kept before hardening.",
+        "visual_after": "32 frame visibility decisions and all split metrics are unchanged.\nPolicy identity changed; the poor accuracy result did not.",
+        "steps": [
+          "Read the preserved initial and final selection records.",
+          "Compare every split metric and per-frame visibility decision.",
+          "Keep old records and report unchanged findings beside the hardened policy."
+        ],
+        "reproduction_scope": "New read-only equality comparison of original records; no preparation or inference rerun.",
+        "reproduction": {
+          "kind": "historical_evidence",
+          "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/subcase_probe.py J32a",
+          "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J32a.log",
+          "status": "passed_audit",
+          "exit_code": 0
+        },
+        "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/research/J32a.log"
+      }
+    ]
+  },
+  {
+    "id": "J33",
+    "title": "Accept the poor KITTI result instead of treating valid messages as accuracy",
+    "symptom": "The pipeline rendered boxes, but the labeled test had zero moderate 3D matches.",
+    "explanation": "A footprint can overlap correctly from above while the box is too high to satisfy 3D overlap. Valid message fields do not establish correct object locations.",
+    "steps": [
+      "Keep the first predictions and their model/input identities frozen.",
+      "Read the class-specific TP/FP/FN and AP_R40 table under the declared policy.",
+      "Inspect the calibrated height differences of BEV-matched objects.",
+      "Compare the limited raw-candidate trtexec probe with the ROS output without claiming full parity."
+    ],
+    "verification": "The audit verifies the frozen moderate test has zero 3D TP for every class and prints Car BEV AP_R40=5.7516%, Pedestrian=0%, Cyclist=0.02577%. Twelve matched car footprints have median upward error about 1.529 m. An analytic vertical-overlap fixture also passes.",
+    "remaining_limit": "The diagnostic sample is small and inspected. The probe shares engine/plugins, rounded output and non-unique matching. The height symptom does not justify a universal z correction.",
+    "evidence_paths": [
+      "config/kitti_accuracy_inventory.json",
+      "docs/KITTI_ACCURACY_RESULTS.md",
+      ".recovery/accuracy/kitti-baseline-v1/evaluation/report.json",
+      ".recovery/accuracy/kitti-baseline-v1/diagnostics/test-pairs.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J33.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J33.log",
+      ".recovery/verification/kitti-rviz-live.png"
+    ],
+    "reproduction": {
+      "kind": "read-only reanalysis of historical negative accuracy plus analytic geometry control",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J33",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J33.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "Plot frozen per-class 3D/BEV results and matched-car height error. Pair with genuine historical kitti-rviz-live.png, labeled original capture. Keep \u201czero qualifying matches\u201d distinct from \u201czero overlap\u201d.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "Rendered boxes did not establish correct objects.",
+    "visual_after": "Moderate 3D matches: 0 for all classes.\n12 car BEV pairs: median height error +1.529 m.",
+    "historical_captures": [
+      {
+        "path": ".recovery/verification/kitti-rviz-live.png",
+        "kind": "original_capture",
+        "visually_inspected_now": true,
+        "sha256": "32e1fe9ef18abaf4c2a99caee72c09a8dc4bc702d1221d7f0cca2dab7d5117d1",
+        "note": "Original historical RViz capture, not a new run. Frame000368/tuning is visible; image alone is not a metric."
+      }
+    ]
+  },
+  {
+    "id": "J34",
+    "title": "Separate NMS behavior from inference differences",
+    "symptom": "Poor accuracy raised the question whether migration or duplicate suppression changed the detections.",
+    "explanation": "Feeding identical candidate rows to both NMS implementations isolates filtering. Comparing two independently generated candidate sets asks a different question.",
+    "steps": [
+      "Freeze the same ONNX, points, engine identities and postprocessing settings.",
+      "Read the preserved TensorRT 8/10 repeated outputs.",
+      "Apply unchanged NVIDIA NMS and project NMS to identical rows.",
+      "Match rows uniquely by class and geometric components rather than array order.",
+      "Report same-candidate agreement separately from cross-runtime numerical variability."
+    ],
+    "verification": "The new hash audit checks the saved all-repeat NMS comparison. All 192 same-candidate observations selected the same boxes. Frozen cross-version final-box matching is about 75.70%, and exact numerical/training parity flags remain false. Duplicate/angle matching fixtures run again.",
+    "remaining_limit": "TRT8 is a compatibility reference, not a trusted original-training fixture. Both versions can share plugin/input defects. NMS agreement does not exonerate all migration behavior or establish optimal suppression.",
+    "evidence_paths": [
+      "config/kitti_reference_inventory.json",
+      ".recovery/accuracy/kitti-reference-v1/all-repeat-nms-comparison.json",
+      "tests/test_kitti_reference.py",
+      "docker/reference/nms_driver.cpp",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J34.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J34.log",
+      ".recovery/verification/reference-rviz-live.png"
+    ],
+    "reproduction": {
+      "kind": "hash-verified historical comparison plus unique-matching controls",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J34",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J34.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "Use genuine .recovery/verification/reference-rviz-live.png with its recorded inventory hash; add a derived split diagram: identical candidates\u2192two NMS paths agree, separate inference outputs\u2192parity remains open.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "Migration and NMS were suspected causes.",
+    "visual_after": "NMS agrees on all 192 identical-candidate observations. Median per-frame cross-runtime final-box agreement: 75.70%; exact parity remains open.",
+    "historical_captures": [
+      {
+        "path": ".recovery/verification/reference-rviz-live.png",
+        "kind": "original_capture",
+        "visually_inspected_now": true,
+        "sha256": "06333629c188a2d3a38559b24075f1c8445a04d3cc66d564916075c3ae8481ce",
+        "note": "Original historical RViz capture, not a new run. Frame000368/tuning is visible; image alone is not a metric."
+      }
+    ],
+    "subcases": [
+      {
+        "title": "Interrupted raw collection is not automatically complete evidence",
+        "explanation": "The reference collector verifies indexed files against hashes. Unindexed binary outputs are renamed and moved outside the active raw folder before recollection; a changed indexed file is rejected. The older Ouster feature collector instead preserves and refuses unindexed outputs, requiring a fresh folder. These are intentionally different recovery policies.",
+        "evidence_paths": [
+          "tools/kitti_reference.py:182",
+          "tools/compare_ouster_features.py:203",
+          ".recovery/verification/thesis-evidence-2026-11-09/research/J34a.json",
+          ".recovery/verification/thesis-evidence-2026-11-09/research/J34a.log"
+        ],
+        "verification_scope": "Source reviewed read-only; quarantine behavior was not newly triggered because running the complete collector would use Docker/GPU.",
+        "id": "J34a",
+        "visual_kind": "source_explanation",
+        "visual_before": "A partial binary file is not automatically completed evidence.",
+        "visual_after": "Indexed outputs require matching hashes; unindexed outputs are quarantined.\nThis recovery branch was reviewed, not newly executed.",
+        "steps": [
+          "Inspect how the real collector reads its frozen raw-file index.",
+          "Trace the changed-file rejection and unindexed-file quarantine branches.",
+          "Keep archived partial output outside the active raw folder before a future full collection."
+        ],
+        "reproduction_scope": "Read-only AST/source audit. The actual collector also starts Docker/GPU jobs; no extracted imitation of its quarantine branch was run.",
+        "reproduction": {
+          "kind": "source_explanation",
+          "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/subcase_probe.py J34a",
+          "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J34a.log",
+          "status": "passed_audit",
+          "exit_code": 0
+        },
+        "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/research/J34a.log"
+      }
+    ]
+  },
+  {
+    "id": "J35",
+    "title": "Distinguish total point capacity from internal pillar capacity",
+    "symptom": "A cloud could contain fewer than 204,800 points yet exceed the model\u2019s 10,000 occupied-pillar or 32-point-per-pillar limits.",
+    "explanation": "The point adapter checks the input allocation. The voxel encoder has additional internal limits and potentially order-dependent point selection.",
+    "steps": [
+      "Count occupied XY pillars and per-pillar occupancy on the frozen KITTI clouds.",
+      "Compare these counts with the encoded export limits.",
+      "Use the existing small first-pillar/first-point control fixtures to test deterministic selection.",
+      "Keep two historical tuning-only capacity experiments separate from production preprocessing."
+    ],
+    "verification": "The audit recomputes 12 of 32 KITTI scans above 10,000 pillars, maximum 15,180, from the hashed capacity report. Existing controls verify stable original-bit/order selection and half-open boundaries. Historical repeated matching improved to roughly 99.6\u2013100% on two altered tuning frames.",
+    "remaining_limit": "Capacity control changes which points reach inference. It did not establish an accuracy improvement, reproduce CUDA encounter order or deliver a production fix.",
+    "evidence_paths": [
+      "config/kitti_reference_inventory.json",
+      ".recovery/accuracy/kitti-reference-v1/voxel-capacity-audit.json",
+      ".recovery/accuracy/kitti-reference-v1/voxel-controls/report.json",
+      "tests/test_kitti_reference.py",
+      "tests/test_ouster_point_policy.py",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J35.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J35.log"
+    ],
+    "reproduction": {
+      "kind": "frozen capacity-count reanalysis plus deterministic selection controls",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J35",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J35.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "Plot occupied pillars against the 10,000 limit and show a tiny annotated selection fixture. Label 12/32 KITTI separately from the later 20/32 Dur360 result.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "12 / 32 KITTI scans exceed 10,000 occupied pillars.\nMaximum: 15,180 pillars.",
+    "visual_after": "Deterministic capacity fixtures preserve retained bytes/order.\nTwo historical tuning controls improved repeats; no production fix."
+  },
+  {
+    "id": "J36",
+    "title": "Keep allocation memcheck separate from internal tensor safety",
+    "symptom": "The first GPU memory tool failed before checking; later runs reported zero allocation errors, which could be mistaken for complete memory safety.",
+    "explanation": "Compute Sanitizer can check allocation boundaries while TensorRT internal tensors share larger allocations. It also does not establish race freedom or all failure behavior.",
+    "steps": [
+      "Read the original CUDA 12.0 setup failure log without re-triggering a GPU fault.",
+      "Hash-check the later original/capped CUDA 12.9 memcheck logs.",
+      "Record each actual exit code and zero-error summary.",
+      "Keep the two-input allocation scope and unresolved tensor/race checks beside the result."
+    ],
+    "verification": "The new audit reopens the historical failed setup and verifies both later logs against their frozen SHA-256. Original and capped runs exited 0 with ERROR SUMMARY: 0 errors. No GPU or sanitizer was run now.",
+    "remaining_limit": "Two allocation probes do not certify internal tensor bounds, race freedom, leaks, long-run memory stability or complete GPU safety.",
+    "evidence_paths": [
+      "config/runtime_inventory.json",
+      "config/kitti_reference_inventory.json",
+      ".recovery/verification/w05-gpu-memcheck.txt",
+      ".recovery/accuracy/kitti-reference-v1/memcheck-results.json",
+      ".recovery/accuracy/kitti-reference-v1/memcheck-original.log",
+      ".recovery/accuracy/kitti-reference-v1/memcheck-capped.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J36.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J36.log"
+    ],
+    "reproduction": {
+      "kind": "hash-checked historical tool-outcome audit; no GPU reproduction",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J36",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J36.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "A before/after evidence panel showing the actual historical instrumentation failure and later zero-allocation-error lines, explicitly historical re-rendering. Add an internal-tensor-within-allocation diagram to explain the limitation.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "CUDA 12.0 could not instrument the process.",
+    "visual_after": "Two CUDA 12.9 allocation probes: exit 0, zero errors.\nInternal tensor bounds and races remain unverified.",
+    "visual_log_excerpt": "========= ERROR SUMMARY: 0 errors",
+    "visual_log_source": ".recovery/accuracy/kitti-reference-v1/memcheck-original.log"
+  },
+  {
+    "id": "J37",
+    "title": "Show why raw Ouster signal caused numerical failures",
+    "symptom": "Initial Ouster replay produced hundreds of saturated-score boxes and 51 logged invalid-output frame drops.",
+    "explanation": "Structural XYZI compatibility did not make the fourth feature training-compatible. Raw Ouster signal reached thousands, whereas the model documentation describes a bounded feature range.",
+    "steps": [
+      "Verify the cached diagnostic image and read-only engine match the historical identities, with working GPU access.",
+      "Copy and hash-check the historically invalid scan000000 raw-signal and reflectivity/255 inputs into a new output folder.",
+      "Confirm XYZ bits, order and the 32,768-point count match between encodings.",
+      "Execute the existing cached pp-reference runner three times per encoding, preserving every raw GPU output.",
+      "Feed each result to the actual production decode_boxes implementation and record its exit code/error without removing invalid rows.",
+      "Keep this six-inference numerical reproduction separate from labeled accuracy and from the older 192-observation feature study."
+    ],
+    "verification": "New actual GPU run on 9 November: one frozen original Koide scan with 32,768 identical XYZ points and 2,907 occupied pillars, three executions per encoding. Raw signal produced 2,179 candidates each time; each contained one nonfinite length and the actual production decode_boxes rejected it with exit 1, Invalid output box. Reflectivity/255 produced 176,177,176 candidates, zero invalid rows, accepted by that same decoder with exit 0. The cached image/engine identities match; no new engine build, ROS replay or accuracy test occurred.",
+    "remaining_limit": "This is one unlabeled Koide scan, three raw executions followed by three reflectivity/255 executions, with no warmups or randomized order. It reproduces the numerical/output-contract failure and a working bounded encoding, not calibrated reflectance, accuracy, live ROS delivery, long-run reliability or a universal channel ranking.",
+    "evidence_paths": [
+      "config/ouster_demo_inventory.json",
+      "config/ouster_feature_inventory.json",
+      ".recovery/accuracy/ouster-feature-v1/report.json",
+      "tools/compare_ouster_features.py",
+      "tests/test_ouster_features.py",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J37.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J37.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/gpu-pair/report.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/gpu-pair/provenance.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/gpu-pair/gpu-command.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/gpu-pair/gpu-command.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/gpu-pair/summary.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/gpu-pair/compile-decoder.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/gpu-pair/cache-and-cleanup-check.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/gpu-pair/decode_check.cpp"
+    ],
+    "reproduction": {
+      "kind": "actual new GPU numerical failure reproduction and real production C++ decoder validation",
+      "command": "docker run --rm --pull=never --name pp-thesis-j37-pair-20261109 --gpus device=GPU-4219859e-3a54-d063-1435-a290cd5d28f3 --network none --mount 'type=bind,src=/media/ae/New Volume1/MasterThesis/.recovery/verification/thesis-evidence-2026-11-09/research/gpu-pair,dst=/out' --mount type=volume,src=pp-engines,dst=/engines,readonly sha256:1171d26ec8f79c8176450008b745412d9e04632f948c1a5f597358b9886c2b5c pp-reference /engines/4b6ea34734d959f49e9a9be3326b9bdffa13d5ec7293022b16e322ac77a94b4a.engine /out/jobs.tsv /out/raw 3",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/gpu-pair/summary.log",
+      "status": "reproduced",
+      "date_local": "2026-11-09",
+      "stdout_stderr_exit_record": ".recovery/verification/thesis-evidence-2026-11-09/research/gpu-pair/gpu-command.json",
+      "procedure_source": ".recovery/verification/thesis-evidence-2026-11-09/research/gpu-pair/run_recorded.py",
+      "rerun_note": "Recorded procedure refuses an existing output folder. A repeat needs a fresh folder and verified cached image/engine. Re-reading summary.log is evidence playback, not another GPU run."
+    },
+    "visual_suggestion": "Plot actual rejected observations and nonfinite-length counts before/after scaling. A clipped evidence table can show the actual invalid row\u2019s field names; do not fabricate a live GPU terminal.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "Actual GPU reproduction: raw signal rejected 3 / 3 times.\nEach output had one nonfinite length: Invalid output box.",
+    "visual_after": "Same XYZ, reflectivity / 255: accepted 3 / 3 times.\nZero invalid rows; 176 / 177 / 176 raw candidates.\nNumerical success only; accuracy not measured.",
+    "prior_reproduction": {
+      "kind": "CPU recomputation from hash-verified actual invalid GPU output plus analytic invalid-row test",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J37",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J37.log",
+      "status": "passed"
+    },
+    "visual_log_excerpt": "raw_signal repeat=0 raw=2179 invalid_rows=1 decoder_exit=1 message=Invalid output box\nreflectivity_div255 repeat=0 raw=176 invalid_rows=0 decoder_exit=0 message=Production decode_boxes accepted 176 rows",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/research/gpu-pair/summary.log"
+  },
+  {
+    "id": "J38",
+    "title": "Correct a verifier that confused duplicate headers with missing messages",
+    "symptom": "The first full-bag check reported 289 outputs for 291 expected messages.",
+    "explanation": "Headers were not unique in the source. A set of timestamps discarded repeated occurrences and made a complete replay appear incomplete.",
+    "steps": [
+      "Inspect the preserved failed unique-header report.",
+      "Compare source message occurrences with unique header counts.",
+      "Count matching occurrences rather than collapsing equal headers.",
+      "Preserve all original timestamps and rerun the verification logic."
+    ],
+    "verification": "The new audit prints the original 291-expected/289-unique result and corrected 291/291 result with 289 unique headers. The second bag has 265/265 occurrences and 264 unique headers. A three-occurrence/two-header synthetic control demonstrates the counting error.",
+    "remaining_limit": "The correction validates the measurement method for these runs. It is not a detector repair, an accuracy result or a guarantee that every transport experiment is lossless.",
+    "evidence_paths": [
+      "config/ouster_feature_inventory.json",
+      ".recovery/accuracy/ouster-feature-v1/ros-first-sequence-unique-header-check.json",
+      ".recovery/accuracy/ouster-feature-v1/ros-first-sequence.json",
+      ".recovery/accuracy/ouster-feature-v1/ros-second-sequence.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J38.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J38.log"
+    ],
+    "reproduction": {
+      "kind": "historical verifier before/after audit plus duplicate-header analytic control",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J38",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J38.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "Use a sequence diagram with repeated identical timestamps and the actual 291/289 versus 291/291 evidence numbers. Label the diagram explanatory and the counts historical.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "Old check: 291 expected, 289 unique headers.",
+    "visual_after": "Correct check: 291 / 291 occurrences match.\nSecond bag: 265 / 265; source timestamps unchanged."
+  },
+  {
+    "id": "J43",
+    "title": "Obtain independent two-channel annotations without rewriting originals",
+    "symptom": "The weather bags and camera previews could not decide which channel was closer to ground truth.",
+    "explanation": "The comparison required original scans containing both channels plus independent object annotations, source integrity and a selection frozen before predictions.",
+    "steps": [
+      "Use the pinned Dur360BEV-Extended revision and published checksum list.",
+      "Select 16 published train and 16 published test frames before inference.",
+      "Retrieve only the required original point/label members through validated ranges.",
+      "Verify every selected member against the publisher MD5.",
+      "Retain label conventions and the annotation/split limitations with the results."
+    ],
+    "verification": "The new local audit rehashes all 64 original point/label files for 32 frames against the publisher checksum list and prints the frozen selection and provenance. No downloads, conversions or source writes occur.",
+    "remaining_limit": "The split is index-disjoint within one collection, not verified drive-disjoint. Labels are model-assisted and human-reviewed according to the original paper; the Extended card does not separately document its procedure.",
+    "evidence_paths": [
+      "config/ouster_channel_decision.json",
+      ".recovery/dur360bevet-study/source-provenance.json",
+      ".recovery/dur360bevet-study/frozen-selection-final.json",
+      ".recovery/dur360bevet-study/download-verification.json",
+      "tools/download_dur360_subset.py",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J43.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J43.log"
+    ],
+    "reproduction": {
+      "kind": "fresh local checksum verification of historical original subset",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J43",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J43.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "A provenance flow from publisher revision\u219232 frozen frames\u219264 checksummed files, with annotation and split caveats. Use the existing labeled scene figure for real data, not a simulated dataset download screen.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "Unlabeled weather recordings cannot rank object accuracy.",
+    "visual_after": "32 selected frames / 64 original files pass publisher MD5 checks again.\nIndex-disjoint split; recording independence unverified.",
+    "subcases": [
+      {
+        "title": "Initial archive-order mapping and selection were replaced before inference",
+        "explanation": "Source provenance explicitly retains the failed initial tar-order mapping selection. The frozen-selection.json and frozen-selection-final.json files have different selection methods; the latter selected uniform archive-ordinal candidates and was frozen before model outputs. Do not use the earlier selection as the final evaluated frame list.",
+        "evidence_paths": [
+          ".recovery/dur360bevet-study/source-provenance.json",
+          ".recovery/dur360bevet-study/frozen-selection.json",
+          ".recovery/dur360bevet-study/frozen-selection-final.json",
+          ".recovery/verification/thesis-evidence-2026-11-09/research/J43a.json",
+          ".recovery/verification/thesis-evidence-2026-11-09/research/J43a.log"
+        ],
+        "verification_scope": "Both saved manifests and source provenance were read; final 64 original files passed new local MD5 verification.",
+        "id": "J43a",
+        "visual_kind": "historical_evidence",
+        "visual_before": "An earlier archive-mapping selection was preserved.",
+        "visual_after": "The evaluated final selection uses a different frozen method.\nBoth manifests remain available; model predictions did not choose the final list.",
+        "steps": [
+          "Read both preserved selection methods and frame lists.",
+          "Compare their membership and the recorded archive-ordinal mapping.",
+          "Use frozen-selection-final.json to identify the evaluated original files."
+        ],
+        "reproduction_scope": "New read-only comparison of preserved manifests and provenance; no download, remapping or model run.",
+        "reproduction": {
+          "kind": "historical_evidence",
+          "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/subcase_probe.py J43a",
+          "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J43a.log",
+          "status": "passed_audit",
+          "exit_code": 0
+        },
+        "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/research/J43a.log"
+      }
+    ]
+  },
+  {
+    "id": "J44",
+    "title": "Exclude an incomplete ROS A/B attempt rather than interpret lost clouds",
+    "symptom": "The initial large-cloud ROS A/B did not finish reliably across host/container UDP transport.",
+    "explanation": "Missing delivery cannot be interpreted as zero objects or model inference failure. The subsequent direct C++ comparison answered the feature question with a narrower transport scope.",
+    "steps": [
+      "Preserve the incomplete ROS recipe, observations and logs.",
+      "Check its complete flag and number of measured observations.",
+      "Exclude that unfinished run from the final feature comparison.",
+      "Use the unchanged production C++ inference/NMS directly for the completed paired study."
+    ],
+    "verification": "The new audit prints the actual incomplete flag and observation/warmup counts from ouster-current-ab-v2, alongside its recorded domain and point policy. It does not launch ROS or repeat the delivery failure.",
+    "remaining_limit": "The completed direct runner does not certify a live ROS signal/reflectivity A/B path. Existing bag signal aliases and target-sensor delivery still need separate verification.",
+    "evidence_paths": [
+      "docs/OUSTER_CHANNEL_DECISION.md",
+      ".recovery/accuracy/ouster-current-ab-v2/observations.json",
+      ".recovery/accuracy/ouster-current-ab-v2/recipe.json",
+      "docker/reference/production_runner.cpp",
+      "tools/run_ouster_ab.py",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J44.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J44.log"
+    ],
+    "reproduction": {
+      "kind": "read-only historical incomplete-run audit",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J44",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J44.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "A decision diagram showing incomplete ROS delivery excluded\u2192direct production runner completed. Evidence-page counts must remain visibly historical, with no fake packet-loss screenshot.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "ROS A/B complete=false; no measured observations in v2.",
+    "visual_after": "Incomplete run excluded.\nCompleted direct C++ study has narrower transport scope."
+  },
+  {
+    "id": "J45",
+    "title": "Declare the Dur360 point-selection adaptation and its control",
+    "symptom": "Original 128-beam labeled scans contain 262,144 points, beyond the 204,800-point engine allocation.",
+    "explanation": "Both feature variants need identical geometry selection. Input point capacity and internal pillar capacity remain different constraints.",
+    "steps": [
+      "Record the original point count before preparation.",
+      "Apply the encoded model ROI and all-zero-XYZ return removal identically to both channels.",
+      "Audit retained counts and occupied pillars.",
+      "Prepare a separate first-10,000-pillar/first-32-point sensitivity control.",
+      "Keep that control out of the production adapter until separately validated."
+    ],
+    "verification": "The new recipe audit reports 65,238\u2013175,559 retained points and 20/32 primary scans above the pillar limit; the bounded control has zero above that limit. Existing first-encountered pillar/32-point controls run again.",
+    "remaining_limit": "ROI and zero-return adaptation changes the input. The deterministic control does not reproduce CUDA thread order or automatically improve accuracy.",
+    "evidence_paths": [
+      "config/ouster_channel_decision.json",
+      ".recovery/accuracy/ouster-production-dur360-v2/recipe.json",
+      ".recovery/accuracy/ouster-production-dur360-bounded-v1/recipe.json",
+      "tools/ouster_point_policy.py",
+      "tests/test_ouster_point_policy.py",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J45.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J45.log"
+    ],
+    "reproduction": {
+      "kind": "frozen recipe count reanalysis plus analytic capacity controls",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J45",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J45.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "Plot original\u2192ROI/nonzero\u2192bounded counts with both channels sharing one geometry branch. Distinguish the model ROI used for points from the \u00b150 m evaluation ROI used for box centers.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "Original labeled scan: 262,144 points; engine capacity: 204,800.",
+    "visual_after": "Declared ROI/nonzero selection: 65,238\u2013175,559 points.\nPillar excess: 20 / 32 primary, 0 / 32 bounded control."
+  },
+  {
+    "id": "J46",
+    "title": "Recommend reflectivity without claiming accepted 3D accuracy",
+    "symptom": "Reflectivity detected four test vehicle footprints, but neither channel reached the required 3D overlap.",
+    "explanation": "BEV evaluates footprint overlap; a vertical displacement can destroy a qualifying 3D match. The recommendation is a fixed experimental encoding/model decision, not a universal sensor ranking.",
+    "steps": [
+      "Hash-check the saved primary production GPU observations.",
+      "Recompute the declared evaluator at confidence 0.4 on the CPU.",
+      "Report per-run Vehicle BEV precision/recall and qualifying 3D matches.",
+      "Inspect the four first-repeat height errors and 3D IoUs.",
+      "Keep the primary precision separate from the bounded-control precision."
+    ],
+    "verification": "New CPU reanalysis of all 320 primary labeled observations reproduces four versus zero test Vehicle BEV matches, mean precision 27.81% versus zero and recall 6.67% versus zero. Both have zero qualifying 3D matches; saved height errors are 0.60\u20131.14 m. The full recomputed report is saved.",
+    "remaining_limit": "Only 16 test scans and 60 in-ROI vehicles; no test Pedestrian matches and no Cyclist ground truth. Repeats are not independent scenes. Primary 27.81% and control 21.99% precision are distinct.",
+    "evidence_paths": [
+      "config/ouster_channel_decision.json",
+      ".recovery/accuracy/ouster-production-dur360-v2/observations.json",
+      "tools/ouster_gt_evaluation.py",
+      "docs/figures/ouster-channel-ground-truth-2026-11-08.png",
+      "docs/figures/ouster-channel-results-summary.png",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J46.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J46.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J46-ground-truth-recomputed.json"
+    ],
+    "reproduction": {
+      "kind": "new CPU evaluation of hash-verified historical production GPU observations",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J46",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J46.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "Use the actual GT/BEV/XZ scene and quantitative result plots with provenance. Show the four 3D IoUs below 0.7, explicitly zero qualifying matches rather than zero overlap.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "Signal: 0 qualifying Vehicle BEV matches at confidence 0.4.",
+    "visual_after": "Reflectivity: 4 / 60; precision 27.81%, recall 6.67%.\nBoth: 0 qualifying 3D matches; height error +0.60\u20131.14 m."
+  },
+  {
+    "id": "J47",
+    "title": "Keep planned scheduling and acceptance separate from delivered code",
+    "symptom": "A design for one pending frame could be mistaken for an implemented low-latency worker.",
+    "explanation": "Current inference runs synchronously in the ROS callback with reliable depth 700. No sustained benchmark can be inferred from short GPU timings or a viewer refresh rate.",
+    "steps": [
+      "Read the actual subscription and callback, not only the design diagram.",
+      "Compare implemented behavior with W06/W07/W08/W09 ledger states.",
+      "Separate queue policy, delivery settings, stage timing and full end-to-end age.",
+      "Leave throughput/accuracy acceptance open until agreed targets and sustained tests exist."
+    ],
+    "verification": "The new read-only audit prints the actual depth-700 callback evidence and open task states/targets. It launches no workload and marks no benchmark or CI gate complete.",
+    "remaining_limit": "The latest-frame worker, configurable detector QoS, sustained latency/memory acceptance, broader failure coverage and CI remain unfinished.",
+    "evidence_paths": [
+      "src/pp_inference_node.cpp",
+      "IMPLEMENTATION_ARCHITECTURE.md",
+      "recovery/tasks.json",
+      "docs/MODEL_VALIDATION_PLAN.md",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J47.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J47.log"
+    ],
+    "reproduction": {
+      "kind": "read-only implementation-versus-plan audit",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J47",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J47.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "A two-lane diagram: implemented synchronous path and clearly dashed proposed worker path. Add real ledger states; do not render a fabricated p99 benchmark chart.",
+    "visual_kind": "open_problem",
+    "visual_before": "Design proposes one active and one pending frame.",
+    "visual_after": "Actual callback remains synchronous, reliable depth 700.\nWorker, sustained metrics and acceptance remain open."
+  },
+  {
+    "id": "J48",
+    "title": "Separate compiler-environment failures from a valid PDF",
+    "symptom": "Built-in compilation repeatedly failed before a complete current thesis PDF could be produced.",
+    "explanation": "Missing TeX bundles, network/DNS problems and font dependencies are compiler-environment evidence, not proof that every source page has been checked.",
+    "steps": [
+      "Read the preserved built-in compiler diagnostics for the actual source.",
+      "Identify the requested resource and failure stage.",
+      "Keep the editable source and original figures intact.",
+      "Report compilation/page-layout acceptance separately from source/link checks."
+    ],
+    "verification": "The new audit reads the actual historical compiler JSON and extracts the compile-failed/DNS/article.cls diagnostic. It does not repair networking, install a TeX distribution or claim a new compile pass. The latest native compiler result is reported separately in the thesis verification record.",
+    "remaining_limit": "A historical separate rendition is not native compilation of the current source. Final PDF and illustrated layout remain unverified until the current source compiles and is inspected.",
+    "evidence_paths": [
+      ".recovery/verification/thesis-history-2026-11-09/latex-compilation.json",
+      "docs/THESIS_DRAFT.tex",
+      "config/documentation_review.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J48.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J48.log"
+    ],
+    "reproduction": {
+      "kind": "read-only historical native-compiler diagnostic audit",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J48",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J48.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "Capture an actual evidence-page rendering of the preserved diagnostic, marked historical. Use the real editor only if available; do not invent a successful PDF preview.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "Native compiler cannot fetch article.cls / TeX bundle.",
+    "visual_after": "Historical compile-failed diagnostic preserved.\nNo source/layout acceptance inferred from this audit."
+  },
+  {
+    "id": "J49",
+    "title": "Preserve source and artifact identity without leaking large assets",
+    "symptom": "SDKs, models, bags and generated output could accidentally enter Git, while mutable image tags could obscure the tested runtime.",
+    "explanation": "Ignore rules protect source control size, not independent evidence backup. Immutable hashes identify an experiment more reliably than a tag. Authentication advice is not an executed login.",
+    "steps": [
+      "Run git check-ignore on representative generated/model paths.",
+      "Keep editable code, reports, figure provenance and small summaries versioned.",
+      "Identify the model and tested image using frozen hashes.",
+      "Back up ignored data and logs independently.",
+      "Keep historical GitHub authentication guidance separate from actual credential actions."
+    ],
+    "verification": "The new audit runs the real git check-ignore command and prints frozen model/image identities. It reads or changes no credentials, stages nothing and pushes nothing.",
+    "remaining_limit": "Ignore rules do not remove already-tracked content or back up ignored evidence. Base tags/non-GPU apt packages are not fully pinned, so source pinning alone is not hermetic reproduction.",
+    "evidence_paths": [
+      ".gitignore",
+      ".dockerignore",
+      "config/model_contract.json",
+      "config/kitti_reference_inventory.json",
+      "docs/PROJECT_HISTORY_AND_DECISION_RECORD.md",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J49.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J49.log"
+    ],
+    "reproduction": {
+      "kind": "actual ignore-rule check plus frozen identity audit",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J49",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J49.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "A source-versus-large-evidence storage diagram and actual ignore-rule evidence page. Do not show credential tokens or simulated authentication screens.",
+    "visual_kind": "source_explanation",
+    "visual_before": "Large generated artifacts and mutable tags weaken traceability.",
+    "visual_after": "Actual ignore rules verified; immutable model/image identities recorded.\nCredentials untouched; ignored evidence needs its own backup.",
+    "subcases": [
+      {
+        "title": "A frozen recipe rejects silent changes",
+        "explanation": "freeze_json compares canonical bytes with an existing record and requires a fresh output directory if they differ. This prevents a new model, selection or policy from quietly replacing a named experiment.",
+        "evidence_paths": [
+          "tools/prepare_kitti_validation.py:44",
+          "tools/kitti_evaluation.py:176",
+          ".recovery/verification/thesis-evidence-2026-11-09/research/J49a.json",
+          ".recovery/verification/thesis-evidence-2026-11-09/research/J49a.log"
+        ],
+        "verification_scope": "Source reviewed; the committed evidence was not edited to force a failure.",
+        "id": "J49a",
+        "visual_kind": "controlled_reproduction",
+        "visual_before": "A frozen recipe already records model A.",
+        "visual_after": "Identical retry succeeds. Model B is refused.\nOriginal recipe bytes remain unchanged.",
+        "steps": [
+          "Create a temporary recipe using the actual freeze_json function.",
+          "Retry identical content and verify it is accepted.",
+          "Change the model identity and record the actual refusal while checking original bytes."
+        ],
+        "reproduction_scope": "Actual freeze_json exercised only in a temporary directory; expected mismatch raises ValueError, child exits1 and original bytes are preserved.",
+        "reproduction": {
+          "kind": "controlled_reproduction",
+          "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/subcase_probe.py J49a",
+          "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J49a.log",
+          "status": "reproduced_expected_refusal",
+          "exit_code": 1
+        },
+        "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/research/J49a.log"
+      }
+    ]
+  },
+  {
+    "id": "J50",
+    "title": "Reject attractive but unsupported quick fixes",
+    "symptom": "Changing a confidence threshold or shifting boxes could make a display cleaner without resolving the model mismatch.",
+    "explanation": "A gate can remove a prediction but cannot move it. A label-fitted offset might improve the inspected data while hiding a training/frame or decoder problem.",
+    "steps": [
+      "Use a known analytic box pair with identical footprints and a one-metre height error.",
+      "Measure BEV and 3D overlap separately.",
+      "Raise the confidence gate and verify it changes selection, not geometry.",
+      "Keep real measured coordinates frozen while investigating the input/training contract.",
+      "Choose any future correction on development data, then evaluate fresh recording-disjoint data."
+    ],
+    "verification": "The new analytic control prints BEV IoU=1 and 3D IoU=1/3 for the elevated box. At the declared 0.7 Vehicle criterion it remains a miss; raising confidence removes the prediction but does not recover the object. Existing vertical and score-boundary tests pass.",
+    "remaining_limit": "The analytic example explains a mechanism; it is not a fitted correction, a real scene result or authorization to change production z coordinates.",
+    "evidence_paths": [
+      "tests/test_ouster_gt_evaluation.py",
+      "tools/ouster_gt_evaluation.py",
+      "docs/OUSTER_CHANNEL_DECISION.md",
+      "docs/MODEL_VALIDATION_PLAN.md",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J50.json",
+      ".recovery/verification/thesis-evidence-2026-11-09/research/J50.log"
+    ],
+    "reproduction": {
+      "kind": "controlled analytic geometry/threshold failure reproduction",
+      "command": "python3 .recovery/verification/thesis-evidence-2026-11-09/research/probe.py J50",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/research/J50.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "A clearly labeled analytic side-view diagram beside actual recorded height errors. Show a confidence gate removing a box without moving it; never portray a post-hoc z shift as a validated fix.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "Analytic elevated box: BEV IoU 1; 3D IoU 1/3.",
+    "visual_after": "Raising confidence removes the box but does not move it.\nNo measured coordinates or production settings changed."
+  }
+]

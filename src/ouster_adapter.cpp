@@ -6,8 +6,10 @@
 namespace pp_infer {
 sensor_msgs::msg::PointCloud2 ouster_to_xyzi(
     const sensor_msgs::msg::PointCloud2& input, const std::string& source,
-    const InputLimits& limits) {
+    const InputLimits& limits, double intensity_clip_max) {
   limits.validate();
+  if (!std::isfinite(intensity_clip_max) || intensity_clip_max < 0)
+    throw std::invalid_argument("intensity_clip_max must be finite and nonnegative (0 disables clipping)");
   if (source != "signal" && source != "reflectivity")
     throw std::invalid_argument("intensity_source must be signal or reflectivity");
   const std::uint16_t endian = 1;
@@ -94,6 +96,7 @@ sensor_msgs::msg::PointCloud2 ouster_to_xyzi(
       value /= limits.intensity_scale;
       if (!std::isfinite(value) || value < 0 || value > std::numeric_limits<float>::max())
         throw std::invalid_argument("Selected Ouster channel produces invalid FLOAT32 intensity");
+      if (intensity_clip_max > 0) value = std::min(value, intensity_clip_max);
       const float intensity = static_cast<float>(value);
       std::memcpy(destination + 12, &intensity, 4);
     }

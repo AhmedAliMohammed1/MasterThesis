@@ -1,10 +1,20 @@
 # Chat discussion record
 
-> **Current startup — 8 November 2026:** deployment uses local source and reuses matching images; base pulls are explicit. `PP_BUILD_ONLY=1` is optional and prepares the image without starting the detector. For the unchanged MOSEP bag, use `start_ouster.sh bag` with `start_ouster_bag.sh`; both use Fast DDS/domain 99 and the same raw topic. One Ctrl+C stops each launcher. See [current startup, replay, RViz and validation](STARTUP_AND_REPLAY.md). Earlier dated observations and quoted conversations retain their historical context.
+## Continuation — 21 November 2026
 
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+The user supplied raw01 and ouster1 as primary experiments, requested playback rate 1.0 and clipped reflectivity/100 at gate 0.3, then requested multi-agent verification across the available Ouster recordings. Three agents verified seven bags and ten streams, with a separate 32-scan labeled reference. All 6,137 source clouds passed format checks and 2,268 measured GPU trials succeeded without establishing a pedestrian fix.
 
-> **Status reviewed 23 October 2026.** The transcript and earlier continuation summaries below retain their original context. They are not a current process inventory or proof of a completed milestone. The documentation review adds the later Ouster/frontal results and screencast figures without rewriting quoted replies. [Current results and evidence](CURRENT_STATUS_AND_RESULTS.md).
+Later screenshots and manual selections established a same-source head/partial-lower-body pair in ouster1 frame 1403. Six additional inferences measured weak, misplaced nearby candidates. The user clarified that the rendered boxes are false detections, corrected an earlier feet label to head, and noted incomplete legs. The user explicitly requested that every screenshot, generated image and draft be retained for documentation. The [latest report](OUSTER_VERIFICATION_AND_PERSON_DIAGNOSIS_20261121.md) and [archive guide](IMAGE_ARCHIVE.md) preserve these corrections. This is a dated summary, not a verbatim reconstruction of unavailable conversation history.
+
+**Historical record, with a current reading guide — 8 November 2026.** The material below preserves the original requests and dated observations. Earlier statements about “current” code, processes, drivers or unpublished work refer to their original session, not the present checkout.
+
+For today's project, use [the documentation index](README.md), [current status](CURRENT_STATUS_AND_RESULTS.md) and [the channel decision](OUSTER_CHANNEL_DECISION.md). The migration and Ouster integration are implemented; reflectivity/255 has the stronger measured vehicle BEV result, while both tested configurations still fail the declared 3D matching criteria. Latest recorded validation includes 1,120 measured channel-study GPU inferences and 119 Python tests.
+
+For thesis writing, cite the measured reports and primary sources rather than quoting an old progress reply as proof. The historical text is retained for traceability; commands in it are not the current setup guide.
+
+Historical quoted replies retain their original absolute file links. Some point to old Desktop or mount paths and no longer resolve; these are preserved as historical text, not current navigation. The documentation validation record lists them separately.
+
+## Preserved historical material
 
 This companion to [the project history](PROJECT_HISTORY_AND_DECISION_RECORD.md) preserves the visible user requests, progress updates and final assistant replies from the original **35 turns**, plus the continuation in “Design resilient edit architecture”, from 1–2 October 2026, through the request for this record and the subsequent request to continue after the usage limit. Dated addenda cover the 3 October accuracy investigation. The [explanation and presentation continuation](#explanation-and-presentation-continuation-saved-5-october-2026), saved on 5 October 2026, records the latest questions and document changes as a summary. Times in the original record use Europe/Berlin (UTC+02:00 on these dates).
 

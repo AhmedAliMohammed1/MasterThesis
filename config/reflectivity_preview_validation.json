@@ -1,0 +1,130 @@
+{
+  "date": "2026-11-21",
+  "encoding": "min(reflectivity / 100.0, 1.0)",
+  "threshold": 0.3,
+  "playback_rate": 1,
+  "primary_bag": "raw01",
+  "image": "sha256:b2107d546220a2ac673ca567c9e4b0c56c024216a9d06510fafd99387b1906c9",
+  "image_tag": "pp-infer:reflectivity-preview-overlay",
+  "base_image": "pp-infer:jazzy-trt10",
+  "base_image_id": "sha256:c6c6f0c3f167d98593360f9dcae9b30b09e7db19a707e95b1116317d87006720",
+  "build": "Native ROS adapter-only build and8 CTest checks passed. New adapter smoke-tested in baseline runtime and copied into derived image. Full dependency image build intentionally canceled; not used for preview.",
+  "tests": {
+    "python_launcher": 16,
+    "native_cpp_ros": 8,
+    "live_exact_cloud_pairs": 3
+  },
+  "source_sha256": {
+    "src/ouster_adapter.cpp": "3120ff7faf541c8a5a849efa9f8de4227947807a3f3b50b0194fa5f0693776be",
+    "src/ouster_adapter_node.cpp": "248a969b0a8d5bb403feb33d61f94fdca3b0cbca460d34eff91e431935518b06",
+    "include/pp_infer/ouster_adapter.hpp": "56a480cb11587a357db97030abe140c432c6959d3ae8431b443751fd3fa91fb1",
+    "launch/ouster_adapter_launch.py": "67c4ae440dfa5a049ce3b72e86513581b356e8e20064bc06ffe803ff392a18b0",
+    "docker/ouster_stack.sh": "0f2fca772e050088a45ba47ccaf5e094f51cceb9b12e53af545400f13f31225b",
+    "tools/start_ouster.sh": "77591e2e1b7b41e868c72ac2f68764ba0417578679d34a5eba24fac90ddd18ee",
+    "tests/ros/test_ouster_adapter.cpp": "8ec7cbbd2c556c7750c9eb252870441aeec0d82f37fb46a6f4e27b2f01351a11",
+    "tests/test_start_ouster.py": "7d00d644ae0454b516eefd07b104f72bd9a03385bb2285962027db4f7ef3f615"
+  },
+  "adapter_binary_sha256": "ad1773bc6f52880b6522b2385b68da1f1fdae7da05b10a4c8dcf998066cdcf21",
+  "live_environment": [
+    "PP_CONFIDENCE_THRESHOLD=0.3",
+    "PP_GPU_INDEX=0",
+    "ROS_DOMAIN_ID=99",
+    "RMW_IMPLEMENTATION=rmw_fastrtps_cpp",
+    "PP_OUSTER_INTENSITY_CLIP_MAX=1.0",
+    "DETECTIONS_TOPIC=/bbox",
+    "PP_WORKSPACE_MIB=512",
+    "OUSTER_POINT_CLOUD_TOPIC=/ouster1/points",
+    "POINT_CLOUD_TOPIC=/point_cloud",
+    "PP_OUSTER_INTENSITY_SOURCE=reflectivity",
+    "PP_OUSTER_INTENSITY_DIVISOR=100.0",
+    "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "DEBIAN_FRONTEND=noninteractive",
+    "ROS_DISTRO=jazzy",
+    "LD_LIBRARY_PATH=/opt/tensorrt/lib:/opt/cuda/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64",
+    "NVIDIA_VISIBLE_DEVICES=all",
+    "NVIDIA_DRIVER_CAPABILITIES=compute,utility"
+  ],
+  "live_verification": {
+    "pairs": [
+      {
+        "header": [
+          3,
+          950064416,
+          "ouster1_lidar"
+        ],
+        "intensity_exact_match": true,
+        "xyz_exact_match_including_nan": true,
+        "source_points": 131072,
+        "output_points": 131072,
+        "min": 0.0,
+        "max": 1.0,
+        "clipped_source_points": 925
+      },
+      {
+        "header": [
+          4,
+          53848,
+          "ouster1_lidar"
+        ],
+        "intensity_exact_match": true,
+        "xyz_exact_match_including_nan": true,
+        "source_points": 131072,
+        "output_points": 131072,
+        "min": 0.0,
+        "max": 1.0,
+        "clipped_source_points": 925
+      },
+      {
+        "header": [
+          4,
+          50002840,
+          "ouster1_lidar"
+        ],
+        "intensity_exact_match": true,
+        "xyz_exact_match_including_nan": true,
+        "source_points": 131072,
+        "output_points": 131072,
+        "min": 0.0,
+        "max": 1.0,
+        "clipped_source_points": 918
+      }
+    ],
+    "duration_s": 1.6949984639977629,
+    "received_detection_arrays": 24,
+    "published_count_min": 1,
+    "published_count_max": 7,
+    "last_diagnostics": {
+      "detector": {
+        "frame_status": "ok",
+        "confidence_threshold": "0.29999999999999999",
+        "post_nms_count": "39",
+        "filtered_count": "36",
+        "published_count": "3",
+        "processed_frames_total": "96",
+        "published_detections_total": "292",
+        "filtered_detections_total": "3343",
+        "invalid_cloud_frames_total": "0",
+        "inference_error_frames_total": "0"
+      },
+      "adapter": {
+        "input_topic": "/ouster1/points",
+        "output_topic": "/point_cloud",
+        "input_publishers": "1",
+        "intensity_source": "reflectivity",
+        "intensity_divisor": "100.000000",
+        "intensity_clip_max": "1.000000",
+        "received": "96",
+        "converted": "96",
+        "rejected": "0",
+        "schema": "1024x128 point_step=48 x(type=7,offset=0,count=1) y(type=7,offset=4,count=1) z(type=7,offset=8,count=1) t(type=6,offset=16,count=1) ring(type=4,offset=20,count=1) range(type=6,offset=24,count=1) signal(type=4,offset=28,count=1) near_ir(type=4,offset=30,count=1) reflectivity(type=2,offset=32,count=1) flags(type=2,offset=33,count=1)",
+        "pointcloud_topics": "/ouster1/points "
+      }
+    }
+  },
+  "limits": [
+    "No change to live point selection or coordinates; this is encoding+score gate preview.",
+    "No confirmed person association or accuracy improvement measured.",
+    "Faster point acquisition and object counts do not prove correctness.",
+    "NVIDIA sources give no verified average-confidence target for exact v1.1 ONNX on Ouster."
+  ]
+}

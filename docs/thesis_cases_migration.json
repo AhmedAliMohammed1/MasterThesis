@@ -1,0 +1,589 @@
+[
+  {
+    "id": "J01",
+    "title": "Old OS, ROS and build settings",
+    "symptom": "The old build combined C++14 settings with an explicit C++11 flag, old CUDA paths and a Foxy-era dependency layout.",
+    "explanation": "Those settings described another software stack. The migration made CPU tests independent and declared ROS and GPU dependencies only for targets that need them.",
+    "steps": [
+      "Read the old CMake file without changing the checkout.",
+      "Select C++17 and explicit target dependencies.",
+      "Configure the CPU-only build with runtime and ROS adapter disabled.",
+      "Build and run the geometry and output-contract controls before enabling ROS/GPU targets."
+    ],
+    "verification": "A fresh isolated current-source CPU configuration and build succeeded on 9 November; both test executables passed. Legacy CMake was inspected through git show 2301135:CMakeLists.txt.",
+    "remaining_limit": "This does not validate a fresh host installation, another GPU or exact inference parity.",
+    "evidence_paths": [
+      "CMakeLists.txt",
+      "PROJECT_REVIEW_AND_UPDATE_PLAN.md",
+      "docs/PROJECT_HISTORY_AND_DECISION_RECORD.md",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/cpu-configure.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/cpu-build.log"
+    ],
+    "reproduction": {
+      "kind": "current_regression_and_historical_source",
+      "command": "cmake -S . -B .recovery/verification/thesis-evidence-2026-11-09/migration/cpu-build -DPP_BUILD_RUNTIME=OFF -DPP_BUILD_ROS_ADAPTER=OFF",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/migration/cpu-configure.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "Show the genuine fresh CMake/build output beside a clearly labeled old-versus-current dependency diagram; no invented old build screenshot.",
+    "visual_kind": "source_explanation",
+    "visual_before": "Old source mixes C++14 and C++11 settings and hardcoded CUDA paths.",
+    "visual_after": "Current CPU-only targets configure and build independently; focused checks pass.",
+    "visual_log_source": "CMakeLists.txt"
+  },
+  {
+    "id": "J02",
+    "title": "Old include and ROS message schema",
+    "symptom": "The source included a nonexistent local point_cloud2_iterator.hpp and wrote obsolete hypothesis fields.",
+    "explanation": "Jazzy stores class ID and score inside hypothesis. Removing the unused include is separate from correctly translating box and header data.",
+    "steps": [
+      "Remove the unused nonexistent include.",
+      "Construct the current nested Jazzy hypothesis fields.",
+      "Copy the source header to the array and each detection.",
+      "Check dimensions, pose and class ID using a small known box."
+    ],
+    "verification": "A safe compiler-only control of the missing include exited 1 with a real fatal error. The freshly compiled current-code probe then emitted class_id=1, source_frame=lidar and the fixture timestamp; the ROS data suite passed.",
+    "remaining_limit": "The old full node was not executed; this is a controlled include failure and a current-schema control.",
+    "evidence_paths": [
+      "PROJECT_REVIEW_AND_UPDATE_PLAN.md",
+      "src/pointcloud_adapter.cpp",
+      "tests/ros/test_ros_adapter.cpp",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/J02-original-include-control.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log"
+    ],
+    "reproduction": {
+      "kind": "controlled_compiler_failure_and_current_code_repair",
+      "command": "g++ -std=c++17 -E -I include .recovery/verification/thesis-evidence-2026-11-09/migration/legacy_missing_include.cpp",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/migration/J02-original-include-control.log",
+      "status": "expected_rejection_and_repaired_control_passed"
+    },
+    "visual_suggestion": "Capture the actual compiler fatal-error output; pair it with the labeled Jazzy-schema section of the authentic current probe report.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "Compiler-only old-include control: the referenced header cannot be found.",
+    "visual_after": "Current production validator constructs Jazzy nested hypotheses and preserves the fixture header.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/migration/J02-original-include-control.log",
+    "visual_log_excerpt": "/media/ae/New Volume1/MasterThesis/.recovery/verification/thesis-evidence-2026-11-09/migration/legacy_missing_include.cpp:1:10: fatal error: pp_infer/point_cloud2_iterator.hpp: No such file or directory\n    1 | #include \"pp_infer/point_cloud2_iterator.hpp\"\n      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\ncompilation terminated."
+  },
+  {
+    "id": "J03",
+    "title": "Malformed, oversized and nonfinite clouds",
+    "symptom": "Malformed rows, missing fields, excessive point counts or NaNs could make point-cloud conversion unsafe or misleading.",
+    "explanation": "A PointCloud2 message has a binary layout. Validate dimensions, strides, field bounds and capacity before conversion; is_dense alone is not proof that points are finite.",
+    "steps": [
+      "Check width, height, point_step, row_step and exact data length.",
+      "Require nonoverlapping scalar little-endian FLOAT32 x/y/z/intensity fields.",
+      "Reject point or byte capacity overflow before allocation.",
+      "Remove nonfinite points even when is_dense is true.",
+      "Require a finite positive intensity divisor and clear stale packed output on failure."
+    ],
+    "verification": "The fresh production-code probe printed exact layout, capacity, missing-field, endian and divisor rejections. Repairing row_step accepted four points; inserting one NaN packed three. All 11 existing ROS data controls passed.",
+    "remaining_limit": "Finite all-zero invalid returns are not removed here. Total point limits do not enforce the internal pillar limits.",
+    "evidence_paths": [
+      "src/pointcloud_adapter.cpp",
+      "include/pp_infer/model_contract.hpp",
+      "tests/ros/test_ros_adapter.cpp",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/ros-data.log"
+    ],
+    "reproduction": {
+      "kind": "controlled_current_validator_reproduction",
+      "command": "source /opt/ros/jazzy/setup.bash; .recovery/verification/thesis-evidence-2026-11-09/migration/migration_probe",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log",
+      "status": "expected_rejections_and_repaired_controls_passed"
+    },
+    "visual_suggestion": "Use the authentic probe sections showing the malformed row and repaired row; add a small byte-layout diagram labeled explanatory.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "Invalid row stride, point capacity, field layout, byte order or divisor is rejected.",
+    "visual_after": "Correct padded rows pack four points; one NaN reduces the packed cloud to three.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log",
+    "visual_log_excerpt": "CASE J03 malformed row: row_step16 for two16-byte points\npacked points=REJECTED: PointCloud2 row_step/data length is inconsistent\n\nCASE J03 repaired padded row: row_step40\npacked points=4"
+  },
+  {
+    "id": "J04",
+    "title": "Degenerate overlap and unstable filtering",
+    "symptom": "Degenerate boxes, unstable overlap calculations or stale outputs could undermine filtering.",
+    "explanation": "Rotated IoU needs robust geometry handling. Suppression should reject invalid configuration, preserve deterministic score ties and replace previous-frame output even for an empty frame.",
+    "steps": [
+      "Validate finite centers, dimensions and yaw; require positive dimensions.",
+      "Compute rotated overlap using bounded polygon clipping.",
+      "Validate IoU threshold and top-N before suppression.",
+      "Use stable score ordering and clear the output on every attempt.",
+      "Check touching, contained, rotated, degenerate and random boxes."
+    ],
+    "verification": "The current-source probe returned IoU=0 for zero-length geometry, rejected a negative NMS threshold and changed a one-box output to zero on an empty frame. Fresh geometry tests passed 15 cases including 2,000 randomized comparisons.",
+    "remaining_limit": "Robust suppression does not move inaccurate boxes or establish detector accuracy.",
+    "evidence_paths": [
+      "src/postprocess.cpp",
+      "tests/core/test_postprocess.cpp",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/cpu-geometry.log"
+    ],
+    "reproduction": {
+      "kind": "controlled_current_geometry_reproduction",
+      "command": "source /opt/ros/jazzy/setup.bash; .recovery/verification/thesis-evidence-2026-11-09/migration/migration_probe",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "Capture actual invalid-threshold and empty-output results; illustrate touching/overlapping footprints with a clearly labeled vector geometry diagram.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "Negative NMS threshold is rejected; zero-length geometry safely yields zero overlap.",
+    "visual_after": "Valid suppression returns one box; a subsequent empty input clears it.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log",
+    "visual_log_excerpt": "CASE J04 degenerate zero length returns safe zero IoU\nIoU=0\nACCEPTED\n\nCASE J04 invalid NMS threshold"
+  },
+  {
+    "id": "J05",
+    "title": "Cross-class suppression policy",
+    "symptom": "Two overlapping predictions with different class IDs can suppress each other.",
+    "explanation": "Production NMS intentionally remains class-agnostic. The CPU core has a class-aware option, but it is not the current production policy or a demonstrated accuracy improvement.",
+    "steps": [
+      "Create two boxes with identical footprints and different class IDs.",
+      "Run the current default NMS and record the retained count.",
+      "Run the core class-aware option on the same candidates.",
+      "Keep the production policy explicit; evaluate a proposed change on tuning data before deployment."
+    ],
+    "verification": "The fresh current-source probe retained one box with the default and two with the class-aware option; the existing same-class/cross-class regression passed.",
+    "remaining_limit": "No production policy was changed, and no class-aware accuracy advantage has been measured.",
+    "evidence_paths": [
+      "src/postprocess.cpp",
+      "tests/core/test_postprocess.cpp",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log"
+    ],
+    "reproduction": {
+      "kind": "controlled_policy_comparison",
+      "command": "source /opt/ros/jazzy/setup.bash; .recovery/verification/thesis-evidence-2026-11-09/migration/migration_probe",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "Show the two real retained counts beside a footprint diagram; label class-aware behavior diagnostic, not deployed.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "Default class-agnostic NMS keeps one of two overlapping boxes with different classes.",
+    "visual_after": "The diagnostic core class-aware option keeps both; production was not changed.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log",
+    "visual_log_excerpt": "CASE J05 production class-agnostic policy\ntwo classes, same footprint: kept=1\nACCEPTED\n\nCASE J05 diagnostic class-aware core option"
+  },
+  {
+    "id": "J06",
+    "title": "Session and usage interruption",
+    "symptom": "A usage/session interruption can lose the next action and confuse what was actually tested.",
+    "explanation": "Recovery saves eligible source, hashes, separate patches and a handoff. Its evidence text is caller-reported, not a substitute for test execution.",
+    "steps": [
+      "Save a checkpoint before a coherent change or long operation.",
+      "Record the next action and actual verification commands.",
+      "On return, read RESUME, PROGRESS and the task ledger.",
+      "Run recovery status and inspect Git drift before continuing.",
+      "Back up ignored large artifacts separately."
+    ],
+    "verification": "All 12 recovery tests passed in isolated temporary repositories. A deliberate corruption in a temporary checkpoint produced the actual Integrity: FAILED status with exit 1.",
+    "remaining_limit": "A local source checkpoint does not buy credits, resume an unavailable model or back up models, bags, engines and the whole machine.",
+    "evidence_paths": [
+      "tools/recovery.py",
+      "tests/test_recovery.py",
+      "recovery/RESUME.md",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/recovery-tests.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/J06-integrity-failure-control.log"
+    ],
+    "reproduction": {
+      "kind": "controlled_temporary_repository_failure",
+      "command": "python3 /tmp/capture_migration_supplement.py",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/migration/J06-integrity-failure-control.log",
+      "status": "expected_integrity_failure_observed"
+    },
+    "visual_suggestion": "Capture the real integrity-failure report from the isolated fixture. Use a separate diagram for session handoff; do not fabricate a historical usage-limit screenshot.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "Intentional corruption of an isolated checkpoint produces Integrity: FAILED.",
+    "visual_after": "The helper detects corrupted checkpoint content; all 12 isolated regression tests pass.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/migration/J06-integrity-failure-control.log",
+    "visual_log_excerpt": "Integrity: FAILED: files/source.cpp\nWARNING: This checkpoint contains unfinished work; treat it as untested.\nHEAD: 3e14976254700250f1481ad6379b1ce4a0037c18 -> 3e14976254700250f1481ad6379b1ce4a0037c18 (unchanged)\nBranch: master -> master\nWorktree drift since checkpoint: none within captured scope"
+  },
+  {
+    "id": "J07",
+    "title": "Checkpoint directory replaced by a file",
+    "symptom": "A tracked directory replaced by a regular file made looking up its former child raise NotADirectoryError.",
+    "explanation": "A deleted child path may have a parent that is now a file. Snapshot collection must record that child as deleted while saving the replacement.",
+    "steps": [
+      "Use a temporary repository with a tracked directory and child file.",
+      "Replace the directory with a regular file.",
+      "Catch NotADirectoryError alongside FileNotFoundError during path inspection.",
+      "Verify the old child is marked deleted and the replacement content is saved."
+    ],
+    "verification": "The isolated fixture recorded component/old.cpp as deleted and saved the replacement component file. Its dedicated regression and the complete 12-test recovery suite passed.",
+    "remaining_limit": "This tests the corrected current behavior; it is not a rerun of the historical buggy implementation.",
+    "evidence_paths": [
+      "tools/recovery.py",
+      "tests/test_recovery.py",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/J07-directory-to-file-control.log"
+    ],
+    "reproduction": {
+      "kind": "controlled_corrected_edge_case",
+      "command": "python3 /tmp/capture_migration_supplement.py",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/migration/J07-directory-to-file-control.log",
+      "status": "passed"
+    },
+    "visual_suggestion": "Capture the authentic fixture manifest/output and explain the before/after directory tree with a small diagram.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "A temporary tracked directory is replaced with a regular file.",
+    "visual_after": "Current checkpoint records the child as deleted and saves the replacement.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/migration/J07-directory-to-file-control.log",
+    "visual_log_excerpt": "Observed deleted child: {\"kind\": \"deleted\"}\nObserved replacement: replacement file\n\nSTDERR"
+  },
+  {
+    "id": "J08",
+    "title": "GPU query failed inside the sandbox",
+    "symptom": "An early nvidia-smi query failed inside the restricted execution environment.",
+    "explanation": "The sandbox did not expose NVIDIA device nodes. A host-accessible read-only query showed the laptop GPU and working driver; the early query did not justify reinstalling the driver.",
+    "steps": [
+      "Check whether the execution environment exposes the GPU devices.",
+      "Compare with an authorized host-side read-only GPU query.",
+      "Record which environment produced each result.",
+      "Continue GPU tests in the environment with actual device access."
+    ],
+    "verification": "The saved environment inventory records RTX 4060 Laptop, 8,188 MiB and driver 595.71.05 outside the sandbox. No new GPU isolation failure was induced.",
+    "remaining_limit": "This is distinct from the later physical-host driver mismatch. The historical inventory alone is not current hardware health.",
+    "evidence_paths": [
+      "config/environment_inventory.json",
+      "docs/PROJECT_HISTORY_AND_DECISION_RECORD.md",
+      "recovery/PROGRESS.md"
+    ],
+    "reproduction": {
+      "kind": "historical_inventory_only",
+      "command": "Read config/environment_inventory.json; no driver fault reproduced.",
+      "log_path": "config/environment_inventory.json",
+      "status": "not_reproduced_to_avoid_environment_disruption"
+    },
+    "visual_suggestion": "Use the genuine recorded inventory and a sandbox-versus-host access diagram; no historical terminal screenshot was located for this specific query.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "Historical sandbox query could not see NVIDIA device nodes.",
+    "visual_after": "Saved host-accessible inventory records the working RTX 4060 and driver.",
+    "visual_log_source": "config/environment_inventory.json",
+    "visual_log_excerpt": "  \"gpu_runtime_validation\": \"nvidia-smi passed outside sandbox; CUDA/TensorRT inference not tested\",\n  \"tensorrt\": \"NvInfer.h not found in /usr/include; other locations not ruled out\",\n  \"selected_driver\": null,\n  \"selected_cuda\": null,\n  \"selected_tensorrt\": null,"
+  },
+  {
+    "id": "J09",
+    "title": "Physical-host kernel and NVIDIA driver mismatch",
+    "symptom": "On the separate alfonso-h017 host, NVIDIA modules did not match the running kernel.",
+    "explanation": "User-supplied physical-host logs reported a real kernel/driver mismatch, unlike the laptop sandbox access issue. Matching branch-595 open modules and driver plus reboot reportedly restored access.",
+    "steps": [
+      "Inspect the actual GPU, running kernel and installed module packages.",
+      "Simulate the package transaction and check mixed Ubuntu/CUDA sources.",
+      "Install only the compatible kernel-module/driver set identified for that host.",
+      "Reboot, then verify GPU access before starting ROS."
+    ],
+    "verification": "The physical-host repair record reports restored GPU access. This documentation task did not reinstall drivers or reproduce the fault.",
+    "remaining_limit": "Later live inference and accuracy on that RTX A4500 Embedded host remain unverified by the supplied logs. These steps are historical, not a universal driver prescription.",
+    "evidence_paths": [
+      "docs/LIVE_OUSTER_TROUBLESHOOTING.md"
+    ],
+    "reproduction": {
+      "kind": "historical_user_log_summary_only",
+      "command": "Read docs/LIVE_OUSTER_TROUBLESHOOTING.md physical-host repair history.",
+      "log_path": "docs/LIVE_OUSTER_TROUBLESHOOTING.md",
+      "status": "not_reproduced_hardware_repair"
+    },
+    "visual_suggestion": "Use a clearly labeled host/kernel/module compatibility diagram. The current repository retains a supplied-log summary, not a verified original driver-error screenshot.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "Separate physical host: installed NVIDIA modules did not match its kernel.",
+    "visual_after": "Supplied-log summary reports compatible modules/driver and reboot restored access.",
+    "visual_log_source": "docs/LIVE_OUSTER_TROUBLESHOOTING.md",
+    "visual_log_excerpt": "\n"
+  },
+  {
+    "id": "J10",
+    "title": "Ouster Fast CDR serialization symbol failure",
+    "symptom": "The Ouster drivers reported an undefined Fast CDR serialization symbol on the physical host.",
+    "explanation": "The driver and ROS/DDS serialization packages were incompatible. The supplied logs reported that updating the compatible package group restored launch.",
+    "steps": [
+      "Stop the affected ROS nodes.",
+      "Inspect versions of ouster-ros, ouster-sensor-msgs, fastcdr, fastrtps and typesupport/RMW packages.",
+      "Update a compatible group after reviewing package resolution.",
+      "Start the driver and check its actual topic schema."
+    ],
+    "verification": "The physical-host record reports launch recovery and an observed 128x1024 cloud with signal and reflectivity but no intensity. No serialization library fault was deliberately created.",
+    "remaining_limit": "Updating one arbitrary library is not a reproducible general fix. Successful driver launch is not successful model inference.",
+    "evidence_paths": [
+      "docs/LIVE_OUSTER_TROUBLESHOOTING.md"
+    ],
+    "reproduction": {
+      "kind": "historical_user_log_summary_only",
+      "command": "Read docs/LIVE_OUSTER_TROUBLESHOOTING.md physical-host repair history.",
+      "log_path": "docs/LIVE_OUSTER_TROUBLESHOOTING.md",
+      "status": "not_reproduced_dependency_fault"
+    },
+    "visual_suggestion": "Use a labeled package-compatibility diagram and the preserved schema report; do not label a newly drawn diagram as the original error screenshot.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "Separate physical host: Ouster driver reports an undefined serialization symbol.",
+    "visual_after": "Supplied-log summary reports compatible Ouster/ROS/DDS packages restored launch.",
+    "visual_log_source": "docs/LIVE_OUSTER_TROUBLESHOOTING.md",
+    "visual_log_excerpt": ""
+  },
+  {
+    "id": "J11",
+    "title": "Model and plugin compatibility uncertainty",
+    "symptom": "A pretrained ONNX was available, but compatible TensorRT libraries and required plugin creators were not established.",
+    "explanation": "A trained model still needs an inference runtime and plugins. TensorRT 10.16.1.11 was verified with the exact model; the proposed TensorRT 11 package was not treated as a drop-in replacement.",
+    "steps": [
+      "Hash and inventory the ONNX and any separate trainable artifact.",
+      "Inspect input/output tensor metadata.",
+      "Check VoxelGeneratorPlugin, PillarScatterPlugin and DecodeBbox3DPlugin creators.",
+      "Parse the exact ONNX and build a target-GPU engine.",
+      "Run a synthetic smoke test after actual linking."
+    ],
+    "verification": "The historical runtime inventory and smoke log record all three creators, successful engine creation and ten synthetic frames. No model, SDK or GPU experiment was rerun for this case.",
+    "remaining_limit": "Structural and smoke checks do not prove original training parity, object accuracy or TensorRT 11 compatibility.",
+    "evidence_paths": [
+      "config/model_inventory.json",
+      "config/runtime_inventory.json",
+      ".recovery/verification/w04-gpu-smoke.txt",
+      ".recovery/verification/w01-engine-build.txt"
+    ],
+    "reproduction": {
+      "kind": "historical_runtime_validation",
+      "command": "Read saved runtime inventory and GPU smoke log.",
+      "log_path": ".recovery/verification/w04-gpu-smoke.txt",
+      "status": "historical_pass_not_rerun"
+    },
+    "visual_suggestion": "Use the genuine historical smoke output and a model \u2192 compatible plugins \u2192 engine diagram; distinguish ONNX from the trainable TLT.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "An ONNX alone does not establish compatible runtime and plugin availability.",
+    "visual_after": "Saved actual SDK smoke reports repeated inference, capacity rejection and empty-result checks.",
+    "visual_log_source": ".recovery/verification/w04-gpu-smoke.txt",
+    "visual_log_excerpt": "PASS: load, capacity rejection, repeated inference, profiling and empty result"
+  },
+  {
+    "id": "J12",
+    "title": "System TensorRT installation unavailable",
+    "symptom": "System SDK installation could not proceed through the intended sudo-based route.",
+    "explanation": "The actual native workaround extracted the repository DEB and selected component package data into a local SDK, without running maintainer scripts or registering host packages. Docker later used a separate package-install recipe.",
+    "steps": [
+      "Verify the downloaded repository DEB hash.",
+      "Extract it into a dedicated local SDK directory.",
+      "Extract compatible shared libraries, headers and tools; omit unused static archives.",
+      "Source the local environment helper.",
+      "Verify the actual plugin registry and linker/runtime before inference."
+    ],
+    "verification": "The historical runtime inventory and SDK build/smoke records identify the local extracted SDK and successful native execution. No extraction or host install was repeated.",
+    "remaining_limit": "Local extraction does not create a complete system package installation. SDK binaries and installers are excluded from source checkpoints.",
+    "evidence_paths": [
+      "docs/local_runtime.md",
+      "tools/env_tensorrt.sh",
+      "config/runtime_inventory.json",
+      ".recovery/verification/w04-sdk-build.txt"
+    ],
+    "reproduction": {
+      "kind": "historical_installation_method",
+      "command": "Read docs/local_runtime.md and config/runtime_inventory.json.",
+      "log_path": "config/runtime_inventory.json",
+      "status": "historical_pass_not_rerun"
+    },
+    "visual_suggestion": "Use a clear DEB \u2192 local extraction \u2192 environment \u2192 validation diagram; do not invent a sudo prompt screenshot.",
+    "visual_kind": "source_explanation",
+    "visual_before": "Normal system SDK installation was unavailable through the intended sudo route.",
+    "visual_after": "Recorded native method uses a local extracted SDK; Docker later installs its own packages.",
+    "visual_log_source": "docs/local_runtime.md"
+  },
+  {
+    "id": "J13",
+    "title": "Binding-position and engine assumptions",
+    "symptom": "The old runtime depended on binding positions and assumed an engine interface.",
+    "explanation": "A deserialized engine is not automatically compatible. The migrated runtime checks names, roles, types, format, device location, shapes, profile and capacity before binding tensors.",
+    "steps": [
+      "Require the supported four named I/O tensors and one profile.",
+      "Check FLOAT32/INT32 types, device locations and linear format.",
+      "Resolve the batch-one shapes and verify capacities.",
+      "Set named tensor addresses and execute enqueueV3.",
+      "Reject an incompatible engine before processing clouds."
+    ],
+    "verification": "Current source was inspected; the historical SDK configure/build/smoke logs record actual TensorRT 10 execution. Fresh output-contract tests also passed, but do not instantiate an incompatible GPU engine.",
+    "remaining_limit": "A full incompatible-engine matrix and exact original-model numerical parity remain incomplete.",
+    "evidence_paths": [
+      "src/pointpillar.cpp",
+      "include/pp_infer/model_contract.hpp",
+      ".recovery/verification/w04-sdk-configure.txt",
+      ".recovery/verification/w04-gpu-smoke.txt"
+    ],
+    "reproduction": {
+      "kind": "source_review_and_historical_gpu_validation",
+      "command": "Read src/pointpillar.cpp and saved SDK/GPU logs.",
+      "log_path": ".recovery/verification/w04-gpu-smoke.txt",
+      "status": "historical_pass_no_new_gpu_reproduction"
+    },
+    "visual_suggestion": "Show the actual named-contract source with a compact input/output tensor table, plus genuine saved smoke output; label source inspection as source inspection.",
+    "visual_kind": "source_explanation",
+    "visual_before": "A positional engine assumption does not validate tensor identity or capacity.",
+    "visual_after": "Current runtime checks named roles, types, format and resolved shapes before inference.",
+    "visual_log_source": "src/pointpillar.cpp",
+    "visual_log_excerpt": "      throw std::runtime_error(\"Require four named I/O tensors and one batch-one profile\");\n    for (std::size_t i = 0; i < names.size(); ++i) {\n      const auto mode = i < 2 ? nvinfer1::TensorIOMode::kINPUT : nvinfer1::TensorIOMode::kOUTPUT;\n      const auto type = i % 2 == 0 ? nvinfer1::DataType::kFLOAT : nvinfer1::DataType::kINT32;\n      if (engine->getTensorIOMode(names[i]) != mode || engine->getTensorDataType(names[i]) != type ||"
+  },
+  {
+    "id": "J14",
+    "title": "Repeated allocation and stream ownership",
+    "symptom": "Per-frame allocations, resource lifetime ambiguity and unchecked output counts could create stale data or unsafe copies.",
+    "explanation": "Owned persistent resources remove repeated allocation. The runtime copies the result count first, checks it against capacity and only then copies box rows; serious GPU-work failure latches the runtime as faulted.",
+    "steps": [
+      "Create and own the runtime, engine, context, stream and buffers once.",
+      "Reuse buffers and clear input padding/output count for each cloud.",
+      "Copy and validate the output count before copying rows.",
+      "Validate decoded classes, geometry and scores before publication.",
+      "Drain work during failure unwinding and require restart after a fault."
+    ],
+    "verification": "The freshly compiled probe rejected counts -1 and 11 for capacity 10, then accepted count 10. Fresh output-contract tests passed; historical GPU smoke exercised repeated inference and cleanup.",
+    "remaining_limit": "The current probe validates pure CPU count behavior, not injected GPU faults or complete resource/memory safety.",
+    "evidence_paths": [
+      "src/pointpillar.cpp",
+      "include/pp_infer/cuda_resources.hpp",
+      "include/pp_infer/output_contract.hpp",
+      "tests/runtime/test_output_contract.cpp",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/cpu-output-contract.log"
+    ],
+    "reproduction": {
+      "kind": "controlled_current_count_validation",
+      "command": "source /opt/ros/jazzy/setup.bash; .recovery/verification/thesis-evidence-2026-11-09/migration/migration_probe",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log",
+      "status": "expected_rejections_and_repaired_count_passed"
+    },
+    "visual_suggestion": "Capture authentic rejected/accepted count output and illustrate count-first transfer; use saved smoke output for repeated GPU execution claims.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "Counts below zero or above engine capacity are rejected before box-row transfer.",
+    "visual_after": "A count equal to capacity is accepted; GPU fault handling remains a separate limit.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log",
+    "visual_log_excerpt": "CASE J14 negative output count\nREJECTED: Output count outside engine capacity\n\nCASE J14 output count11 exceeds capacity10\nREJECTED: Output count outside engine capacity"
+  },
+  {
+    "id": "J15",
+    "title": "Real SDK version-macro and profiler incompatibilities",
+    "symptom": "Actual TensorRT headers used macro aliases, and TensorRT 10.16 rejected setting the context profiler to null.",
+    "explanation": "Parsing a literal version from a header was insufficient. The build now asks the preprocessor; the runtime keeps an owned profiler attached and gates its accumulation.",
+    "steps": [
+      "Evaluate NV_TENSORRT_MAJOR with a compiler preprocessor guard.",
+      "Reject unsupported major versions before building the runtime.",
+      "Keep the profiler alive for the context lifetime.",
+      "Toggle accumulation instead of passing null.",
+      "Run actual SDK smoke checks; record callback overhead as unresolved."
+    ],
+    "verification": "A compiler-only control using macro aliases rejected major 8 with TensorRT 10 required and accepted major 10. The historical record explains the null-profiler failure and subsequent GPU smoke success.",
+    "remaining_limit": "The null-profiler GPU failure was not rerun. Callback overhead is not proven absent when timing accumulation is disabled.",
+    "evidence_paths": [
+      "CMakeLists.txt",
+      "src/pointpillar.cpp",
+      "recovery/PROGRESS.md",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/J15-version-8-control.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/J15-version-10-control.log",
+      ".recovery/verification/w04-gpu-smoke.txt"
+    ],
+    "reproduction": {
+      "kind": "controlled_preprocessor_guard_and_historical_profiler_fix",
+      "command": "g++ -fsyntax-only -I .recovery/verification/thesis-evidence-2026-11-09/migration/version-10 .recovery/verification/thesis-evidence-2026-11-09/migration/version-10/guard.cpp",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/migration/J15-version-8-control.log",
+      "status": "expected_major8_rejection_major10_alias_accepted"
+    },
+    "visual_suggestion": "Capture real compiler rejection and clean alias acceptance; describe profiler failure using dated source/log evidence, not a fabricated screenshot.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "Synthetic major-8 header is rejected by the same preprocessor guard used in CMake.",
+    "visual_after": "Macro-aliased major 10 passes; historical null-profiler fix retains an owned profiler.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/migration/J15-version-8-control.log",
+    "visual_log_excerpt": "/media/ae/New Volume1/MasterThesis/.recovery/verification/thesis-evidence-2026-11-09/migration/version-8/guard.cpp:3:2: error: #error TensorRT 10 required\n    3 | #error TensorRT 10 required\n      |  ^~~~~"
+  },
+  {
+    "id": "J16",
+    "title": "Build, ROS logging and shell setup blockers",
+    "symptom": "ROS builds needed C/MPI target support, writable logging and compatible shell setup; an unsourced probe could not load librclcpp.so.",
+    "explanation": "Different blockers occurred at different layers. Enable C only for ROS/PCL targets, give tests a writable ROS_LOG_DIR and relax nounset only while sourcing generated setup scripts. Native executables also need the ROS library environment.",
+    "steps": [
+      "Keep the standalone CPU build independent of ROS/PCL.",
+      "Enable C in the ROS build path to satisfy exported MPI targets.",
+      "Use a build-local writable ROS log directory.",
+      "Source ROS and the overlay with scoped nounset relaxation.",
+      "Rerun the same executable and compare the actual failure and success."
+    ],
+    "verification": "On 9 November the isolated compiled probe really exited 127 with missing librclcpp.so before ROS setup. The same executable succeeded after sourcing Jazzy. The fresh CPU configure and existing ROS data tests also passed.",
+    "remaining_limit": "The newly observed loader failure is a controlled environment mistake, not a claimed replay of the original MPI/logging failure. No system package change was made.",
+    "evidence_paths": [
+      "CMakeLists.txt",
+      "docker/entrypoint.sh",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/J16-unsourced-probe-failure.log",
+      ".recovery/verification/thesis-evidence-2026-11-09/migration/production-validator-probe.log",
+      ".recovery/verification/w04-sdk-configure.txt"
+    ],
+    "reproduction": {
+      "kind": "actual_safe_environment_failure_then_repair",
+      "command": "source /opt/ros/jazzy/setup.bash; .recovery/verification/thesis-evidence-2026-11-09/migration/migration_probe",
+      "log_path": ".recovery/verification/thesis-evidence-2026-11-09/migration/J16-unsourced-probe-failure.log",
+      "status": "observed_loader_failure_then_sourced_success"
+    },
+    "visual_suggestion": "Capture the genuine missing-library stderr and the successful sourced probe report. Keep MPI/logging history as a separate labeled diagram or saved configure output.",
+    "visual_kind": "controlled_reproduction",
+    "visual_before": "New isolated executable really fails to load librclcpp.so without ROS setup.",
+    "visual_after": "Sourcing Jazzy allows the same executable to run all current validator controls.",
+    "visual_log_source": ".recovery/verification/thesis-evidence-2026-11-09/migration/J16-unsourced-probe-failure.log",
+    "visual_log_excerpt": "/media/ae/New Volume1/MasterThesis/.recovery/verification/thesis-evidence-2026-11-09/migration/migration_probe: error while loading shared libraries: librclcpp.so: cannot open shared object file: No such file or directory"
+  },
+  {
+    "id": "J17",
+    "title": "Sanitizer coverage limitations",
+    "symptom": "Some sanitizer runs could not support the requested coverage; ROS node creation exposed an allocator type mismatch and early GPU instrumentation failed.",
+    "explanation": "A sanitizer result has a limited scope. The record separates passing CPU/data checks, distribution ROS allocator behavior, unavailable leak checking and incomplete GPU memory acceptance.",
+    "steps": [
+      "Run focused CPU address/undefined-behavior checks in a separate build.",
+      "Record why LeakSanitizer is disabled in the traced environment.",
+      "Keep the original ROS allocator mismatch log.",
+      "Test parameter construction normally and instrument data paths separately.",
+      "Distinguish the failed early GPU instrumentation from the later two zero-error allocation probes."
+    ],
+    "verification": "The original saved log contains AddressSanitizer new-delete-type-mismatch through rcutils_string_map_fini. The early Compute Sanitizer log says the application terminated before its first instrumented call. Later reference records report two zero-error allocation checks. No harmful allocator/sanitizer environment was recreated.",
+    "remaining_limit": "Two allocation probes do not clear internal pooled tensor bounds, races or full GPU failure acceptance. The original allocator error was not hidden with blanket suppression.",
+    "evidence_paths": [
+      ".recovery/verification/w03-system-allocator-asan.txt",
+      ".recovery/verification/w03-sanitized-data.txt",
+      ".recovery/verification/w05-gpu-memcheck.txt",
+      "docs/MODEL_REFERENCE_COMPARISON.md",
+      "CMakeLists.txt"
+    ],
+    "reproduction": {
+      "kind": "original_saved_failure_logs_only",
+      "command": "Read the saved ASan and early Compute Sanitizer logs.",
+      "log_path": ".recovery/verification/w03-system-allocator-asan.txt",
+      "status": "historical_failure_preserved_not_recreated"
+    },
+    "visual_suggestion": "Screenshot the authentic historical ASan trace and early instrumentation error in a labeled evidence report; do not imply the later limited probes resolve every warning.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "Saved ASan trace reports new-delete-type-mismatch in the installed ROS allocator.",
+    "visual_after": "Focused data checks and normal parameter checks are separated; full sanitizer acceptance remains open.",
+    "visual_log_source": ".recovery/verification/w03-system-allocator-asan.txt",
+    "visual_log_excerpt": "==52==ERROR: AddressSanitizer: new-delete-type-mismatch on 0x5060000cef00 in thread T0:\n  object passed to delete has wrong type:\n  size of the allocated type:   64 bytes;\n  size of the deallocated type: 1 bytes.\n    #0 0x7154284ff5e8 in operator delete(void*, unsigned long) ../../../../src/libsanitizer/asan/asan_new_delete.cpp:164"
+  },
+  {
+    "id": "J18",
+    "title": "Dependency resolution and disk-full builds",
+    "symptom": "Docker package resolution mixed CUDA variants, and bulky build inputs exhausted storage in earlier attempts.",
+    "explanation": "Pinning only top-level TensorRT packages let dependencies select another CUDA variant. Shared-library/header-only component selection reduced unused static/development content. Disk space for Docker is separate from the source drive.",
+    "steps": [
+      "Inspect the resolver error and exact conflicting package variants.",
+      "Pin the compatible lean, dispatch and plugin dependencies too.",
+      "Install only required CUDA components and shared/header packages.",
+      "Check the actual Docker storage filesystem before rebuilding.",
+      "Remove only identified disposable task-owned cache, then rerun the build."
+    ],
+    "verification": "The preserved automatic-deploy-first-failure log genuinely reports cuda12.9 dependencies with cuda13.2 candidates and exit 100. The current Dockerfile explicitly pins the compatible group; later saved full builds passed. Disk-full history is documented, not deliberately reproduced.",
+    "remaining_limit": "No fresh package installation or disk-full fault was induced. Base tags and all apt dependencies are not a fully hermetic supply chain.",
+    "evidence_paths": [
+      "Dockerfile",
+      ".recovery/verification/automatic-deploy-first-failure.txt",
+      ".recovery/verification/automatic-dockerfile-only-build.txt",
+      "docs/PROJECT_HISTORY_AND_DECISION_RECORD.md",
+      "config/docker_inventory.json"
+    ],
+    "reproduction": {
+      "kind": "original_saved_dependency_failure_and_repair_record",
+      "command": "Read .recovery/verification/automatic-deploy-first-failure.txt and the final Dockerfile.",
+      "log_path": ".recovery/verification/automatic-deploy-first-failure.txt",
+      "status": "historical_failure_and_later_build_pass_preserved"
+    },
+    "visual_suggestion": "Capture the actual unmet-dependency lines. Explain disk pressure with a source-disk versus Docker-storage diagram; do not generate a fake disk-full terminal image.",
+    "visual_kind": "historical_evidence",
+    "visual_before": "Saved Docker resolver error mixes required cuda12.9 with selected cuda13.2 dependencies.",
+    "visual_after": "Current Dockerfile pins the compatible group; later recorded full builds pass.",
+    "visual_log_source": ".recovery/verification/automatic-deploy-first-failure.txt",
+    "visual_log_excerpt": "#8 10.04 The following packages have unmet dependencies:\n#8 10.11  libnvinfer-bin : Depends: libnvinfer-lean10 (= 10.16.1.11-1+cuda12.9) but 10.16.1.11-1+cuda13.2 is to be installed\n#8 10.11                   Depends: libnvinfer-vc-plugin10 (= 10.16.1.11-1+cuda12.9) but 10.16.1.11-1+cuda13.2 is to be installed\n#8 10.11                   Depends: libnvinfer-dispatch10 (= 10.16.1.11-1+cuda12.9) but 10.16.1.11-1+cuda13.2 is to be installed\n#8 10.11 E: Unable to correct problems, you have held broken packages."
+  }
+]

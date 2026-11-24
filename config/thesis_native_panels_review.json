@@ -1,0 +1,87 @@
+{
+  "review_date_local": "2026-11-09",
+  "request": "Replace J-series report screenshots with editable tables, flowcharts and simple explanations.",
+  "multi_agent_roles": [
+    "LaTeX implementation",
+    "Readable manuscript implementation",
+    "Independent evidence/structure review"
+  ],
+  "scope": "Existing thesis edited in place. Actual RViz/terminal captures and scientific figures retained.",
+  "counts": {
+    "docs/THESIS_DRAFT.tex": {
+      "native_tables": 54,
+      "native_flowcharts": 10,
+      "numbered_steps": 260,
+      "preserved_nonreport_image_references": 6,
+      "steps_unchanged": true,
+      "real_images_unchanged": true
+    },
+    "docs/THESIS_DRAFT.md": {
+      "native_tables": 54,
+      "native_flowcharts": 7,
+      "numbered_steps": 260,
+      "preserved_nonreport_image_references": 12,
+      "steps_unchanged": true,
+      "real_images_unchanged": true
+    },
+    "docs/THESIS_CASEBOOK.md": {
+      "native_tables": 54,
+      "native_flowcharts": 7,
+      "numbered_steps": 257,
+      "preserved_nonreport_image_references": 6,
+      "steps_unchanged": true,
+      "real_images_unchanged": true
+    }
+  },
+  "case_groups": 50,
+  "additional_subcases": 4,
+  "small_steps_preserved": 257,
+  "archival_policy": "All54 old report PNGs and capture provenance retained as historical assets; none embedded in the current manuscripts.",
+  "static_check_errors": [],
+  "frozen_config_files_unchanged": [
+    "config/demo_inventory.json",
+    "config/docker_inventory.json",
+    "config/environment_inventory.json",
+    "config/kitti_accuracy_inventory.json",
+    "config/kitti_front_inventory.json",
+    "config/kitti_reference_inventory.json",
+    "config/kitti_sources.json",
+    "config/kitti_validation_inventory.json",
+    "config/launcher_fix_validation.json",
+    "config/model_contract.json",
+    "config/model_inventory.json",
+    "config/ouster_adapter_bag_validation.json",
+    "config/ouster_camera_inventory.json",
+    "config/ouster_channel_decision.json",
+    "config/ouster_demo_inventory.json",
+    "config/ouster_detail_inventory.json",
+    "config/ouster_feature_inventory.json",
+    "config/ouster_fresh_visual_validation.json",
+    "config/runtime_inventory.json",
+    "config/visualization_inventory.json"
+  ],
+  "runtime_changes": [],
+  "new_experiments": false,
+  "new_screenshots": false,
+  "pdf_layout_verified": false,
+  "native_compilation": {
+    "kind": "compile-failed",
+    "cause": "Built-in compiler cannot download article.cls because relay.fullyjustified.net DNS lookup fails. Compilation stops before validating the source.",
+    "evidence": ".recovery/verification/thesis-native-panels-2026-11-09/native-compile.json",
+    "pdf_generated": false,
+    "page_layout_verified": false
+  },
+  "source_sha256": {
+    "docs/THESIS_DRAFT.tex": "e7a227fce1039eb81080cac5666d616ee4c9661fc5161bd3797f495e360a607a",
+    "docs/THESIS_DRAFT.md": "1c4ed4b7d3e241c64f4fb1b6ba456d8f2a14b1f188a3c54dbc39bf80ae481cff",
+    "docs/THESIS_CASEBOOK.md": "2481d3b099b96bd22808318aa27e877b1207367c0aac2bc6ba8c394869a63f1d"
+  },
+  "publication": "Local uncommitted edits; no push.",
+  "remaining_overviews_followup": "config/thesis_remaining_figures_review.json",
+  "local_compilation_followup": {
+    "record": "config/thesis_local_compile_review.json",
+    "exit_code": 0,
+    "pages": 93,
+    "full_layout_verified": false
+  }
+}

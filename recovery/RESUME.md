@@ -1,130 +1,105 @@
-# Resume pp_infer work after interrupted credit, context or tooling
+# Resume work without losing the current state
 
-> **Current startup — 8 November 2026:** deployment uses local source and reuses matching images; base pulls are explicit. `PP_BUILD_ONLY=1` is optional and prepares the image without starting the detector. For the unchanged MOSEP bag, use `start_ouster.sh bag` with `start_ouster_bag.sh`; both use Fast DDS/domain 99 and the same raw topic. One Ctrl+C stops each launcher. See [current startup, replay, RViz and validation](../docs/STARTUP_AND_REPLAY.md). Earlier dated observations and quoted conversations retain their historical context.
+## Completed candidate development comparison — 24 November 2026
 
-> **Latest update — 23 October 2026:** confidence filtering and counters were pushed/deployed from `8a87a73`; 73 Python tests, five C++/ROS tests and 60 deployed GPU replay frames passed. The trial detector, KITTI player and RViz were then stopped at the user's request (19:47 UTC); image, engine cache and frozen results are preserved. Accuracy acceptance remains open. [Verified results and restart instructions](../docs/CURRENT_STATUS_AND_RESULTS.md#trial-shutdown-and-restart--23-october-2026).
+Read [candidate comparison and next evidence](../docs/CANDIDATE_MODEL_COMPARISON_20261124.md). Dur360 continuation is complete: 96 unique records, original 67 preserved plus 29 missing records, identical repeated boxes. Final paired scoring and independent integrity/metric checks are in `.recovery/verification/candidate-eval-20261124/`. At gate 0.3, historical Ouster test pedestrian counts improve from 0 TP / 12.667 FP / 6 FN to 3 / 11 / 3. Vehicle false positives worsen; frame 1403 still has no pedestrian box containing both landmarks. KITTI has concrete overlap with upstream split lists. These are development results, not unseen acceptance. Next required evidence: independent complete primary-bag 3D labels, verified calibration, frozen held-out scenes, extension/export parity and live checks. Preserve original artifacts and all existing changes. The extracted offline runner is `tools/experimental_pointpillars.py`; its new implementation checks are separate from the original inference evidence.
 
-> **Status reviewed 23 October 2026.** Start from the consolidated current results. Feature `8a87a73` and verification docs `8fc05d2` are published; old “uncommitted” statements below describe earlier sessions. No saved PID/container record establishes what is currently running. Keep W01/W04/W05/W07/W09 in progress, W06/W08 pending. [Current results and evidence](../docs/CURRENT_STATUS_AND_RESULTS.md).
+## Current continuation — 23 November 2026
 
-## Latest published runtime — 23 October 2026
+Read [the A–Z protocol](../docs/POINTPILLARS_SOLUTION_PROTOCOL_20261123.md). The checkout is now `/media/ae/New Volume/MasterThesis`; recheck historical mount/process claims. The 78 preserved height/quantile trials did not fix landmark coverage. Accuracy remains open; absolute targets are undecided, and improvement must be measured against the frozen baseline. Local failure-output clearing is a separate freshness repair; consult `.recovery/verification/solution-20261123` for current checks. Preserve the many preexisting modifications.
 
-User authorized pushing and trying the feature. Source `8a87a7378c8c11ad187e7c19bc4ecc6e649948c8` is pushed to `origin/main` and deployed. The trial `pointpillars` container, `pointpillars-kitti-front-bag` player and RViz ran on domain 0, threshold **0.5**, then were stopped at the user's request at 19:47 UTC. Shutdown evidence is `shutdown.json` beside the deployment report; follow-up inspection confirmed their exit. Check actual state and `.recovery/verification/published-deployment/deployment.json` before process management. Host GPU execution works; earlier restricted-context driver failures do not describe the host deployment. Existing engine volume was reused.
+## Latest evidence handoff — 21 November 2026
 
-73 Python tests, five Docker-build C++/ROS tests, native GPU smoke and 60 native plus 60 deployed matched replay frames passed. Actual RViz rendering of boxes, scores and counters was visually verified. Detailed results are in [current status](../docs/CURRENT_STATUS_AND_RESULTS.md) and the new progress entry. Old local-only/no-GPU statements below describe earlier checks. `prompt.md` remains the user's untracked file. W07 remains in progress and frozen accuracy results are unchanged.
+Read `docs/OUSTER_VERIFICATION_AND_PERSON_DIAGNOSIS_20261121.md`, `config/ouster_verification_20261121.json` and `config/user_person_point_measurements_20261121.json`. The exact identified case is ouster1 frame 1403, record time 1794397517854145698 ns, offset +70.05539416 s. Head and partial lower body are verified in the same source scan; feet and full height remain unmeasured. No live height correction or sampling policy was enabled.
 
-## Initial documentation handoff — 23 October 2026 (superseded by published trial above)
+Retain all images: the gallery is under `.recovery/documentation-images/2026-11-21`, named figures under `docs/figures/2026-11-21`, controlled evidence under `.recovery/verification/ouster-multi-agent-20261121`, and the exact case under `.recovery/verification/user-person-exact-scan-20261121`. The last configured preview was ouster1, rate 1, clipped /100, gate 0.3; check actual process state. Use record timestamps and source hashes because headers wrap and repeat. Preserve unrelated existing changes.
 
-**Initial feature implementation (historical check):** [confidence filtering and monitoring](../docs/CONFIDENCE_FILTER_AND_MONITORING.md) is now implemented locally. The node defaults to score >= 0.5, supports live `confidence_threshold` updates, and publishes derived `/bbox/stats` diagnostics and `/bbox/count` RViz text (following detection-topic remapping). Seven RViz profiles include the count display. Five C++/ROS tests passed with real isolated DDS publication, and 67 Python tests passed, followed by a focused baseline-check rerun. The full TensorRT-enabled package builds under `.recovery/confidence-filter-runtime/`; no new GPU execution or desktop count rendering was possible because the driver was inaccessible. Existing containers were not rebuilt/replaced, and remote-source Docker builds still require the feature in the selected published Git revision.
+Reviewed 8 November 2026. Start here after an interrupted session. This is a handoff guide, not a record of currently running processes.
 
-New labeled baseline collection disables/verifies this additional gate, matching per-frame statistics by header. Preserve frozen old results and use a fresh output directory for changed runtime/exporter identities. W07 remains in progress for launch/QoS/timing/worker acceptance; do not mistake the publication counters for the planned full timing/worker implementation. Earlier documentation-only statements below retain their original scope. Current feature logs: `.recovery/verification/confidence-filter/`.
+## Read these first
 
-Read [current status/results](../docs/CURRENT_STATUS_AND_RESULTS.md) first. The 19 existing project Markdown guides/history files and all three LaTeX sources were refreshed; the contributor agreement and user `prompt.md` were preserved. Two lossless PNGs and source/frame hashes are under `docs/figures/`. The initial refresh had six slides; the filtering-trial continuation adds a seventh. Old PDFs are historical.
+1. [Current status and measured results](../docs/CURRENT_STATUS_AND_RESULTS.md).
+2. [Ouster channel decision and proposal](../docs/OUSTER_CHANNEL_DECISION.md).
+3. [Architecture](../IMPLEMENTATION_ARCHITECTURE.md) and [task ledger](tasks.json).
+4. [Startup and replay](../docs/STARTUP_AND_REPLAY.md) for runnable commands.
 
-All 64 Python tests passed after allowing the local HTTP fixtures to bind loopback sockets. Selected baseline/reference/Ouster JSON evidence matched inventory hashes; frontal/raw-view observations also matched recorded evidence. No GPU experiments, image rebuilds, runtime edits, dataset mutations or process management were performed.
+The latest published research snapshot at this review is `15a82bc`; deployment fixes are in `493bdf0`. Check `git status` and `git log` before assuming either still describes the checkout. Documentation edits do not rebuild a saved runtime image.
 
-Compilation was attempted with the built-in compiler for every updated LaTeX source. All failed before parsing because the uncached TeX bundle could not be downloaded. Preserve the source/assets and keep the built-in editor as the default; compilation and rendered layout are unverified. Logs: `.recovery/verification/docs-2026-10-23/`. Missing project images produce explicit placeholders rather than silently omitted figures.
+## Current conclusion
 
-The numerical priorities remain original input/training parity and bounded voxelization, then untouched accuracy acceptance. W06 worker, configurable sensor QoS, timing metrics, benchmarks, full memory/failure validation and CI remain unfinished. The chronological notes below retain their original dates and should not be read as current process/publication status.
+The ROS 2 Jazzy/TensorRT 10 migration, Docker startup, Ouster adapter and monitoring are implemented and have recorded checks. The latest channel study made 1,120 measured GPU inferences plus 18 warmups. Both normalized channels completed the tested numerical runs without inference failure.
 
-Open this repository: `/media/ae/New Volume/MasterThesis`.
+Reflectivity/255 is the better supported experimental input for this configuration. On 16 labeled Ouster test scans it gives four qualifying Vehicle BEV matches per run, versus zero for signal/65535, among 60 in-ROI Vehicle annotations. Both have zero qualifying 3D matches. This is not accuracy acceptance.
 
-The user authorized implementation on 2026-10-01. W02 CPU foundations and W03 local ROS adapters are implemented; W04/W05 runtime source migration builds/links against extracted TensorRT 10.16.1.11 and passes synthetic GPU smoke checks; reference semantics, memory/failure checks and W06 remain pending; read PROGRESS.md/tasks.json and the latest checkpoint for verification and remaining blockers. Docker packaging is implemented and verified with synthetic GPU/ROS checks; see docker/README.md and config/docker_inventory.json. Continue using the protocol below, preserving existing work.
+The current detector is synchronous with reliable depth 700. The bounded worker, sustained benchmark, complete memory/failure acceptance and CI remain open. The deterministic capacity experiment is not deployed preprocessing. Do not mark tasks verified merely because the study finished.
 
-The A-to-Z implementation/deployment guide is `docs/PROJECT_IMPLEMENTATION_AND_DEPLOYMENT_GUIDE.tex`; README now describes the Jazzy workflow. All current build instructions now use colcon; reduced CPU, sanitized CPU and ROS builds/tests passed. Its commands passed syntax/link checks and its synthetic container command passed in isolated ROS domain 91. Built-in LaTeX compilation remains unverified: the original attempt could not retrieve its TeX bundle, and attempts after the folder move report that the LaTeX sandbox connection closed before parsing source. Preserve the source and retry with the built-in compiler when available; do not install a terminal TeX distribution for this task.
+## Preserve the evidence
 
-## Current deployment and moved checkout
+Small summaries and provenance are in `config/`; large evidence is ignored and needs an independent backup:
 
-The user moved the checkout to `/media/ae/New Volume/MasterThesis` on 2026-10-02. Quote this path. Docker still uses its own host storage filesystem; moving the project does not move Docker images/cache. Old native build/install outputs contain stale absolute paths; select fresh directories when rebuilding native code. Historical logs/inventories retain their original paths as evidence.
+| Directory | Contents |
+| --- | --- |
+| `.recovery/accuracy/ouster-production-mosep-v1` | 480 current-code weather observations |
+| `.recovery/accuracy/ouster-production-dur360-v2` | 320 primary labeled observations and evaluation |
+| `.recovery/accuracy/ouster-production-dur360-bounded-v1` | 320 separate capacity-control observations |
+| `.recovery/dur360bevet-study` | Original annotated subset, publisher checksums and frozen selection |
+| `.recovery/accuracy/kitti-baseline-v1` | Frozen first KITTI predictions and evaluation |
+| `.recovery/accuracy/kitti-reference-v1` | TensorRT compatibility and repeatability evidence |
 
-`sudo bash tools/deploy.sh` checks the host GPU/Docker, reuses a matching local image or builds current local source with cached dependency/model layers, then launches the detector. No push is needed for local edits. Remote source remains optional. No local SDK/model inputs are needed. Keep large assets ignored. See the latest progress entry and image inventory for verified build/GPU evidence and current container state. W09 remains in progress for full operational/CI acceptance.
+Do not overwrite frozen outputs to make new code appear consistent. A changed model, engine, source, preprocessing rule or evaluation policy requires a new output directory. Preserve failed attempts as well as successful runs. Keep original bags and labels unchanged.
 
-## Historical real-bag viewer state (inspect current processes)
+## Before starting or stopping anything
 
-The KITTI sequence04 bag playback (`pointpillars-bag`) and inference (`pointpillars`) passed 25 matched frames inside Docker and another25 on the host with UDPv4. `bash tools/visualize.sh` opened a live RViz view of points and Detection3DArray boxes; the GUI was left running. Before starting another viewer, inspect current processes/windows. Source/configuration and optional plugin setup are documented in README. Numeric box colors are not semantic class labels; no accuracy validation was claimed. A global TF warning from sensor-only playback is recorded; the shared `velodyne` frame renders successfully. Do not add assumed world transforms.
+Run `git status --short --branch`, inspect Docker containers and check the selected image. Saved ownership/PID records are historical until matched against actual process identity. Stop only the intended resources. Use the startup guide's explicit bag profile so topic, domain and middleware agree.
 
-`config/visualization_inventory.json` indexes exact reports, screenshot, plugin version/hash and verification commands. The local plugin, diagnostic script and evidence under `.recovery` are excluded from snapshots; back them up separately. W07 visualization substep is delivered but full launch/QoS/metrics acceptance remains unfinished, as does W06. The user subsequently published visualization and bag/video source at `dd687da7f42b4dc8fb53370be4a7c26635bc6e95`; earlier uncommitted statements are historical. The latest LaTeX compile again failed before parsing because its uncached bundle could not be downloaded.
+A working host GPU was verified during the study. A restricted tool session can still hide GPU access; distinguish that from a host driver failure. Do not install or upgrade host drivers merely because a sandbox cannot query them.
 
-## Current sample-data helper
+## Checkpoint routine
 
-`bash tools/rosbag_demo.sh` now prepares the pinned KITTI bag and matching drive camera MP4, then starts/reuses matching LiDAR playback. `prepare` saves assets only; `stop` stops only a helper-labeled player. Defaults use the existing `/media/ae/New Volume/rosbags/kitti04` folder beside this checkout. The earlier manually started player was intentionally preserved during validation. At the first history snapshot, the user had restarted the player through the helper and its ownership label was present; inspect actual containers before acting. Camera clip and timestamps are prepared; repeat runs verified cache reuse. A separate Docker image installs preparation libraries without host changes. Asset directories contain their own ignore file; assets/logs are excluded from checkpoints.
+`tools/recovery.py` stores limited source checkpoints and reports drift; it does not restore files, execute experiments, enforce task acceptance or back up datasets. Use its current `--help` before issuing commands. Its ignored output is not a substitute for Git or an external evidence backup.
 
-`config/demo_inventory.json` records provenance, source/clip hashes, 285 camera frames, 283 LiDAR frames, eight passing recovery tests, actual isolated-domain playback/stop and full video decode. Camera starts about0.210s before LiDAR and the video is not synchronized or annotated ground truth; do not claim accuracy. Model contract, W06 and remaining W07 acceptance are still incomplete. The bag/video and RViz changes are now published at dd687da; this history-documentation patch remains local. The latest LaTeX attempt again failed before parsing on the unavailable compiler bundle.
+When resuming an implementation task:
 
-## Complete project and discussion history
+1. Read the source involved and its callers/tests, then inspect existing changes.
+2. Identify the smallest correctness question to resolve.
+3. Record source/model/input identities and use a new evidence directory if they differ.
+4. Run checks appropriate to that change; state failures and unverified areas explicitly.
+5. Update the status, evidence summary and task ledger together.
 
-Read `docs/PROJECT_HISTORY_AND_DECISION_RECORD.md` for the natural-language account of the architecture, migration, installation choices, Docker evolution, relocation, Git authentication advice, real-bag validation, RViz, camera video and every changed implementation file. `docs/CHAT_DISCUSSION_RECORD.md` preserves the visible discussion through the latest continuation. README links both documents. Historical inventory paths, image identities and publication states describe their original checks; do not treat them as fresh observations.
+## Thesis and documentation work
 
-The first history-writing turn hit the usage limit. On continuation, the project volume was unmounted; normal disk-service mounting reconnected it. The saved chat record was retained, and the narrative draft was recovered from this thread's local session record and saved before further edits. A checkpoint should preserve actual files rather than rely on tool-session storage. The history is Markdown and needs no LaTeX compiler.
+The [documentation index](../docs/README.md) separates current guides, research, the thesis draft and historical records. Use the [thesis draft](../docs/THESIS_DRAFT.md) as an editable structure, retaining its limitations and source references. Figure provenance lives beside the images in `docs/figures`.
 
-## W01 KITTI accuracy work started
+LaTeX sources remain editable in the built-in editor. Previous compilation attempts failed while fetching missing TeX resources. A failed preview does not establish a source error or a successful PDF. Consult the latest documentation review record for the current attempt; do not install a separate TeX distribution to conceal an unverified native preview.
 
-The user chose varied labeled KITTI scenarios first, then their own sensor recordings when available. Read `docs/MODEL_VALIDATION_PLAN.md` and partial `config/model_contract.json`. The exact NGC version label/model hashes now verify IDs 0 Vehicle, 1 Pedestrian, 2 Cyclist. NVIDIA decoder source supports center-based boxes; normalized XYZI input is documented and fits the first three bag clouds. Earlier unresolved class-order statements are historical. Runtime config still uses smoke labels; numerical/calibration fixtures and independent reference/accuracy checks are not complete.
+## Thesis history expansion — 9 November 2026
 
-The preparation/calibration substep is now delivered; see the 3 October update below. Next implement prediction export and independent exact-model parity, then evaluator rules and baseline accuracy. Existing bag/video have no object annotations; do not call them accuracy data or silently change z/intensity because many raw points lie outside the export range. Freeze class mapping/visibility/evaluator/splits and define acceptance targets. W01 is now in progress; the contract remains partial and is not runtime enforcement. Raw evidence is ignored and needs its own backup.
+The engineering chapter and 50-item register are saved in both thesis drafts, with a separately readable `docs/ENGINEERING_JOURNEY.md` and two new explanatory figures. Check `config/thesis_history_review.json` for coverage and compiler status. The verified project volume is currently mounted at `/media/ae/New Volume1/MasterThesis`; the earlier mount path is occupied by another volume. Confirm the mount and Git identity before using historical absolute commands. These documentation edits remain local.
 
-## Available now
+## 9 November 2026 — illustrated thesis completion pass
 
-Requirements: Python 3 and Git. No ROS, CUDA, GPU, model access or paid API is needed for checkpoint/status commands. Run from the repository root:
+Expanded the existing THESIS_DRAFT.tex and readable manuscript with 50 illustrated problem groups, four subcases and 257 small solution steps. Added 54 evidence-report captures, four byte-identical historical RViz captures and two actual new terminal captures. Their labels distinguish a report from an original incident screenshot. No physical driver, disk-full or destructive data fault was induced. The full Python regression run passed 119 tests; six separate one-scan GPU demonstrations reproduced raw-signal decoder rejection and normalized-reflectivity acceptance without changing the frozen 1,120-observation study. Author details supplied: Ahmed Elsaify, THI, Master of International Automotive Engineering; supervisor pending. Current work remains local and uncommitted. Consult config/thesis_casebook_review.json for final source checks and the native compiler result.
 
-```bash
-cd '/media/ae/New Volume/MasterThesis'
-python3 tools/recovery.py status
-```
+## 9 November 2026 — replace report screenshots in thesis
 
-Create a checkpoint at the beginning of a work unit, after coherent edits, after tests, and before a long-running command. Example **for a future W02 implementation session**:
+At the author’s request, replace all 54 J-series report screenshots with editable comparison tables and selected explanatory flowcharts. Preserve the original problem history, 257 small steps, recorded checks and limitations. Retain genuine RViz/terminal captures and numerical plots; keep old report PNGs and provenance as historical evidence, no longer embedded in the manuscript. No runtime or experiment result is changed. The native-panel review is recorded in config/thesis_native_panels_review.json.
 
-```bash
-python3 tools/recovery.py checkpoint \
-  --task W02 --state in-progress \
-  --next 'Extract CPU geometry from CUDA includes, then run its focused tests.' \
-  --evidence 'Not tested yet; see recovery/PROGRESS.md.'
-```
+## 9 November 2026 — multi-agent detection investigation
 
-After tests actually pass, update progress/ledger first and record their exact command, exit code and saved log path. Then use `--state verified` with evidence. Use `--state blocked` with the missing prerequisite and unblock action when needed. The helper records assertions; it does not run tests or enforce milestone prerequisites.
+Five roles covered model provenance, development, independent testing, minimal code review and documentation. Exact-version model/label hashes match; the shared model-level card describes proprietary solid-state data, but its empty version-specific description leaves v1.1 training identity unverified. Actual packaged decoder and tiny voxel-feature controls pass; no blanket z correction was installed. A tuning-only oriented-box point audit measured lower-ROI geometry loss. Eighteen new unlabeled Ouster production inferences show bounded selection improves repeat matching on two scans, while removing zero returns alone does not consistently do so. These are separate from the frozen 1,120-observation study and establish no new accuracy result.
 
-The helper is run explicitly by the agent or a person. There is no background watcher. A successful checkpoint is an immutable local directory under `.recovery/checkpoints/`; incomplete temporary directories are not accepted as completed checkpoints. Status validates saved content and compares the current tree to the latest completed snapshot. It never checks out, resets, stages, commits or restores files. Save independent backups if disk-loss recovery is required.
+Added a pure CPU `prepare_points` helper and optional offline CLI, enabled with `PP_BUILD_POINT_DIAGNOSTICS=ON`. Live adapter/runtime behavior is unchanged. New C++ outputs match Python preparation byte for byte on both real scans; passthrough and existing-output protection pass. Current Python regression119 tests and CPU CTest3/3 pass. Review caught and corrected an unconditional offline target that would have required tools absent from the Docker context; a minimal no-tools build also passes. Read docs/DETECTION_INVESTIGATION_AND_PLAN.md, docs/DETECTION_TEST_RESULTS.md, docs/DETECTION_MODEL_INVESTIGATION.md and docs/DETECTION_CODE_REVIEW.md. Large logs/inputs remain under .recovery/verification/detection-investigation-2026-11-09. No production accuracy fix, package installation, engine replacement or push is claimed.
 
-Source snapshots include tracked and nonignored untracked eligible UTF-8 text files. Defaults cap files at 1 MiB each, total source snapshots at 16 MiB and each patch at 32 MiB. Build outputs, `.recovery`, model/bag/media binaries, likely credential paths and oversized files are excluded as reported in the manifest. Symlinks are recorded as links, not followed. Ignored artifacts and files outside the repository require their own backup/location/hash records. Exclusions are deliberately not a full-machine backup or a guarantee of detecting every secret; do not put secrets in source or evidence text. Inspect exclusions before relying on a snapshot. Local test logs under `.recovery` remain on disk but are not recursively copied into snapshots.
+## 9 November 2026 — full original Ouster before/after comparison
 
-## Recovery sequence
+User asked exactly what changed and whether it improves detections. All 291 cloud occurrences from original Koide/AIST rosbag2_2023_03_28-16_25_54 were decoded read-only, using reflectivity/255 in both variants. The after inputs invoke the actual new C++ helper and match Python preparation on all 291 scans. A shuffled paired-job run made 1,746 measured inferences plus four excluded warmups with one unchanged production engine and runtime. Original bag hash stayed unchanged; all 1,746 raw output hashes pass verification. Candidate repeat matching 98.904%→100%; confidence 0.4 accepted repeat matching 99.761%→100%. Accepted counts are unchanged on every scan: 418 events per pass. No labeled accuracy improvement is established; live defaults remain unchanged. Read docs/OUSTER_BEFORE_AFTER_COMPARISON.md and config/ouster_before_after_20261109.json. Original/after raw outputs, exactcommands and identities remain ignored under .recovery/verification/ouster-before-after-20261109-v1. No containers remained after the run.
 
-1. Read `IMPLEMENTATION_ARCHITECTURE.md`, `recovery/tasks.json` and `recovery/PROGRESS.md`. Read repository instructions if present. Do not restart the architecture analysis from scratch.
-2. Run `python3 tools/recovery.py status` and inspect the printed checkpoint manifest, integrity result and current drift. Also inspect `git status --short`, `git diff` and `git diff --cached`; account for untracked files separately. A changed HEAD, changed file, failed integrity check or mismatched evidence invalidates any assumption that old tests cover current work.
-3. Treat `in-progress` and `blocked` as unfinished. A `verified` label still needs its evidence and relevant hashes. Inspect excluded files relevant to the task. If status reports a corrupt checkpoint, inspect earlier complete checkpoints and their manifests; do not silently trust a fallback or overwrite current files.
-4. Check whether an interrupted build, benchmark or engine-generation process is still running before launching another. Inspect outputs before retrying any install/build/promotion command. Keep incomplete engine outputs separate from validated artifacts.
-5. Preserve current work. If file recovery is necessary, compare the snapshot file to the working file and recover selected content manually after reviewing the diff. Saved patches describe staged/unstaged state against their recorded base; never blindly apply both onto an already modified checkout. The original Git index is never changed by this helper.
-6. Select the interrupted substep first, or the earliest ready task whose dependencies are satisfied. One editor per shared file and one ledger writer. If GPU prerequisites remain blocked, continue independent CPU/ROS work and retain that blocker.
-7. Write an `in-progress` checkpoint **before editing**. Complete one coherent patch, run the smallest meaningful affected checks, update progress/ledger, and checkpoint again. Re-run downstream checks when shared contracts change; do not rerun expensive unaffected suites repeatedly.
-8. Report what changed, which checks actually passed, what remains blocked and the next action. Never convert absent GPU evidence into a pass.
+## Primary experiment inputs — 21 November 2026
 
-## Copy into the next chat when ready to implement
-
-> Continue implementation in `/media/ae/New Volume/MasterThesis` using `IMPLEMENTATION_ARCHITECTURE.md`. First read `recovery/RESUME.md`, `recovery/PROGRESS.md` and `recovery/tasks.json`, run `python3 tools/recovery.py status`, and reconcile the actual working tree with the last completed checkpoint. Preserve all existing changes. Resume the interrupted substep or the earliest unblocked task; do not repeat completed work without a reason. Checkpoint before and after each coherent edit/test. Record exact verification evidence and remaining GPU/model blockers. Do not claim inference or real-time performance is verified without target-hardware evidence.
-
-If the old chat is available, resuming it retains conversational context; these files also support a fresh chat. Availability/credits must first permit model work. The local recovery helper cannot increase quota or automatically continue the model after a stop.
-
-
-## Latest continuation: W01.2 prepared labeled data (2026-10-03)
-
-Read `docs/KITTI_VALIDATION_DATA.md` and `config/kitti_validation_inventory.json`. The 32 matched KITTI frames are at `/media/ae/New Volume/datasets/kitti_object_diagnostic_v1`. Final manifest/selection hashes, exact frame IDs, source pins, recipe and logs are indexed. The 16+16 split is annotation-selected and raw-recording-drive-disjoint; all configured buckets are present. Calibrated ground-truth reports preserve full orientation/corners, original classes and DontCare. Fifteen focused and35 total Python tests passed, along with real preparation and repeat reuse. This is data preparation, not inference parity or accuracy acceptance.
-
-To resume preparation, run `python3 tools/prepare_kitti_validation.py --output ../datasets/kitti_object_diagnostic_v1` from this checkout. The identical code/recipe verifies and reuses assets; a changed recipe requires a new output directory. Do not overwrite frozen files. Independently back up the dataset and ignored verification logs; checkpoints preserve source/inventory rather than large data. First pre-review manifests retained with `.initial-pre-review` suffix are historical, not the final manifests.
-
-Next implement prediction export for frozen frames, an independent exact-model runtime/reference with geometry-based matching, then fixed class/visibility/ignore/evaluator rules and accuracy baseline. Keep diagnostic/tuning changes away from the test split. Do not infer detection failure or invent a z shift from partial model-range box coverage. Runtime contract enforcement and label configuration remain separate unfinished work. No runtime or Docker source/image changed in this substep. These edits are uncommitted; Docker still pulls published Git, so a build will not include local validation tools until the user publishes them.
-
-
-## Latest: W01.3 accuracy measured, poor baseline (3 October 2026)
-
-Read docs/KITTI_ACCURACY_RESULTS.md and config/kitti_accuracy_inventory.json first. The32 frozen frames have real ROS outputs in .recovery/accuracy/kitti-baseline-v1, with first observations preserved and policy/report hashes. Moderate16-frame test3D TP=0 for Car/Pedestrian/Cyclist. BEV AP_R40 is5.75%/0%/0.0258%, with explicit Vehicle->Car compatibility mapping. Forty-one tests and exact/missing/duplicate metric controls passed; final report reproduced. The12 BEV-matched cars have median upward center error1.529m. Live counts varied; trtexec probe is only candidate consistency, not full independent original-model parity. Accuracy acceptance is not achieved.
-
-Detector pointpillars-validation, kitti_validation_player and RViz were left running on domain42, topics /kitti/point_cloud, /kitti/predictions, /kitti/ground_truth and framevelodyne. Green boxes are calibrated GT. Inspect actual processes first. bash tools/kitti_accuracy.sh report reuses the frozen run; live/collect refuse another active player. bash tools/kitti_accuracy.sh stop checks recorded task-owned container/process identities before stopping them. Ownership records are under the result folder, not source snapshots. If missing/stale, inspect and stop only the intended resources. Other containers/apps are preserved.
-
-Next resolve original-model input/vertical contract, plugin/runtime reference parity and numerical repeatability before guessing any z shift. Define a larger untouched acceptance split/targets; the diagnostic test set has now been inspected. Keep first observations, outputs and policy immutable. Existing source/tool hashes bind this measured implementation; changed identities require a new result directory. Data/evidence are ignored and need independent backup. The built-in LaTeX compiler failed before parsing because its bundle could not be downloaded; source updated in place, PDF unverified. All documentation has dated status/findings; historical addenda do not rewrite old observations. No commit/push or image rebuild performed.
-
-## W01.4 independent comparison delivered: 3 October 2026
-
-Read docs/MODEL_REFERENCE_COMPARISON.md and config/kitti_reference_inventory.json first. Outputs are ignored .recovery/accuracy/kitti-reference-v1: frozen recipe/collection, lossless raw/final observations, all-repeat scores, capacity controls, memory probes and source/evidence hashes. The TRT8 compatibility reference reproduced poor accuracy and elevated centers. All192 same-raw NMS observations agree; exact training/numerical parity and accuracy acceptance remain unmet. Two tuning capacity controls improve repeat matching to roughly99.6–100%;12 original frames exceed the export's voxel limit. Source raises internal tensor-bounds concern; two zero-error allocation probes do not clear it.
-
-Next verify bounded voxelization and original input/training/decoder behavior before blaming weights or installing an empirical shift. Production runtime/source/image/engine and original ROS baseline remain unchanged. W01 is in progress; the comparison substep is delivered, not accuracy acceptance. Source edits remain local/unpublished.50 Python tests passed. Existing LaTeX updated in place; built-in compilation still cannot obtain uncached bundle, PDF unverified.
-
-The original validation detector/player plus reference overlay and RViz were left running on domain42. Inspect actual processes/ownership before stopping or duplicating them. Overlay owner is kitti-reference-v1/overlay-owner.json; python3 tools/kitti_reference_view.py --stop validates PID/start identity. Close reference RViz separately. Original kitti_accuracy.sh stop handles its detector/player; preserve unrelated YOLO. Large evidence is outside source snapshots and needs independent backup. Same frozen identities reuse validated raw files; changed code/image/GPU needs a fresh output directory. New source commands and source-level concerns are documented; older “reference unfinished” statements refer to training parity or historical phases, not absence of this compatibility comparison.
+New experiments use `raw01` (default) and `ouster1` from
+`/media/ae/New Volume1/rosbags`. The replay launcher opens their original standalone
+MCAPs read-only; the shared bag profile now uses `/ouster1/points`, domain 99 and
+Fast DDS. Sampled clouds use frame `ouster1_lidar` and have literal signal and
+reflectivity channels. See [startup and replay](../docs/STARTUP_AND_REPLAY.md) for commands and inspection limits.
+Historical datasets and frozen results remain unchanged; this input selection
+does not establish new inference or accuracy results.

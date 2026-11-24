@@ -1,0 +1,166 @@
+{
+  "reviewed": "2026-11-21",
+  "role": "primary inputs for new experiments",
+  "default": "raw01",
+  "root": "/media/ae/New Volume1/rosbags",
+  "topic": "/ouster1/points",
+  "frame": "ouster1_lidar",
+  "recordings": [
+    {
+      "name": "raw01",
+      "file": "raw01/ouster1_raw_01_0-001.mcap",
+      "size_bytes": 17510485770,
+      "message_count": 2783,
+      "sampled_cloud": {
+        "topic": "/ouster1/points",
+        "frame": "ouster1_lidar",
+        "width": 1024,
+        "height": 128,
+        "point_step": 48,
+        "fields": [
+          {
+            "name": "x",
+            "datatype": 7,
+            "offset": 0,
+            "count": 1
+          },
+          {
+            "name": "y",
+            "datatype": 7,
+            "offset": 4,
+            "count": 1
+          },
+          {
+            "name": "z",
+            "datatype": 7,
+            "offset": 8,
+            "count": 1
+          },
+          {
+            "name": "t",
+            "datatype": 6,
+            "offset": 16,
+            "count": 1
+          },
+          {
+            "name": "ring",
+            "datatype": 4,
+            "offset": 20,
+            "count": 1
+          },
+          {
+            "name": "range",
+            "datatype": 6,
+            "offset": 24,
+            "count": 1
+          },
+          {
+            "name": "signal",
+            "datatype": 4,
+            "offset": 28,
+            "count": 1
+          },
+          {
+            "name": "near_ir",
+            "datatype": 4,
+            "offset": 30,
+            "count": 1
+          },
+          {
+            "name": "reflectivity",
+            "datatype": 2,
+            "offset": 32,
+            "count": 1
+          },
+          {
+            "name": "flags",
+            "datatype": 2,
+            "offset": 33,
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "ouster1",
+      "file": "ouster1/ouster1_raw_02_0-001.mcap",
+      "size_bytes": 11583475462,
+      "message_count": 1841,
+      "sampled_cloud": {
+        "topic": "/ouster1/points",
+        "frame": "ouster1_lidar",
+        "width": 1024,
+        "height": 128,
+        "point_step": 48,
+        "fields": [
+          {
+            "name": "x",
+            "datatype": 7,
+            "offset": 0,
+            "count": 1
+          },
+          {
+            "name": "y",
+            "datatype": 7,
+            "offset": 4,
+            "count": 1
+          },
+          {
+            "name": "z",
+            "datatype": 7,
+            "offset": 8,
+            "count": 1
+          },
+          {
+            "name": "t",
+            "datatype": 6,
+            "offset": 16,
+            "count": 1
+          },
+          {
+            "name": "ring",
+            "datatype": 4,
+            "offset": 20,
+            "count": 1
+          },
+          {
+            "name": "range",
+            "datatype": 6,
+            "offset": 24,
+            "count": 1
+          },
+          {
+            "name": "signal",
+            "datatype": 4,
+            "offset": 28,
+            "count": 1
+          },
+          {
+            "name": "near_ir",
+            "datatype": 4,
+            "offset": 30,
+            "count": 1
+          },
+          {
+            "name": "reflectivity",
+            "datatype": 2,
+            "offset": 32,
+            "count": 1
+          },
+          {
+            "name": "flags",
+            "datatype": 2,
+            "offset": 33,
+            "count": 1
+          }
+        ]
+      }
+    }
+  ],
+  "verification": {
+    "launcher_tests_passed": 15,
+    "shell_syntax": "passed",
+    "ros_storage": "Both original MCAPs opened read-only through rosbag2_py; metadata and first cloud decoded.",
+    "limits": "No full-file checksum, exhaustive scan validation, GPU replay or accuracy evaluation performed. Frozen historical experiments unchanged."
+  }
+}
