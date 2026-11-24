@@ -86,9 +86,7 @@ One Ctrl+C stops each foreground launcher; allow up to eight seconds for cleanup
 RViz runs on a graphical desktop with host ROS Jazzy and the `vision_msgs` RViz plugin. Use it as your desktop user, without sudo. With the Ouster bag pipeline running:
 
 ```bash
-ROS_DOMAIN_ID=99 RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
-  RVIZ_CONFIG="$PWD/rviz/ouster.rviz" \
-  bash tools/visualize.sh -f ouster1_lidar
+bash tools/visualize.sh bag
 ```
 
 For the standard KITTI demo, `bash tools/visualize.sh` uses the `velodyne` profile. If RViz is missing, install `ros-jazzy-rviz2` and `ros-jazzy-vision-msgs-rviz-plugins` after configuring host ROS Jazzy. For an existing window, choose **File → Open Config**; the launcher opens a new window.

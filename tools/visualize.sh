@@ -2,6 +2,26 @@
 # Host desktop viewer; inference and bag playback stay in their containers.
 set -euo pipefail
 project_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+case "${1:-}" in
+  -h|--help)
+    cat <<'EOF'
+Usage: bash tools/visualize.sh [bag] [RViz arguments]
+
+  No profile  Standard KITTI viewer (domain 0, velodyne configuration).
+  bag         Ouster replay viewer (Fast DDS, domain 99, ouster1_lidar configuration).
+
+Run as your desktop user while the detector and player are running separately.
+ROS_DOMAIN_ID, RMW_IMPLEMENTATION and RVIZ_CONFIG overrides are preserved.
+Additional arguments are passed to RViz, for example: bag -f another_frame.
+EOF
+    exit 0 ;;
+  bag)
+    shift
+    source "$project_dir/tools/ouster_profile.sh"
+    pp_ouster_profile bag
+    export RVIZ_CONFIG=${RVIZ_CONFIG:-"$project_dir/rviz/ouster.rviz"}
+    ;;
+esac
 if [[ ! -f /opt/ros/jazzy/setup.bash || ! -x /opt/ros/jazzy/bin/rviz2 ]]; then
   printf '%s\n' 'Install host ROS Jazzy (see the guide), then:' \
     'sudo apt install ros-jazzy-rviz2 ros-jazzy-vision-msgs-rviz-plugins' >&2
@@ -63,5 +83,6 @@ export FASTDDS_BUILTIN_TRANSPORTS=${FASTDDS_BUILTIN_TRANSPORTS:-UDPv4}
 export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
 cd "$project_dir"
 rviz_config=${RVIZ_CONFIG:-"$project_dir/rviz/pointpillars.rviz"}
-printf 'RViz: domain %s, fixed frame velodyne; configuration %s.\n' "$ROS_DOMAIN_ID" "$rviz_config"
+printf 'RViz: domain %s; middleware %s; configuration %s.\n' \
+  "$ROS_DOMAIN_ID" "${RMW_IMPLEMENTATION:-ROS default}" "$rviz_config"
 exec rviz2 -d "$rviz_config" "$@"

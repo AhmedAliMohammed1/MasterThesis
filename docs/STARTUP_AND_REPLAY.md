@@ -95,12 +95,10 @@ and results. [Historical download record](FRESH_OUSTER_VISUAL_TEST.md).
 In another terminal on the graphical desktop, as your normal user:
 
 ```bash
-ROS_DOMAIN_ID=99 RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
-  RVIZ_CONFIG="$PWD/rviz/ouster.rviz" \
-  bash tools/visualize.sh -f ouster1_lidar
+bash tools/visualize.sh bag
 ```
 
-This bag-specific command needs host ROS Jazzy, RViz and `vision_msgs_rviz_plugins`. For live data, match the actual middleware/domain and use the cloud's `header.frame_id`. The saved profile displays adapted points, detections and counts. The launcher prints a generic `velodyne` hint, but the explicit `-f` above selects the Ouster frame.
+This bag-specific command needs host ROS Jazzy, RViz and `vision_msgs_rviz_plugins`. For live data, match the actual middleware/domain and use the cloud's `header.frame_id`. The saved profile displays adapted points, detections and counts. The `bag` shortcut selects Fast DDS, domain 99 and the Ouster configuration with fixed frame `ouster1_lidar`; explicit environment overrides are preserved.
 
 The viewer opens a new window. For an existing window, select **File → Open Config**. Rendering confirms message delivery; it does not validate object accuracy. [Measured prediction/ground-truth figure](OUSTER_CHANNEL_DECISION.md#why-3d-accuracy-still-fails).
 
