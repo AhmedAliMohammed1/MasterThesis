@@ -131,3 +131,78 @@ The Ouster channel decision reports a frozen primary gate of 0.4 plus a separate
 `src/detection_output.cpp` owns the dynamic parameter and aggregate publication; `src/pointcloud_adapter.cpp` validates candidate messages. The shared output path reports successful/empty scans and rejected inputs/inference failures. Tests exercise score boundaries, preserved headers/fields, rejected updates, remapped topics, cumulative/error counts and late subscribers.
 
 The 23 October filtering trial verified 60 native and 60 deployed GPU frames plus actual RViz rendering. Later deployment/shutdown checks passed seven C++/ROS tests. The latest recorded Python suite has 119 tests; the 1,120-inference channel study assesses feature results separately from ROS delivery. [Current evidence and open work](CURRENT_STATUS_AND_RESULTS.md).
+
+## Responsive live processing and timing (27 November 2026)
+
+The detector now supports `processing_mode:=latest` at startup. A depth-one,
+best-effort input subscription receives scans independently of inference. One
+pending scan is retained; a newer scan replaces it while the current inference
+finishes. Only one callback accesses the TensorRT context and packing buffers.
+The detection publisher also uses depth one in this mode. This bounds application
+backlog and favors fresh results; it does not make the network faster, guarantee
+an output frequency, or eliminate upstream playback/transport stalls.
+
+The default `all_frames` mode retains the existing reliable depth-700 input and
+output queues and sequential processing. It does not deliberately skip scans,
+but finite queues and transport can still lose data. Use this mode for evaluation,
+with paced playback and explicit completeness checks. Mode changes require a
+restart; confidence changes remain live.
+
+After rebuilding the image, start live viewing from the repository root:
+
+```bash
+sudo env PP_BUILD_ONLY=1 bash tools/deploy.sh
+# Stop the previous detector/adapter using Ctrl+C in its terminal first.
+sudo env PP_PROCESSING_MODE=latest bash tools/start_ouster.sh bag
+```
+
+Keep the bag player and RViz in their separate terminals. For sequential
+processing, set `PP_PROCESSING_MODE=all_frames`. The environment option is also
+forwarded by `tools/start.sh` and `tools/deploy.sh`. Existing images must be rebuilt
+before they implement this option. Native startup accepts `-p processing_mode:=latest`.
+
+Read the most recent per-scan timing report:
+
+```bash
+sudo docker exec pointpillars /entrypoint.sh ros2 topic echo \
+  /pointpillars/performance --qos-durability transient_local --once
+```
+
+The private topic follows the node name. Reports preserve the input header and
+contain `processing_mode`, `replaced_pending_frames_total`, `queue_wait_ms`,
+`pack_ms`, `gpu_pipeline_ms`, `decode_ms`, `nms_ms`, `publish_ms`, and
+`processing_ms`. Durations are host wall-clock measurements using a monotonic
+clock. The GPU pipeline includes upload, execution, downloads and synchronization;
+it is not a CUDA kernel-only measurement. Processing time excludes application
+queue wait and the timing report's own publication. Failed frames have a warning
+status and incomplete stage timings; do not interpret their zeros as measured
+GPU durations.
+
+`queue_wait_ms` starts when the subscription callback receives a message, so it
+excludes DDS waiting and upstream delays. In `all_frames` it is approximately zero
+because receipt and inference share the callback. Sensor/header timestamps may
+have unrelated epochs during replay, so they are retained for correlation rather
+than subtracted from the wall clock. The replacement counter counts only the
+application's pending-slot replacements, not DDS losses. The input subscription
+and inference run in two executor threads with mutually exclusive callback groups.
+
+Validation: native runtime builds against the locally available TensorRT 10.16.1
+SDK. CPU/ROS tests and a synthetic GPU smoke test cover resource use and output
+contracts. `tests/runtime/check_live_scheduling.py` tests an overloaded synthetic
+burst in isolated ROS domain 118, checking ordered original headers, latest-frame
+replacement, delivery of the final scan, sequential completeness and clean shutdown.
+These are scheduling checks, not Ouster frame-rate or accuracy measurements.
+
+Use timings from representative scans to choose subsequent optimization work.
+GPU NMS, pinned transfer buffers and CUDA Graphs have not been enabled without
+representative bottleneck measurements and output-equivalence checks. The runtime
+now moves its decoded box vector into CPU NMS to avoid an unnecessary full copy.
+
+In the final synthetic 60-scan burst check on the RTX 4060 Laptop GPU, sequential
+mode processed 60 scans and the final scan's publish-to-diagnostic delay was
+459.7 ms. Latest mode processed 10 scans, replaced 50 pending scans, and delivered
+the final diagnostic after 12.0 ms. Median inference processing stayed around
+7.6–7.9 ms; this demonstrates backlog avoidance by skipping intermediate scans,
+not an inference speedup. Results are retained under
+`.recovery/verification/live-latency-20261127/`. The Docker image was not rebuilt
+in this session because access requires the user's sudo password.

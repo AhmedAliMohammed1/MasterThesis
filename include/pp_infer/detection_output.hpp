@@ -12,7 +12,7 @@ enum class FrameFailure { invalid_cloud, inference_error };
 // committed ROS updates; rejected atomic parameter batches have no side effects.
 class DetectionOutput {
  public:
-  DetectionOutput(rclcpp::Node& node, std::vector<std::string> classes);
+  DetectionOutput(rclcpp::Node& node, std::vector<std::string> classes, std::size_t queue_depth = 700);
   void publish(const std_msgs::msg::Header& header, const std::vector<Bndbox>& boxes);
   void report_failure(const std_msgs::msg::Header& header, FrameFailure failure);
 

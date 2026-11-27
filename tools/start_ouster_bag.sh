@@ -26,7 +26,7 @@ Defaults:
   OUSTER_POINT_CLOUD_TOPIC /ouster1/points (adapter input)
   PP_BAG_RATE           0.5
   PP_BAG_LOOP           1 (set 0 to play once)
-  PP_BAG_DELAY          3 seconds
+  PP_BAG_DELAY          3 seconds (0 starts without a delay)
 
 Examples:
   sudo bash tools/start_ouster_bag.sh
@@ -97,6 +97,9 @@ if ! docker image inspect "$image" >/dev/null 2>&1; then
   echo "Missing local image '$image'. Set PP_IMAGE to your saved ROS inference image." >&2
   exit 1
 fi
+# ROS accepts only positive values for --delay; omit it for zero.
+delay_args=()
+[[ -z ${delay//[.0]/} ]] || delay_args=(--delay "$delay")
 loop_args=()
 [[ $loop == 0 ]] || loop_args=(--loop)
 remap_args=()
@@ -115,5 +118,5 @@ pp_run_container --pull=never --rm --init --name "$container" \
   -e "FASTDDS_BUILTIN_TRANSPORTS=${FASTDDS_BUILTIN_TRANSPORTS:-UDPv4}" \
   --mount "type=bind,source=$bag,target=$bag_uri,readonly" \
   "$image" ros2 bag play "$bag_uri" "${storage_args[@]}" --topics "$source_topic" \
-  --rate "$rate" "${loop_args[@]}" --delay "$delay" --disable-keyboard-controls \
+  --rate "$rate" "${loop_args[@]}" "${delay_args[@]}" --disable-keyboard-controls \
   "${remap_args[@]}"

@@ -22,6 +22,11 @@
 #include <vector>
 #include "postprocess.h"
 
+// Host wall-clock durations; GPU stage includes transfers and synchronization.
+struct InferenceTimings {
+  double gpu_pipeline_ms{}, decode_ms{}, nms_ms{};
+};
+
 // One caller owns this context. Engine generation is an offline operation.
 class PointPillar {
  public:
@@ -32,7 +37,8 @@ class PointPillar {
   std::size_t getPointCapacity() const;
   std::vector<Bndbox> infer(const float* xyzi, std::size_t count,
                            float nms_threshold, int top_n,
-                           std::size_t class_count, bool profile = false);
+                           std::size_t class_count, bool profile = false,
+                           InferenceTimings* timings = nullptr);
  private:
   struct Impl;
   std::unique_ptr<Impl> impl_;

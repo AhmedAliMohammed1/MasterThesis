@@ -22,6 +22,7 @@ Settings (same defaults as deploy.sh):
   POINT_CLOUD_TOPIC        /point_cloud
   DETECTIONS_TOPIC         /bbox
   PP_CONFIDENCE_THRESHOLD  0.4
+  PP_PROCESSING_MODE       all_frames (or latest for live viewing)
   PP_GPU_INDEX             0
   PP_WORKSPACE_MIB         512
 
@@ -32,6 +33,8 @@ EOF
 esac
 [[ $# -eq 0 ]] || { echo 'Unexpected arguments; use --help. Configure startup through environment variables.' >&2; exit 2; }
 
+processing_mode=${PP_PROCESSING_MODE:-all_frames}
+[[ $processing_mode == latest || $processing_mode == all_frames ]] || { echo 'PP_PROCESSING_MODE must be latest or all_frames' >&2; exit 2; }
 image="${PP_IMAGE:-pp-infer:jazzy-trt10}"
 container="${PP_CONTAINER_NAME:-pointpillars}"
 volume="${PP_ENGINE_VOLUME:-pp-engines}"
@@ -51,6 +54,7 @@ pp_run_container --pull=never --rm --init --name "$container" \
   -e "RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}" \
   -e "POINT_CLOUD_TOPIC=${POINT_CLOUD_TOPIC:-/point_cloud}" \
   -e "DETECTIONS_TOPIC=${DETECTIONS_TOPIC:-/bbox}" \
+  -e "PP_PROCESSING_MODE=${PP_PROCESSING_MODE:-all_frames}" \
   -e "PP_CONFIDENCE_THRESHOLD=${PP_CONFIDENCE_THRESHOLD:-0.4}" \
   -e "PP_GPU_INDEX=${PP_GPU_INDEX:-0}" \
   -e "PP_WORKSPACE_MIB=${PP_WORKSPACE_MIB:-512}" \

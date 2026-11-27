@@ -29,6 +29,7 @@ Defaults:
   PP_ENGINE_VOLUME            pp-engines
   DETECTIONS_TOPIC            /bbox
   PP_CONFIDENCE_THRESHOLD     0.4
+  PP_PROCESSING_MODE          all_frames (set latest for responsive live viewing)
   PP_GPU_INDEX                0
   PP_WORKSPACE_MIB            512
 
@@ -76,6 +77,8 @@ domain=${ROS_DOMAIN_ID:-0}
 [[ $domain =~ ^[0-9]{1,3}$ && $((10#$domain)) -le 232 ]] || {
   echo 'ROS_DOMAIN_ID must be 0..232.' >&2; exit 2;
 }
+mode=${PP_PROCESSING_MODE:-all_frames}
+[[ $mode == latest || $mode == all_frames ]] || { echo 'PP_PROCESSING_MODE must be latest or all_frames' >&2; exit 2; }
 image=${PP_IMAGE:-pp-infer:jazzy-trt10}
 container=${PP_CONTAINER_NAME:-pointpillars}
 volume=${PP_ENGINE_VOLUME:-pp-engines}
@@ -119,6 +122,7 @@ pp_run_container --pull=never --rm --init --stop-timeout 10 --name "$container" 
   -e "PP_OUSTER_INTENSITY_CLIP_MAX=$clip_max" \
   -e "DETECTIONS_TOPIC=${DETECTIONS_TOPIC:-/bbox}" \
   -e "PP_CONFIDENCE_THRESHOLD=${PP_CONFIDENCE_THRESHOLD:-0.4}" \
+  -e "PP_PROCESSING_MODE=$mode" \
   -e "PP_GPU_INDEX=${PP_GPU_INDEX:-0}" \
   -e "PP_WORKSPACE_MIB=${PP_WORKSPACE_MIB:-512}" \
   -v "$volume:/var/lib/pp_infer" "$image" bash /ouster-stack.sh

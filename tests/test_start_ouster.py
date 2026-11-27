@@ -39,13 +39,21 @@ if args[0] not in ('info', 'run'):
                         'RMW_IMPLEMENTATION', 'POINT_CLOUD_TOPIC', 'DETECTIONS_TOPIC',
                         'OUSTER_POINT_CLOUD_TOPIC', 'PP_OUSTER_INTENSITY_SOURCE',
                         'PP_OUSTER_INTENSITY_DIVISOR', 'PP_OUSTER_INTENSITY_CLIP_MAX', 'PP_CONFIDENCE_THRESHOLD',
-                        'PP_GPU_INDEX', 'PP_WORKSPACE_MIB'):
+                        'PP_GPU_INDEX', 'PP_WORKSPACE_MIB', 'PP_PROCESSING_MODE'):
                 env.pop(key, None)
             env.update(PATH=str(directory) + ':' + env['PATH'], TEST_DOCKER_CALLS=str(capture), **settings)
             result = subprocess.run(['bash', str(LAUNCHER), *args], env=env,
                                     capture_output=True, text=True, timeout=8)
             calls = [json.loads(line) for line in capture.read_text().splitlines()] if capture.exists() else []
             return result, calls
+
+    def test_processing_mode(self):
+        result, calls = self.launch(('bag',), PP_PROCESSING_MODE='latest')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('PP_PROCESSING_MODE=latest', calls[-1])
+        result, calls = self.launch(PP_PROCESSING_MODE='invalid')
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(calls, [])
 
     def test_default_runs_one_stack_and_checks_saved_adapter(self):
         result, calls = self.launch()

@@ -13,6 +13,7 @@ Source edits do not invalidate independent SDK/model dependency stages.
 Starts the detector after building unless PP_BUILD_ONLY=1.
 
   PP_BUILD_ONLY=1       Build/check image, do not start a container
+  PP_PROCESSING_MODE   all_frames (default) or latest for live viewing
   PP_FORCE_BUILD=1      Run a cached build even when runtime inputs match
   PP_PULL_BASE=1        Refresh base images (can reinstall dependencies)
   PP_SOURCE_MODE=remote Use published Git source instead of the checkout
@@ -23,6 +24,8 @@ No host NVIDIA drivers are installed or upgraded by these scripts.
 HELP
   exit 0
 fi
+processing_mode=${PP_PROCESSING_MODE:-all_frames}
+[[ $processing_mode == latest || $processing_mode == all_frames ]] || { echo 'PP_PROCESSING_MODE must be latest or all_frames' >&2; exit 2; }
 image=${PP_IMAGE:-pp-infer:jazzy-trt10}
 container=${PP_CONTAINER_NAME:-pointpillars}
 volume=${PP_ENGINE_VOLUME:-pp-engines}
@@ -78,6 +81,7 @@ pp_run_container --pull=never --rm --init --name "$container" \
   -e "RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}" \
   -e "POINT_CLOUD_TOPIC=${POINT_CLOUD_TOPIC:-/point_cloud}" \
   -e "DETECTIONS_TOPIC=${DETECTIONS_TOPIC:-/bbox}" \
+  -e "PP_PROCESSING_MODE=${PP_PROCESSING_MODE:-all_frames}" \
   -e "PP_CONFIDENCE_THRESHOLD=${PP_CONFIDENCE_THRESHOLD:-0.4}" \
   -e "PP_GPU_INDEX=${PP_GPU_INDEX:-0}" \
   -e "PP_WORKSPACE_MIB=${PP_WORKSPACE_MIB:-512}" \

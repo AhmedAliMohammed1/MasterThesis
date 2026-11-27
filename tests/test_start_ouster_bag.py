@@ -51,6 +51,21 @@ if args[0] not in ('info','run'):sys.exit('Unexpected mutation')
                 self.assertEqual(path.read_bytes(), b'original bytes')
             return result, calls
 
+    def test_zero_delay_is_omitted_and_positive_delay_is_preserved(self):
+        for delay in ('0', '0.0', '00.000'):
+            with self.subTest(delay=delay):
+                result, calls = self.launch(PP_BAG_DELAY=delay, PP_BAG_LOOP='0', PP_BAG_RATE='1.0')
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertNotIn('--delay', calls[-1])
+                self.assertNotIn('--loop', calls[-1])
+                self.assertIn('--disable-keyboard-controls', calls[-1])
+        for delay in ('3', '0.1'):
+            with self.subTest(delay=delay):
+                result, calls = self.launch(PP_BAG_DELAY=delay)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                run = calls[-1]
+                self.assertEqual(run[run.index('--delay') + 1], delay)
+
     def test_default_mounts_primary_raw01_readonly_without_metadata(self):
         result, calls = self.launch()
         self.assertEqual(result.returncode, 0, result.stderr)

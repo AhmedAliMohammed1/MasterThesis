@@ -18,7 +18,7 @@ std::string number(double value) {
 }
 }  // namespace
 
-DetectionOutput::DetectionOutput(rclcpp::Node& node, std::vector<std::string> classes)
+DetectionOutput::DetectionOutput(rclcpp::Node& node, std::vector<std::string> classes, std::size_t queue_depth)
     : node_(node), classes_(std::move(classes)) {
   rcl_interfaces::msg::ParameterDescriptor descriptor;
   descriptor.description = "Publish only detections with score >= this value. Finite [0,1]; dynamically configurable.";
@@ -40,7 +40,7 @@ DetectionOutput::DetectionOutput(rclcpp::Node& node, std::vector<std::string> cl
       }
       return result;
     });
-  detections_ = node_.create_publisher<vision_msgs::msg::Detection3DArray>("bbox", 700);
+  detections_ = node_.create_publisher<vision_msgs::msg::Detection3DArray>("bbox", queue_depth);
   // Derive from the resolved topic so bbox remappings also isolate monitoring.
   const std::string topic = detections_->get_topic_name();
   const auto monitor_qos = rclcpp::QoS(1).reliable().transient_local();

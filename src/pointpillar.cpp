@@ -22,6 +22,7 @@
 #include <NvInfer.h>
 #include <NvInferPlugin.h>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <fstream>
@@ -124,7 +125,10 @@ PointPillar::PointPillar(const std::string& path) : impl_(std::make_unique<Impl>
 PointPillar::~PointPillar() = default;
 std::size_t PointPillar::getPointCapacity() const { return impl_->points; }
 std::vector<Bndbox> PointPillar::infer(const float* xyzi, std::size_t count,
-                                    float threshold, int top_n, std::size_t classes, bool profile) {
+                                    float threshold, int top_n, std::size_t classes, bool profile, InferenceTimings* timings) {
+  if (timings) *timings = {};
+  using Clock = std::chrono::steady_clock;
+  const auto begin = Clock::now();
   auto& state = *impl_;
   if (state.faulted) throw std::runtime_error("GPU runtime faulted; restart the node");
   if (count > state.points || (count && !xyzi) || !classes || top_n <= 0 ||
@@ -159,8 +163,16 @@ std::vector<Bndbox> PointPillar::infer(const float* xyzi, std::size_t count,
     state.faulted = true;
     throw;
   }
+  const auto gpu_done = Clock::now();
   auto raw = pp_infer::decode_boxes(state.host_boxes.data(), static_cast<std::size_t>(detected), classes);
   std::vector<Bndbox> result;
-  nms_cpu(raw, threshold, result, top_n);
+  const auto decode_done = Clock::now();
+  nms_cpu(std::move(raw), threshold, result, top_n);
+  const auto nms_done = Clock::now();
+  if (timings) {
+    timings->gpu_pipeline_ms = std::chrono::duration<double, std::milli>(gpu_done - begin).count();
+    timings->decode_ms = std::chrono::duration<double, std::milli>(decode_done - gpu_done).count();
+    timings->nms_ms = std::chrono::duration<double, std::milli>(nms_done - decode_done).count();
+  }
   return result;
 }

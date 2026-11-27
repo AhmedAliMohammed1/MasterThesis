@@ -7,6 +7,8 @@ source /workspace/install/setup.bash
 set -u
 if [[ ${1:-} != run ]]; then exec "$@"; fi
 shift
+mode=${PP_PROCESSING_MODE:-all_frames}
+[[ $mode == latest || $mode == all_frames ]] || { echo 'PP_PROCESSING_MODE must be latest or all_frames' >&2; exit 2; }
 mkdir -p /var/lib/pp_infer
 model=/opt/models/pointpillars.onnx
 model_hash=$(sha256sum "$model" | cut -d' ' -f1)
@@ -54,6 +56,6 @@ if [[ -n ${PP_CONFIDENCE_THRESHOLD:-} ]]; then
   threshold_args=(-p "confidence_threshold:=$PP_CONFIDENCE_THRESHOLD")
 fi
 exec /workspace/install/pp_infer/lib/pp_infer/pp_infer --ros-args --params-file /opt/pp_infer/node.yaml \
-  -p "engine_path:=$engine" -r "__node:=pointpillars" \
+  -p "processing_mode:=$mode" -p "engine_path:=$engine" -r "__node:=pointpillars" \
   "${threshold_args[@]}" \
   -r "/point_cloud:=${POINT_CLOUD_TOPIC:-/point_cloud}" -r "bbox:=${DETECTIONS_TOPIC:-/bbox}" "$@"
